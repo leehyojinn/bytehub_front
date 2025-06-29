@@ -1,5 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
+import ChatbotWidget from './component/chatbot/Chatbot';
+import Chatbot from './component/chatbot/Chatbot';
 
 const menuItems = [
   { name: '근태 관리', href: '/component/attendance' },
@@ -31,8 +33,17 @@ export default function Header() {
                 </li>
             ))}
             </ul>
+            <ul className='flex gap_10'>
+              <li className='su_small_text font_500 links'>
+                <Link href={"/component/logout"}>로그아웃</Link>
+              </li>
+              <li className='su_small_text font_500 links'>
+                <Link href={"/component/mypage"}>마이페이지</Link>
+              </li>
+            </ul>
         </div>
         </div>
+        <Chatbot/>
     </div>
   )
 }

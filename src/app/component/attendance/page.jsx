@@ -167,7 +167,7 @@ export default function Attendance() {
 
           {/* 출/퇴근 기록 + 페이징 */}
           <div className="attendance_log_wrap width_100" style={{ marginTop: 30 }}>
-            <div className="small_title font_600 text_center" style={{ marginBottom: 8 }}>근태 내역</div>
+            <div className="card_title font_600 text_center" style={{ marginBottom: 8 }}>근태 내역</div>
             <table className="attendance_log_table width_100">
               <thead>
                 <tr>
