@@ -8,6 +8,11 @@ const departments = [
   { id: 3, name: "디자인팀" },
 ];
 
+const gender = [
+  { id: 1, name: "남자" },
+  { id: 2, name: "여자" },
+];
+
 const positions = [
   "사원", "주임", "대리", "과장", "차장", "부장", "이사", "팀장"
 ];
@@ -148,27 +153,40 @@ export default function Signup() {
                 onBlur={() => setPwFocus(false)}
               />
             </div>
-            <div className="login_input_row">
-              <label htmlFor="dept_id" className="login_label small_text">부서</label>
-              <select id="dept_id" name="dept_id" className="login_input" value={form.dept_id} onChange={handleChange} required>
-                <option value="">부서 선택</option>
-                {departments.map(dep => (
-                  <option key={dep.id} value={dep.id}>{dep.name}</option>
-                ))}
-              </select>
+            <div className="flex align_center justify_center gap_10">
+              <div className="login_input_row flex_1">
+                <label htmlFor="dept_id" className="login_label small_text">성별</label>
+                <select id="dept_id" name="dept_id" className="login_input" value={form.dept_id} onChange={handleChange} required>
+                  <option value="">성별 선택</option>
+                  {gender.map(gender => (
+                    <option key={gender.id} value={gender.id}>{gender.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="login_input_row flex_1">
+                <label htmlFor="dept_id" className="login_label small_text">부서</label>
+                <select id="dept_id" name="dept_id" className="login_input" value={form.dept_id} onChange={handleChange} required>
+                  <option value="">부서 선택</option>
+                  {departments.map(dep => (
+                    <option key={dep.id} value={dep.id}>{dep.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div className="login_input_row">
-              <label htmlFor="position" className="login_label small_text">직책</label>
-              <select id="position" name="position" className="login_input" value={form.position} onChange={handleChange} required>
-                <option value="">직책 선택</option>
-                {positions.map(pos => (
-                  <option key={pos} value={pos}>{pos}</option>
-                ))}
-              </select>
-            </div>
-            <div className="login_input_row">
-              <label htmlFor="hire_date" className="login_label small_text">입사일</label>
-              <input id="hire_date" name="hire_date" className="login_input" type="date" value={form.hire_date} onChange={handleChange} required />
+            <div className="flex gap_10 justify_center align_center">
+              <div className="login_input_row flex_1">
+                <label htmlFor="position" className="login_label small_text">직책</label>
+                <select id="position" name="position" className="login_input" value={form.position} onChange={handleChange} required>
+                  <option value="">직책 선택</option>
+                  {positions.map(pos => (
+                    <option key={pos} value={pos}>{pos}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="login_input_row flex_1">
+                <label htmlFor="hire_date" className="login_label small_text">입사일</label>
+                <input id="hire_date" name="hire_date" className="login_input" type="date" value={form.hire_date} onChange={handleChange} required />
+              </div>
             </div>
             <div className="login_input_row">
               <label htmlFor="phone" className="login_label small_text">연락처</label>

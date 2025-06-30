@@ -23,6 +23,22 @@ body, html {
   overflow-x: hidden;
 }
 
+select {
+
+  -webkit-appearance:none; /* for chrome */
+
+  -moz-appearance:none; /*for firefox*/
+  background:url('/arrow.png') no-repeat 97% 50%/15px auto !important;
+  appearance:none;
+
+}
+
+select::-ms-expand{
+
+  display:none;/*for IE10,11*/
+
+}
+
 
 img{
   width: 100%;
