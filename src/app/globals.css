@@ -1600,8 +1600,8 @@ a:hover {
   position: fixed;
   right: 32px;
   bottom: 32px;
-  width: 62px;
-  height: 62px;
+  width: 60px;
+  height: 60px;
   background: linear-gradient(90deg, #433878 0%, #7c6ee6 100%);
   color: #fff;
   border-radius: 50%;
@@ -1630,6 +1630,9 @@ a:hover {
   font-size: 2rem;
   margin-right: 0;
   transition: margin 0.18s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .chatbot_fab_text {
   opacity: 0;
@@ -1772,3 +1775,4 @@ a:hover {
 }
 .chatbot_send_btn:hover { background: #433878; }
 .dis_none{display: none;}
+.nextjs-toast {opacity: 0 !important;}
