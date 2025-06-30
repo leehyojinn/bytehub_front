@@ -44,7 +44,7 @@ export default function Chatbot() {
         tabIndex={0}
         aria-label="챗봇 열기"
       >
-        <span className="chatbot_fab_icon"><img style={{width:"40px", aspectRatio:"1/1"}} src="/chat.png" alt="chatbot_img" /></span>
+        <span className="chatbot_fab_icon"><img style={{width:"40px", aspectRatio:"1/1"}} src="/chat.gif" alt="chatbot_img" /></span>
         
         <span className={`chatbot_fab_text${hover ? " show" : " dis_none"}`}>챗봇 상담</span>
       </div>
