@@ -5,6 +5,7 @@ import Footer from "@/app/Footer";
 import React, {useState} from "react";
 import {useAlertModalStore} from "@/app/zustand/store";
 import AlertModal from "../alertmodal/page";
+import CountUp from 'react-countup';
 
 const memberData = {
     id: "hong123",
@@ -163,16 +164,20 @@ export default function MyPage() {
                                 <div className="mypage_title_v2">연차</div>
                                 <div className="mypage_leave_grid">
                                     <div className="mypage_leave_item total">
-                                        <span>총 연차</span>
-                                        <b>{TOTAL_LEAVE}일</b>
+                                        <span className="leave_title">총 연차</span>
+                                        <b><CountUp end={TOTAL_LEAVE} />일</b>
                                     </div>
                                     <div className="mypage_leave_item used">
-                                        <span>사용</span>
-                                        <b>{usedLeave}일</b>
+                                        <span className="leave_title">사용</span>
+                                        <b>
+                                            <CountUp end={usedLeave} />일
+                                        </b>
                                     </div>
                                     <div className="mypage_leave_item remain">
-                                        <span>남음</span>
-                                        <b>{remainLeave}일</b>
+                                        <span className="leave_title">남음</span>
+                                        <b>
+                                            <CountUp end={remainLeave} />일
+                                        </b>
                                     </div>
                                 </div>
                             </div>

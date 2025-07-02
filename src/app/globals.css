@@ -2113,7 +2113,7 @@ a:hover {
   color: #3db36a;
   font-weight: 800;
 }
-.mypage_leave_item span {
+.mypage_leave_item .leave_title {
   font-size: 0.98rem;
   color: #888;
   margin-bottom: 2px;
