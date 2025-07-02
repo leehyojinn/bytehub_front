@@ -35,7 +35,7 @@ export default function Header() {
             </ul>
             <ul className='flex gap_10'>
               <li className='su_small_text font_500 links'>
-                <Link href={"/component/logout"}>로그아웃</Link>
+                <a>로그아웃</a>
               </li>
               <li className='su_small_text font_500 links'>
                 <Link href={"/component/mypage"}>마이페이지</Link>

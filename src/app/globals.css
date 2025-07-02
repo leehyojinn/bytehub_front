@@ -80,6 +80,7 @@ a:hover {
 .mt_10 { margin-top: 1rem !important; }
 .mt_20 { margin-top: 2rem !important; }
 .mt_30 { margin-top: 3rem !important; }
+.mb_0 {margin-bottom : 0 !important;}
 
 .text_center {text-align: center;}
 .text_left {text-align: left;}
@@ -540,7 +541,6 @@ a:hover {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 0;
   position: relative;
 }
 
@@ -1776,3 +1776,425 @@ a:hover {
 .chatbot_send_btn:hover { background: #433878; }
 .dis_none{display: none;}
 .nextjs-toast {opacity: 0 !important;}
+
+.member_checkbox_label{
+  box-sizing: border-box;
+  padding : 5px 10px;
+  border-radius: 100px;
+  background-color: var(--primary-color1);
+  color: #fff;
+  text-align: center;
+}
+
+.member_checkbox_group{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.project_card_list {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  justify-content: flex-start;
+}
+.project_card {
+  flex: 1;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(67,56,120,0.07);
+  padding: 22px 18px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 10px;
+  position: relative;
+}
+.project_card_head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.project_priority {
+  background: #ece6fa;
+  color: #433878;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 0.99rem;
+  font-weight: 600;
+}
+.project_status {
+  background: #7c6ee6;
+  color: #fff;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 0.99rem;
+  font-weight: 600;
+}
+.project_deadline_badge {
+  background: #ff6f61;
+  color: #fff;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 0.99rem;
+  font-weight: 600;
+  margin-left: 8px;
+  animation: rotate infinite 0.3s ease-in-out;
+}
+
+@keyframes rotate {
+  0% {rotate: 0;}
+  25% {rotate: 3deg;}
+  50% {rotate: 0deg;}
+  75% {rotate: -3deg;}
+  100% {rotate: 0;}
+}
+
+.project_subject {
+  font-size: 1.18rem;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+.project_content {
+  color: #555;
+  font-size: 1.05rem;
+  margin-bottom: 2px;
+}
+.project_dates {
+  color: #888;
+  font-size: 0.98rem;
+  display: flex;
+  gap: 18px;
+  margin-bottom: 2px;
+}
+.project_progress_wrap {
+  margin-bottom: 2px;
+}
+.progress_bar {
+  position: relative;
+  background: #ece6fa;
+  border-radius: 8px;
+  height: 18px;
+  width: 100%;
+  overflow: hidden;
+}
+.progress_fill {
+  background: #7c6ee6;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+.progress_bar span {
+  position: absolute;
+  right: 10px;
+  top: 0;
+  font-size: 0.9rem;
+  color: #fff;
+  font-weight: 600;
+  line-height: 18px;
+}
+.project_members, .project_files {
+  font-size: 1.1rem;
+  margin-bottom: 2px;
+}
+.project_card_btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+.file_label {
+  display: inline-block;
+  background: #ece6fa;
+  color: #433878;
+  border-radius: 7px;
+  padding: 7px 18px;
+  font-size: 1.01rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 6px;
+  transition: background 0.15s;
+}
+.file_label:hover { background: #d1c7fa; }
+.near_deadline {
+  border: 2px solid #ff6f61 !important;
+  box-shadow: 0 2px 16px rgba(255,111,97,0.08);
+}
+.project_detail_row {
+  margin-bottom: 10px;
+  font-size: 1.07rem;
+}
+.modal_buttons{
+  display: flex;
+  gap: 10px;
+  justify-content: end;
+}
+.my_checkbox_label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-family: 'Pretendard', sans-serif;
+  font-size: 1.07rem;
+  font-weight: 500;
+  color: #433878;
+  gap: 8px;
+  user-select: none;
+}
+
+.my_checkbox_input {
+  display: none;
+}
+
+.my_checkbox_box {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #7c6ee6;
+  border-radius: 7px;
+  background: #faf8ff;
+  position: relative;
+  transition: border-color 0.18s, background 0.18s;
+  box-sizing: border-box;
+  display: inline-block;
+}
+
+.my_checkbox_input:checked + .my_checkbox_box {
+  background: linear-gradient(90deg, #7c6ee6 0%, #433878 100%);
+  border-color: #433878;
+}
+
+.my_checkbox_box::after {
+  content: "";
+  display: block;
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 7px;
+  height: 13px;
+  border: solid #fff;
+  border-width: 0 3px 3px 0;
+  opacity: 0;
+  transform: scale(0.7) rotate(45deg);
+  transition: opacity 0.18s, transform 0.18s;
+}
+
+.my_checkbox_input:checked + .my_checkbox_box::after {
+  opacity: 1;
+  transform: scale(1) rotate(45deg);
+}
+
+.my_checkbox_input:focus + .my_checkbox_box {
+  box-shadow: 0 0 0 2px #ece6fa;
+  outline: none;
+}
+
+.my_checkbox_text {
+  margin-left: 2px;
+  color: #433878;
+}
+.mypage_bg {
+  background: linear-gradient(120deg, #ece6fa 0%, #faf8ff 100%);
+  padding: 60px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+.mypage_card_v2 {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 8px 36px rgba(67,56,120,0.13);
+  display: flex;
+  gap: 0;
+  max-width: 680px;
+  width: 100%;
+  overflow: hidden;
+}
+.mypage_profile_col {
+  background: linear-gradient(120deg, #7c6ee6 0%, #433878 100%);
+  color: #fff;
+  width: 220px;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 38px 14px 32px 14px;
+  gap: 12px;
+  border-right: 2px solid #ece6fa;
+}
+.mypage_profile_imgbox {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #fff;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 12px rgba(67,56,120,0.10);
+}
+.mypage_profile_img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+.mypage_profile_name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 2px;
+  letter-spacing: -1px;
+}
+.mypage_profile_position {
+  font-size: 1.05rem;
+  color: #e7e7fa;
+  font-weight: 500;
+}
+.mypage_info_col {
+  flex: 1;
+  padding: 34px 32px 30px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+  min-width: 0;
+}
+.mypage_section_v2 {
+  margin-bottom: 12px;
+}
+.mypage_title_v2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #433878;
+  margin-bottom: 16px;
+  letter-spacing: -0.5px;
+}
+.mypage_info_grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+  font-size: 1.07rem;
+}
+.mypage_info_label {
+  color: #7c6ee6;
+  font-weight: 600;
+  margin-right: 8px;
+}
+.mypage_info_value {
+  color: #222;
+  font-weight: 500;
+}
+.mypage_leave_grid {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+}
+.mypage_leave_item {
+  background: #faf8ff;
+  border-radius: 12px;
+  padding: 18px 22px;
+  text-align: center;
+  min-width: 90px;
+  box-shadow: 0 1px 4px rgba(67,56,120,0.04);
+  font-size: 1.08rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.mypage_leave_item.total {
+  background: #ece6fa;
+  color: #433878;
+  font-weight: 700;
+}
+.mypage_leave_item.used {
+  background: #ffe3e0;
+  color: #ff6f61;
+  font-weight: 700;
+}
+.mypage_leave_item.remain {
+  background: #e7f8e7;
+  color: #3db36a;
+  font-weight: 800;
+}
+.mypage_leave_item span {
+  font-size: 0.98rem;
+  color: #888;
+  margin-bottom: 2px;
+}
+.mypage_leave_item b {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.alert-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.alert-modal-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  min-width: 320px;
+  max-width: 30vw;
+  text-align: center;
+  position: relative;
+}
+
+.alert-modal-icon {
+  font-size: 2.5rem;
+  color: #4caf50;
+  margin-bottom: 12px;
+}
+
+.alert-modal-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.alert-modal-message {
+  font-size: 1.1rem;
+  line-height: 2rem;
+  color: #444;
+  margin-bottom: 24px;
+}
+
+.alert-modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.alert-modal-btn {
+  padding: 5px 15px;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+.alert-modal-btn.cancel {
+  background: #f3f3f3;
+  color: #888;
+}
+
+.alert-modal-btn.confirm {
+  background: #4caf50;
+  color: #fff;
+}
+
+.alert-modal-btn.cancel:hover {
+  background: #e0e0e0;
+}
+
+.alert-modal-btn.confirm:hover {
+  background: #388e3c;
+}
