@@ -2,12 +2,13 @@ import React from 'react'
 import Link from 'next/link'
 import ChatbotWidget from './component/chatbot/Chatbot';
 import Chatbot from './component/chatbot/Chatbot';
+import AdminPaeneol from './component/adminpaeneol/AdminPaeneol';
 
 const menuItems = [
   { name: '근태 관리', href: '/component/attendance' },
   { name: '프로젝트 관리', href: '/component/project' },
   { name: '결재 시스템', href: '/component/approval' },
-  { name: '채팅', href: '/component/chat' },
+  { name: '채팅', href: '/component/chating' },
   { name: '일정관리', href: '/component/calendar' },
   { name: '조직도', href: '/component/organization' },
   { name: '비상연락망', href: '/component/emergency' },
@@ -43,6 +44,7 @@ export default function Header() {
             </ul>
         </div>
         </div>
+        <AdminPaeneol/>
         <Chatbot/>
     </div>
   )

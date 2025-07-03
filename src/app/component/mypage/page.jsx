@@ -165,18 +165,18 @@ export default function MyPage() {
                                 <div className="mypage_leave_grid">
                                     <div className="mypage_leave_item total">
                                         <span className="leave_title">총 연차</span>
-                                        <b><CountUp end={TOTAL_LEAVE} />일</b>
+                                        <b><CountUp duration={2.75} end={TOTAL_LEAVE} />일</b>
                                     </div>
                                     <div className="mypage_leave_item used">
                                         <span className="leave_title">사용</span>
                                         <b>
-                                            <CountUp end={usedLeave} />일
+                                            <CountUp duration={2.75} end={usedLeave} />일
                                         </b>
                                     </div>
                                     <div className="mypage_leave_item remain">
                                         <span className="leave_title">남음</span>
                                         <b>
-                                            <CountUp end={remainLeave} />일
+                                            <CountUp duration={2.75} end={remainLeave} />일
                                         </b>
                                     </div>
                                 </div>

@@ -10,7 +10,7 @@ const calendarEvents = [
 
 export default function CalendarCard() {
   return (
-    <div className="main_box calendar_card flex_1">
+    <div className="main_box calendar_card flex_1" id='main_calendar'>
       <div className="card_title font_700">캘린더</div>
       <FullCalendar
         plugins={[dayGridPlugin]}
