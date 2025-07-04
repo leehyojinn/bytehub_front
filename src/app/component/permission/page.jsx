@@ -18,7 +18,7 @@ export default function GrantUser() {
         const list = data.member_list.map((item) => {
             console.log(item);
             return (
-                <tr>
+                <tr id={item.user_id}>
                     <td className={"board_title"}>{item.user_id}</td>
                     <td>{item.name}</td>
                     <td>{item.gender}</td>
