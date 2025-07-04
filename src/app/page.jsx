@@ -78,7 +78,7 @@ export default function Login() {
           localStorage.setItem('token', data.token);
         }
         // 로그인 성공 후 리다이렉트 (예: 메인 페이지)
-        // window.location.href = '/main';
+        window.location.href = '/component/main';
       } else {
         alert(data.message || "로그인에 실패했습니다.");
       }

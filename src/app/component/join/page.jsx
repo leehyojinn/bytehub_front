@@ -160,6 +160,7 @@ export default function Signup() {
         });
         setIsIdChecked(false);
         setIsIdAvailable(false);
+        window.location.href = '/';
       } else {
         alert(`회원가입 실패: ${data.msg}`);
       }
