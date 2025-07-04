@@ -94,20 +94,24 @@ export default function Board() {
           <table className="board_table">
             <thead>
               <tr>
+                <th className="small_text">번호</th>
                 <th className="small_text">제목</th>
                 <th className="small_text">작성자</th>
                 <th className="small_text">등록일</th>
-                <th className="small_text">조회수</th>
               </tr>
             </thead>
             <tbody>
+              {/* 상단 고정 여부 티내고 싶으미 */}
               {currentPosts.length === 0 ? (
                 <tr>
                   <td colSpan={4} style={{ color: "#aaa", padding: "32px 0" }}>검색 결과가 없습니다.</td>
                 </tr>
               ) : (
                 currentPosts.map((post) => (
-                  <tr key={post.post_idx}>
+                  <tr
+                  key={post.post_idx}
+                  style={post.pinned ? { background: "#fffbe6" } : {}}>
+                    <td>{post.post_idx}</td>
                     <td className="board_title">
                       <Link href={`/component/board/board_detail/${post.post_idx}`}>
                         {post.subject}
@@ -115,7 +119,6 @@ export default function Board() {
                     </td>
                     <td>{post.user_id}</td>
                     <td>{formatDate(post.reg_date)}</td>
-                    <td>{post.views ?? '-'}</td>
                   </tr>
                 ))
               )}
