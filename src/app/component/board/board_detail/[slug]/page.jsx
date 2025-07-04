@@ -4,7 +4,6 @@ import Header from "@/app/Header";
 import Footer from "@/app/Footer";
 import {useParams} from "next/navigation";
 import React from "react";
-import {boardPosts} from "../../page"; // 실제 boardPosts 위치에 맞게 import
 import Link from "next/link";
 
 export default function BoardDetail() {

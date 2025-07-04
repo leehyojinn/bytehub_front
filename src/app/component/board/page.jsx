@@ -3,52 +3,64 @@
 import Footer from "@/app/Footer";
 import Header from "@/app/Header";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
-export const boardPosts = [
-  { id: 1, title: "7월 워크샵 후기 공유합니다", author: "김철수", date: "2025-06-27", views: 41 },
-  { id: 2, title: "점심 메뉴 추천받아요", author: "이영희", date: "2025-06-26", views: 35 },
-  { id: 3, title: "신입사원 환영합니다!", author: "관리자", date: "2025-06-25", views: 59 },
-  { id: 4, title: "업무 효율 꿀팁 공유", author: "박민수", date: "2025-06-24", views: 22 },
-  { id: 5, title: "사내 동호회 모집", author: "최지연", date: "2025-06-23", views: 18 },
-  { id: 6, title: "7월 생일자 명단", author: "관리자", date: "2025-06-22", views: 30 },
-  { id: 7, title: "연차 사용 안내", author: "인사팀", date: "2025-06-21", views: 44 },
-  { id: 8, title: "사내 보안 교육", author: "보안팀", date: "2025-06-20", views: 27 },
-  { id: 9, title: "회의실 예약 방법", author: "관리자", date: "2025-06-19", views: 19 },
-  { id: 10, title: "점심시간 변경 안내", author: "총무팀", date: "2025-06-18", views: 25 },
-  { id: 11, title: "7월 워크샵 후기 공유합니다", author: "김철수", date: "2025-06-27", views: 41 },
-  { id: 12, title: "점심 메뉴 추천받아요", author: "이영희", date: "2025-06-26", views: 35 },
-  { id: 13, title: "신입사원 환영합니다!", author: "관리자", date: "2025-06-25", views: 59 },
-  { id: 14, title: "업무 효율 꿀팁 공유", author: "박민수", date: "2025-06-24", views: 22 },
-  { id: 15, title: "사내 동호회 모집", author: "최지연", date: "2025-06-23", views: 18 },
-  { id: 16, title: "7월 생일자 명단", author: "관리자", date: "2025-06-22", views: 30 },
-  { id: 17, title: "연차 사용 안내", author: "인사팀", date: "2025-06-21", views: 44 },
-  { id: 18, title: "사내 보안 교육", author: "보안팀", date: "2025-06-20", views: 27 },
-  { id: 19, title: "회의실 예약 방법", author: "관리자", date: "2025-06-19", views: 19 },
-  { id: 20, title: "점심시간 변경 안내", author: "총무팀", date: "2025-06-18", views: 25 },
-];
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-const POSTS_PER_PAGE = 15;
+// 날짜를 MM월 DD일로 포맷팅하는 함수
+const formatDate = (dateStr) => {
+  if (!dateStr) return "-";
+  const date = new Date(dateStr);
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${mm}월 ${dd}일`;
+};
 
 export default function Board() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [posts, setPosts] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // 게시글 리스트 불러오기
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(`${apiUrl}/post/list/${page}`, {
+          headers: {
+            Authorization: token,
+          },
+        });
+        const data = response.data;
+        // data.list가 실제 게시글 배열
+        setPosts(data.list || []);
+        // 페이지네이션 정보가 필요하면 data.page 등 활용
+        // setTotalPages(data.totalPages || 1); // totalPages가 있으면 사용
+      } catch (err) {
+        setPosts([]);
+      }
+    };
+    fetchPosts();
+  }, [page]);
 
   // 검색 필터링
-  const filteredPosts = boardPosts.filter(
+  const filteredPosts = posts.filter(
     post =>
-      post.title.toLowerCase().includes(search.toLowerCase()) ||
-      post.author.toLowerCase().includes(search.toLowerCase())
+      (post.subject || "").toLowerCase().includes(search.toLowerCase()) ||
+      (post.user_id || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
-
-  const startIdx = (page - 1) * POSTS_PER_PAGE;
-  const endIdx = startIdx + POSTS_PER_PAGE;
+  const POSTS_PER_PAGE = 15;
+  const startIdx = 0;
+  const endIdx = POSTS_PER_PAGE;
   const currentPosts = filteredPosts.slice(startIdx, endIdx);
+  // totalPages는 서버에서 내려주면 그걸 쓰고, 없으면 클라이언트에서 계산
+  const calcTotalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
 
   const handlePageChange = (newPage) => {
-    if (newPage < 1 || newPage > totalPages) return;
+    if (newPage < 1 || newPage > (totalPages || calcTotalPages)) return;
     setPage(newPage);
   };
 
@@ -95,15 +107,15 @@ export default function Board() {
                 </tr>
               ) : (
                 currentPosts.map((post) => (
-                  <tr key={post.id}>
+                  <tr key={post.post_idx}>
                     <td className="board_title">
-                      <Link href={`/component/board/board_detail/${post.id}`}>
-                        {post.title}
+                      <Link href={`/component/board/board_detail/${post.post_idx}`}>
+                        {post.subject}
                       </Link>
                     </td>
-                    <td>{post.author}</td>
-                    <td>{post.date}</td>
-                    <td>{post.views}</td>
+                    <td>{post.user_id}</td>
+                    <td>{formatDate(post.reg_date)}</td>
+                    <td>{post.views ?? '-'}</td>
                   </tr>
                 ))
               )}
@@ -117,7 +129,7 @@ export default function Board() {
             >
               이전
             </button>
-            {[...Array(totalPages)].map((_, idx) => (
+            {[...Array(totalPages || calcTotalPages)].map((_, idx) => (
               <button
                 key={idx + 1}
                 className={`board_btn board_page_btn${page === idx + 1 ? " active" : ""}`}
@@ -129,7 +141,7 @@ export default function Board() {
             <button
               className="board_btn"
               onClick={() => handlePageChange(page + 1)}
-              disabled={page === totalPages}
+              disabled={page === (totalPages || calcTotalPages)}
             >
               다음
             </button>
