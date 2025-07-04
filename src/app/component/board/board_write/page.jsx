@@ -2,16 +2,35 @@
 
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+
+function getUserIdFromToken() {
+  const token = localStorage.getItem("token");
+  if (!token) return "";
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.id || "";
+  } catch {
+    return "";
+  }
+}
 
 export default function BoardWrite() {
   const [form, setForm] = useState({
-    title: "",
-    author: "",
+    subject: "",
     content: "",
   });
   const [imageFiles, setImageFiles] = useState([]);        
-  const [previewUrls, setPreviewUrls] = useState([]);       
+  const [previewUrls, setPreviewUrls] = useState([]);
+  const [userId, setUserId] = useState("");
+
+  // 주소
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  useEffect(() => {
+    setUserId(getUserIdFromToken());
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -32,9 +51,38 @@ export default function BoardWrite() {
     Promise.all(readers).then((results) => setPreviewUrls(results));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert("글이 등록되었습니다!");
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("로그인 후 이용해 주세요.");
+      return;
+    }
+    try {
+      const response = await axios.post(
+        `${apiUrl}/board/write`,
+        {
+          subject: form.subject,
+          content: form.content,
+          category: 'NOTICE',
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": token,
+          },
+        }
+      );
+      const data = response.data;
+      if (data.success) {
+        alert("글이 등록되었습니다!");
+        window.location.href = "/component/board";
+      } else {
+        alert("글 등록 실패: " + (data.message || "오류"));
+      }
+    } catch (err) {
+      alert("서버 오류: " + (err.response?.data?.message || err.message));
+    }
   };
 
   return (
@@ -45,14 +93,14 @@ export default function BoardWrite() {
           <div className="card_title font_700 text_center">게시글 작성</div>
           <form className="board_write_form" onSubmit={handleSubmit} autoComplete="off">
             <div className="board_write_row">
-              <label htmlFor="title" className="board_write_label small_text font_600">제목</label>
+              <label htmlFor="subject" className="board_write_label small_text font_600">제목</label>
               <input
-                id="title"
-                name="title"
+                id="subject"
+                name="subject"
                 className="board_write_input"
                 type="text"
                 placeholder="제목을 입력하세요"
-                value={form.title}
+                value={form.subject}
                 onChange={handleChange}
                 required
               />
@@ -64,10 +112,8 @@ export default function BoardWrite() {
                 name="author"
                 className="board_write_input"
                 type="text"
-                placeholder="이름을 입력하세요"
-                value={form.author}
-                onChange={handleChange}
-                required
+                value={userId}
+                readOnly
               />
             </div>
             <div className="board_write_row">
