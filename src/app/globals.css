@@ -422,7 +422,7 @@ a:hover {
 
 /* 게시판 테이블 */
 .board_table {
-  width: 95%;
+  width: 95%;  
   margin: 0 auto 18px auto;
   border-collapse: separate;
   border-spacing: 0;
@@ -2767,4 +2767,300 @@ a:hover {
 
 #main_calendar .fc-daygrid-day-events {
   display: none;
+}
+.keyword_table {
+  width: 100%;
+  text-align: center;
+  border-collapse: collapse;
+  background: #fff;
+  margin-bottom: 12px;
+}
+.keyword_table th, .keyword_table td {
+  border: 1px solid #ece6fa;
+  padding: 13px 10px;
+  font-size: 1.05rem;
+}
+.keyword_table th {
+  background: #faf8ff;
+  color: #433878;
+  font-weight: 700;
+}
+.keyword_table td {
+  background: #fff;
+}
+.board_btn_small {
+  padding: 7px 14px;
+  font-size: 0.97rem;
+  border-radius: 7px;
+}
+
+.member_table {
+  width: 100%;
+  text-align: center;
+  border-collapse: collapse;
+  background: #fff;
+  margin-bottom: 12px;
+}
+.member_table th, .member_table td {
+  border: 1px solid #ece6fa;
+  padding: 13px 8px;
+  font-size: 1.03rem;
+}
+.member_table th {
+  background: #faf8ff;
+  color: #433878;
+  font-weight: 700;
+}
+.member_table td {
+  background: #fff;
+}
+.blind_row td {
+  color: #bbb !important;
+  background: #f5f5f5 !important;
+  font-style: italic;
+}
+
+.vacation_policy_table, .vacation_member_table {
+  text-align: center;
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  margin-bottom: 12px;
+}
+.vacation_policy_table th, .vacation_policy_table td,
+.vacation_member_table th, .vacation_member_table td {
+  border: 1px solid #ece6fa;
+  padding: 13px 8px;
+  font-size: 1.03rem;
+}
+.vacation_policy_table th, .vacation_member_table th {
+  background: #faf8ff;
+  color: #433878;
+  font-weight: 700;
+}
+.vacation_policy_table td, .vacation_member_table td {
+  background: #fff;
+}
+.attendance_table {
+  width: 100%;
+  text-align: center;
+  border-collapse: collapse;
+  background: #fff;
+  margin-bottom: 12px;
+}
+.attendance_table th, .attendance_table td {
+  border: 1px solid #ece6fa;
+  padding: 13px 8px;
+  font-size: 1.03rem;
+}
+.attendance_table th {
+  background: #faf8ff;
+  color: #433878;
+  font-weight: 700;
+}
+.attendance_table td {
+  background: #fff;
+}
+.approval_form_table {
+  width: 100%;
+  text-align: center;
+  border-collapse: collapse;
+  background: #fff;
+  margin-bottom: 12px;
+}
+.approval_form_table th, .approval_form_table td {
+  border: 1px solid #ece6fa;
+  padding: 13px 10px;
+  font-size: 1.05rem;
+}
+.approval_form_table th {
+  background: #faf8ff;
+  color: #433878;
+  font-weight: 700;
+}
+.approval_form_table td {
+  background: #fff;
+}
+
+.approval_form_blind {
+  color: #bbb;
+  font-weight: 700;
+}
+.approval_form_active {
+  color: #3db36a;
+  font-weight: 700;
+}
+.blind_row td {
+  color: #bbb !important;
+  background: #f5f5f5 !important;
+  font-style: italic;
+}
+.department_table {
+  width: 100%;
+  text-align: center;
+  border-collapse: collapse;
+  background: #fff;
+  margin-bottom: 12px;
+}
+.department_table th, .department_table td {
+  border: 1px solid #ece6fa;
+  padding: 13px 10px;
+  font-size: 1.05rem;
+}
+.department_table th {
+  background: #faf8ff;
+  color: #433878;
+  font-weight: 700;
+}
+.department_table td {
+  background: #fff;
+}
+.level_table {
+  width: 100%;
+  text-align: center;
+  border-collapse: collapse;
+  background: #fff;
+  margin-bottom: 12px;
+}
+.level_table th, .level_table td {
+  border: 1px solid #ece6fa;
+  padding: 13px 10px;
+  font-size: 1.05rem;
+}
+.level_table th {
+  background: #faf8ff;
+  color: #433878;
+  font-weight: 700;
+}
+.level_table td {
+  background: #fff;
+}
+.stat_tab_btn {
+  border:2px solid #ece6fa !important;
+  background: #faf8ff;
+  color: #433878;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px 10px 0 0;
+  padding: 14px 36px 10px 36px;
+  font-size: 1.08rem;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: background 0.14s;
+}
+.stat_tab_btn.active {
+  background: #fff;
+  border-bottom: 2px solid #fff;
+}
+.stat_table {
+  width: 100%;
+  text-align: center;
+  border-collapse: collapse;
+  background: #fff;
+  margin-bottom: 12px;
+}
+.stat_table th, .stat_table td {
+  border: 1px solid #ece6fa;
+  padding: 13px 8px;
+  font-size: 1.03rem;
+}
+.stat_table th {
+  background: #faf8ff;
+  color: #433878;
+  font-weight: 700;
+}
+.stat_table td {
+  background: #fff;
+}
+.board_table th, .board_table td {
+  padding: 12px 7px;
+}
+.gap_4 { gap: 4px; }
+.custom-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 1.03rem;
+  font-weight: 500;
+  gap: 8px;
+  position: relative;
+  user-select: none;
+  margin-bottom: 6px;
+}
+.custom-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: #fff;
+  margin: 0;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #7c6ee6;
+  border-radius: 6px;
+  display: grid;
+  place-content: center;
+  transition: border 0.18s;
+  cursor: pointer;
+  outline: none;
+}
+.custom-checkbox:focus {
+  border: 2px solid #433878;
+  box-shadow: 0 0 0 2px #ece6fa;
+}
+.custom-checkbox-span {
+  position: absolute;
+  left: 0;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+}
+.custom-checkbox:checked {
+  background-color: #7c6ee6;
+  border-color: #7c6ee6;
+}
+.custom-checkbox:checked + .custom-checkbox-span::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 7px;
+  height: 13px;
+  border: solid #fff;
+  border-width: 0 3px 3px 0;
+  border-radius: 1px;
+  transform: rotate(45deg);
+  transition: all 0.13s;
+}
+.custom-checkbox + .custom-checkbox-span {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px;
+  height: 22px;
+  width: 22px;
+  position: relative;
+}
+.custom_permission_table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  margin-bottom: 12px;
+}
+.custom_permission_table th, .custom_permission_table td {
+  border: 1px solid #ece6fa;
+  padding: 13px 10px;
+  font-size: 1.05rem;
+}
+.custom_permission_table th {
+  background: #faf8ff;
+  color: #433878;
+  font-weight: 700;
+  text-align: center;
+}
+.custom_permission_table td {
+  background: #fff;
+  text-align: center;
+}
+.grid_permission {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
 }

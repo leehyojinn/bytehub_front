@@ -38,7 +38,7 @@ const initialProjects = [
         subject: "프로젝트 A",
         content: "내용 A",
         start_date: "2025-07-01",
-        end_date: "2025-07-03",
+        end_date: "2025-07-07",
         priority: 1,
         team: "개발팀",
         members: [
