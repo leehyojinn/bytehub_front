@@ -3064,3 +3064,18 @@ a:hover {
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
+.chatbot_searchtype_row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+.chatbot_searchtype_select {
+  padding: 7px 12px;
+  width: 200px;
+  border-radius: 7px;
+  border: 1px solid #ece6fa;
+  font-size: 1.01rem;
+  background: #faf8ff;
+  color: #433878;
+  font-weight: 600;
+}
