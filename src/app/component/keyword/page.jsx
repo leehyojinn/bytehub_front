@@ -1,58 +1,182 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
+import axios from "axios";
+import { useAlertModalStore } from "@/app/zustand/store";
+import AlertModal from "../alertmodal/page";
 
-const initialKeywords = [
-  { id: 1, keyword: "인사", answer: "안녕하세요! 무엇을 도와드릴까요?", description: "기본 인삿말" },
-  { id: 2, keyword: "연차", answer: "연차 신청은 근태 메뉴에서 가능합니다.", description: "연차 안내" },
-];
+const isActiveStatus = (status) =>
+  status === 0 || status === false || status === '0' || status === null;
 
 export default function KeywordManagePage() {
-  const [keywords, setKeywords] = useState(initialKeywords);
+  const [keywords, setKeywords] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [form, setForm] = useState({ id: null, keyword: "", answer: "", description: "" });
+
+  const getUserId = () => (typeof window !== "undefined" ? sessionStorage.getItem("userId") || "" : "");
+  const [form, setForm] = useState({ user_id: getUserId(), keyword: "", response: "" });
+
+  const api_url = process.env.NEXT_PUBLIC_API_URL;
+  const alertModal = useAlertModalStore();
+
+  // 키워드 목록 불러오기
+  async function list() {
+    try {
+      const { data } = await axios.post(`${api_url}/keyword/list`);
+      setKeywords((data.list || []).filter(k => isActiveStatus(k.status)));
+    } catch (e) {
+      alertModal.openModal({
+        msg1: "키워드 목록 불러오기에 실패했습니다.",
+        showCancel: false,
+      });
+    }
+  }
+
+  // 키워드 등록
+  async function keyword_insert() {
+    try {
+      const user_id = getUserId();
+      const { data } = await axios.post(`${api_url}/keyword/insert`, { ...form, user_id });
+      if (data.suc) {
+        await list();
+        setModalOpen(false);
+        setForm({ user_id, keyword: "", response: "" });
+        alertModal.openModal({
+          msg1: "키워드가 등록되었습니다.",
+          showCancel: false,
+        });
+      } else {
+        // 서버에서 중복에 대한 메시지를 내려주는 경우
+        if (data.code === 1062 || (data.message && data.message.includes('Duplicate'))) {
+          alertModal.openModal({
+            msg1: "이미 등록된 키워드입니다.",
+            showCancel: false,
+          });
+        } else {
+          alertModal.openModal({
+            msg1: data.message || "등록에 실패했습니다.",
+            showCancel: false,
+          });
+        }
+      }
+    } catch (e) {
+      // DB에서 중복 에러가 발생했을 때
+      if (
+        (e.response && e.response.data && e.response.data.code === 1062) ||
+        (e.message && e.message.includes('Duplicate'))
+      ) {
+        alertModal.openModal({
+          msg1: "이미 등록된 키워드입니다.",
+          showCancel: false,
+        });
+      } else {
+        alertModal.openModal({
+          msg1: "등록 중 오류가 발생했습니다.",
+          showCancel: false,
+        });
+      }
+    }
+  }
+
+  // 키워드 수정
+  async function keyword_update() {
+    try {
+      const user_id = getUserId();
+      const { data } = await axios.post(`${api_url}/keyword/update`, { ...form, user_id });
+      if (data.suc) {
+        await list();
+        setModalOpen(false);
+        setForm({ user_id, keyword: "", response: "" });
+        alertModal.openModal({
+          msg1: "키워드가 수정되었습니다.",
+          showCancel: false,
+        });
+      } else {
+        alertModal.openModal({
+          msg1: data.message || "수정에 실패했습니다.",
+          showCancel: false,
+        });
+      }
+    } catch (e) {
+      alertModal.openModal({
+        msg1: "수정 중 오류가 발생했습니다.",
+        showCancel: false,
+      });
+    }
+  }
+
+  // 키워드 삭제 (status 1로 soft delete)
+  async function keyword_delete(key_idx) {
+    alertModal.openModal({
+      msg1: "정말 삭제하시겠습니까?",
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          const user_id = getUserId();
+          const { data } = await axios.post(`${api_url}/keyword/delete`, { key_idx, user_id });
+          if (data.suc) {
+            await list();
+            alertModal.openModal({
+              msg1: "삭제되었습니다.",
+              showCancel: false,
+            });
+          } else {
+            alertModal.openModal({
+              msg1: data.message || "삭제에 실패했습니다.",
+              showCancel: false,
+            });
+          }
+        } catch (e) {
+          alertModal.openModal({
+            msg1: "삭제 중 오류가 발생했습니다.",
+            showCancel: false,
+          });
+        }
+      },
+      onCancel: () => {},
+    });
+  }
 
   // 등록/수정 폼 열기
   const openForm = (kw = null) => {
+    const user_id = getUserId();
     if (kw) {
       setEditMode(true);
-      setForm(kw);
+      setForm({
+        key_idx: kw.key_idx,
+        user_id: kw.user_id || user_id,
+        keyword: kw.keyword || "",
+        response: kw.response || ""
+      });
     } else {
       setEditMode(false);
-      setForm({ id: null, keyword: "", answer: "", description: "" });
+      setForm({ user_id, keyword: "", response: "" });
     }
     setModalOpen(true);
   };
 
   // 등록/수정 처리
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.keyword.trim() || !form.answer.trim()) {
-      alert("키워드와 답변을 입력하세요.");
+    if (!form.keyword.trim() || !form.response.trim()) {
+      alertModal.openModal({
+        msg1: "키워드와 답변을 입력하세요.",
+        showCancel: false,
+      });
       return;
     }
     if (editMode) {
-      setKeywords(prev =>
-        prev.map(k => k.id === form.id ? { ...form } : k)
-      );
+      await keyword_update();
     } else {
-      setKeywords(prev => [
-        ...prev,
-        { ...form, id: Date.now() }
-      ]);
+      await keyword_insert();
     }
-    setModalOpen(false);
   };
 
-  // 삭제
-  const handleDelete = (id) => {
-    if (window.confirm("정말 삭제하시겠습니까?")) {
-      setKeywords(prev => prev.filter(k => k.id !== id));
-    }
-  };
+  useEffect(() => {
+    list();
+  }, []);
 
   return (
     <div>
@@ -69,7 +193,6 @@ export default function KeywordManagePage() {
               <tr>
                 <th style={{width: '18%'}}>키워드</th>
                 <th style={{width: '40%'}}>답변</th>
-                <th style={{width: '25%'}}>설명</th>
                 <th style={{width: '17%'}}>관리</th>
               </tr>
             </thead>
@@ -80,13 +203,12 @@ export default function KeywordManagePage() {
                 </tr>
               )}
               {keywords.map(kw => (
-                <tr key={kw.id}>
+                <tr key={kw.key_idx}>
                   <td><b>{kw.keyword}</b></td>
-                  <td>{kw.answer}</td>
-                  <td>{kw.description}</td>
+                  <td>{kw.response}</td>
                   <td>
                     <button className="board_btn board_btn_small" onClick={() => openForm(kw)}>수정</button>
-                    <button className="board_btn board_btn_small board_btn_cancel" style={{marginLeft: 8}} onClick={() => handleDelete(kw.id)}>삭제</button>
+                    <button className="board_btn board_btn_small board_btn_cancel" style={{marginLeft: 8}} onClick={() => keyword_delete(kw.key_idx)}>삭제</button>
                   </td>
                 </tr>
               ))}
@@ -115,22 +237,12 @@ export default function KeywordManagePage() {
                   <label className="board_write_label">답변</label>
                   <textarea
                     className="board_write_input"
-                    value={form.answer}
-                    onChange={e => setForm(f => ({ ...f, answer: e.target.value }))}
+                    value={form.response}
+                    onChange={e => setForm(f => ({ ...f, response: e.target.value }))}
                     required
                     rows={3}
                   />
-                </div>
-                <div className="board_write_row">
-                  <label className="board_write_label">설명</label>
-                  <input
-                    type="text"
-                    className="board_write_input"
-                    value={form.description}
-                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                    placeholder="키워드 설명(선택)"
-                  />
-                </div>
+                </div>        
                 <div className="modal_buttons">
                   <button type="submit" className="board_btn">{editMode ? "수정" : "등록"}</button>
                   <button type="button" className="board_btn board_btn_cancel" onClick={() => setModalOpen(false)}>취소</button>
@@ -141,6 +253,7 @@ export default function KeywordManagePage() {
         )}
       </div>
       <Footer />
+      <AlertModal/>
     </div>
   );
 }

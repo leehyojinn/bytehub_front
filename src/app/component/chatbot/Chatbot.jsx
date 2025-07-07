@@ -4,15 +4,7 @@ import React, { useRef, useEffect, useState } from "react";
 import axios from "axios";
 
 const GEMINI_API_KEY = process.env.NEXT_PUBLIC_API_KEY;
-
-console.log(GEMINI_API_KEY);
-
-const keywords = [
-  { keyword: "인사", answer: "안녕하세요! 무엇을 도와드릴까요?" },
-  { keyword: "연차", answer: "연차 신청은 근태 메뉴에서 가능합니다." },
-  { keyword: "퇴근", answer: "퇴근 시간은 18:00입니다." },
-  { keyword: "프로젝트", answer: "프로젝트 관련 문의는 팀장에게 연락하세요." },
-];
+const api_url = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Chatbot() {
   const [open, setOpen] = useState(false);
@@ -24,6 +16,17 @@ export default function Chatbot() {
   const [loading, setLoading] = useState(false);
   const [searchType, setSearchType] = useState("keyword"); // "keyword" or "ai"
   const chatEndRef = useRef();
+  const [keywords,setKeywords] = useState([]);
+
+  async function keyword_list() {
+    let {data} = await axios.post(`${api_url}/keyword/list`);
+    const list = data.list.filter((list)=> list.status == 0);
+    setKeywords(list);
+  }
+
+  useEffect(()=>{
+    keyword_list();
+  },[])
 
   useEffect(() => {
     if (open && chatEndRef.current) {
@@ -36,7 +39,7 @@ export default function Chatbot() {
     const found = keywords.find(k =>
       userText.includes(k.keyword)
     );
-    return found ? found.answer : "등록된 키워드가 없습니다. AI 검색을 이용해보세요.";
+    return found ? found.response : "등록된 키워드가 없습니다. AI 검색을 이용해보세요.";
   }
 
   // Gemini API 호출 (axios)
