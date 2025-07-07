@@ -99,9 +99,9 @@ export default function GrantUser() {
     }, [])
 
     //  더 똑똑하게 할방법이 있을 것 같다...
-    const toggleWithDraw= async (id)=>{
-        let {data}=await axios.get(`http://localhost/admin/withdraw/${id}`);
-        if(data.success){
+    const toggleWithDraw = async (id) => {
+        let {data} = await axios.get(`http://localhost/admin/withdraw/${id}`);
+        if (data.success) {
             callMember();
         }
     }
@@ -145,11 +145,20 @@ export default function GrantUser() {
         );
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        let arr = [];
         setUserPermissions(prev => ({
             ...prev,
             [selectedMember.user_id]: editPerm
         }));
+        console.log(editPerm, selectedMember.user_id);     // editPerm: 해당 유저의 권한(배열), members(Object배열)
+        // let {data}=await axios.post(`http://localhost/auth/grant`, );     // 배열 foreach써서 arr로 저장해서 보내자
+
+        editPerm.forEach((perm) => {
+            // 완벽한건아니고 대충 이런식으로,,,
+            arr.push({'project':perm, user_id:selectedMember.user_id});
+        });
+
         setModalOpen(false);
     };
 
