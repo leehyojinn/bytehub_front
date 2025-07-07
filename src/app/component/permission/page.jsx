@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import AdminPaeneol from "@/app/component/adminpaeneol/AdminPaeneol";
@@ -17,7 +15,7 @@ const initialMembers = [
         lv_name: "팀장",
         email: "hong@bytehub.com",
         hire_date: "2022-01-01",
-        withdraw: "N",
+        withdraw: "X",
     },
     {
         user_id: "kim456",
@@ -27,7 +25,7 @@ const initialMembers = [
         lv_name: "대리",
         email: "kim@bytehub.com",
         hire_date: "2021-03-15",
-        withdraw: "N",
+        withdraw: "X",
     },
     {
         user_id: "lee789",
@@ -37,7 +35,7 @@ const initialMembers = [
         lv_name: "사원",
         email: "lee@bytehub.com",
         hire_date: "2023-02-10",
-        withdraw: "N",
+        withdraw: "X",
     },
 ];
 
@@ -100,11 +98,18 @@ export default function GrantUser() {
         callMember();
     }, [])
 
+    //  더 똑똑하게 할방법이 있을 것 같다...
+    const toggleWithDraw= async (id)=>{
+        let {data}=await axios.get(`http://localhost/admin/withdraw/${id}`);
+        if(data.success){
+            callMember();
+        }
+    }
+
     // members 불러오기
     const callMember = async () => {
         let {data} = await axios.get(`http://localhost/admin/memberList`);
         const list = data.member_list.map((item) => {
-            console.log(item.user_id, item.withdraw);
             return {
                 user_id: item.user_id,
                 name: item.name,
@@ -113,7 +118,14 @@ export default function GrantUser() {
                 lv_name: item.lv_name,
                 email: item.email,
                 hire_date: item.hire_date,
-                withdraw: item.withdraw ? "Y":"N",
+                withdraw: <input
+                    type="checkbox"
+                    checked={item.withdraw}
+                    onChange={(e) => {
+                        toggleWithDraw(item.user_id)
+                    }}
+                    className="custom-checkbox"
+                />,
             };
         });
         setMembers(list);
