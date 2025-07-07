@@ -6,31 +6,31 @@ const links = [
     {
         id: 1,
         name: "키워드",
-        link: "/component/key"
+        link: "/component/keyword"
     }, {
         id: 2,
         name: "직원정보 수정",
-        link: "/component/member-edit"
+        link: "/component/memberedit"
     }, {
         id: 3,
         name: "연차 수정",
-        link: "/component/leave-edit"
+        link: "/component/leaveedit"
     }, {
         id: 4,
         name: "근태정보 수정",
-        link: "/component/attendance-edit"
+        link: "/component/attendanceedit"
     }, {
         id: 5,
         name: "결재양식 수정",
-        link: "/component/form-edit"
+        link: "/component/formedit"
     }, {
         id: 6,
         name: "부서 생성",
-        link: "/component/dept-create"
+        link: "/component/deptcreate"
     }, {
         id: 7,
         name: "직급 생성",
-        link: "/component/grade-create"
+        link: "/component/gradecreate"
     }, {
         id: 8,
         name: "권한부여",
