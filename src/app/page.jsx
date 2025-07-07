@@ -72,11 +72,11 @@ export default function Login() {
       const data = await response.json();
 
       if (data.success) {
-        alert("로그인 성공!");
         // JWT 토큰을 로컬 스토리지에 저장
         if (data.token) {
-          localStorage.setItem('token', data.token);
+          sessionStorage.setItem('token', data.token);
         }
+        sessionStorage.setItem('userId', form.id);
         // 로그인 성공 후 리다이렉트 (예: 메인 페이지)
         window.location.href = '/component/main';
       } else {

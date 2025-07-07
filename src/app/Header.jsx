@@ -18,6 +18,27 @@ const menuItems = [
 ];
 
 export default function Header() {
+
+    // 로그아웃 핸들러
+    const handleLogout = async (e) => {
+        e.preventDefault();
+        try {
+            // 백엔드 로그아웃 API 호출
+            await fetch('http://localhost/member/logout', {
+                method: 'POST',
+                credentials: 'include', // 세션 기반이면 필요
+            });
+            // 로컬스토리지/세션스토리지 토큰 삭제
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('userId');
+            // 메인 또는 로그인 페이지로 이동
+            window.location.href = '/';
+            alert('로그아웃 되었습니다.')
+        } catch (error) {
+            alert('로그아웃 중 오류가 발생했습니다.');
+        }
+    };
+
   return (
     <div className='bg_tertiary widht_100'>
         <div className='wrap'>
@@ -36,7 +57,7 @@ export default function Header() {
             </ul>
             <ul className='flex gap_10'>
               <li className='su_small_text font_500 links'>
-                <a>로그아웃</a>
+                <a href="#" onClick={handleLogout}>로그아웃</a>
               </li>
               <li className='su_small_text font_500 links'>
                 <Link href={"/component/mypage"}>마이페이지</Link>

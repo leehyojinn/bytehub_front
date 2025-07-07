@@ -2,23 +2,12 @@
 
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import {useAlertModalStore} from "@/app/zustand/store";
 import AlertModal from "../alertmodal/page";
 import CountUp from 'react-countup';
 
-const memberData = {
-    id: "hong123",
-    name: "홍길동",
-    email: "hong@bytehub.com",
-    dept_id: 2,
-    position: "팀장",
-    grade: "A",
-    hire_date: "2022-01-01",
-    phone: "010-1111-2222",
-    profile_img: "profile.png"
-};
-
+// 임시 데이터 (백엔드 연동 전까지 사용)
 const departments = [
     {
         id: 1,
@@ -55,10 +44,21 @@ const usedLeave = leaves
 const remainLeave = TOTAL_LEAVE - usedLeave;
 
 export default function MyPage() {
-    const dept = departments.find(d => d.id === memberData.dept_id);
-    const profileUrl = memberData.profile_img
-        ? `/${memberData.profile_img}`
-        : "/profile/default_avatar.png";
+    // 사용자 정보 상태
+    const [memberData, setMemberData] = useState({
+        user_id: "",
+        name: "",
+        email: "",
+        dept_idx: 0,
+        lv_idx: 0,
+        gender: "",
+        hire_date: "",
+        profile_img: "profile.png"
+    });
+
+    // 로딩 상태
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     // 모달 상태
     const [pwModalOpen, setPwModalOpen] = useState(false);
@@ -67,25 +67,110 @@ export default function MyPage() {
     // 비밀번호 입력 상태
     const [passwordInput, setPasswordInput] = useState("");
 
-    // 회원정보 수정 상태 (연락처, 이메일, 비밀번호)
-    const [editInfo, setEditInfo] = useState(
-        {phone: memberData.phone, email: memberData.email, password: ""}
-    );
+    // 회원정보 수정 상태 (이메일, 비밀번호)
+    const [editInfo, setEditInfo] = useState({
+        email: "",
+        password: ""
+    });
 
     // zustand alert modal
     const alertModal = useAlertModalStore();
 
+    // 컴포넌트 마운트 시 사용자 정보 가져오기
+    useEffect(() => {
+        fetchUserInfo();
+    }, []);
+
+    // 사용자 정보 가져오기
+    const fetchUserInfo = async () => {
+        try {
+            // 로컬 스토리지에서 사용자 ID 가져오기 (로그인 시 저장된 정보)
+            const userId = sessionStorage.getItem('userId') || 'testuser'; // 임시로 testuser 사용
+
+            const response = await fetch(`http://localhost/mypage/info/${userId}`);
+            const data = await response.json();
+
+            if (data.success) {
+                const userInfo = data.data;
+                setMemberData({
+                    user_id: userInfo.user_id,
+                    name: userInfo.name,
+                    email: userInfo.email,
+                    dept_idx: userInfo.dept_idx,
+                    lv_idx: userInfo.lv_idx,
+                    gender: userInfo.gender,
+                    hire_date: userInfo.hire_date,
+                    profile_img: "profile.png"
+                });
+
+                // 수정 폼 초기값 설정
+                setEditInfo({
+                    email: userInfo.email,
+                    password: ""
+                });
+            } else {
+                setError(data.message);
+                alertModal.openModal({
+                    svg: '❗',
+                    msg1: "오류",
+                    msg2: data.message,
+                    showCancel: false
+                });
+            }
+        } catch (error) {
+            console.error('사용자 정보 조회 오류:', error);
+            setError('사용자 정보를 가져오는데 실패했습니다.');
+            alertModal.openModal({
+                svg: '❗',
+                msg1: "오류",
+                msg2: '사용자 정보를 가져오는데 실패했습니다.',
+                showCancel: false
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // 비밀번호 확인
-    const handlePwConfirm = (e) => {
+    const handlePwConfirm = async (e) => {
         e.preventDefault();
-        if (passwordInput === "1234") { // 예시 비밀번호
-            setPwModalOpen(false);
-            setEditModalOpen(true);
-            setPasswordInput("");
-        } else {
-            alertModal.openModal(
-                {svg: '❗', msg1: "비밀번호 오류", msg2: "비밀번호가 틀렸습니다.", showCancel: false}
-            );
+
+        try {
+            const userId = sessionStorage.getItem('userId') || 'testuser';
+
+            const response = await fetch('http://localhost/mypage/verify-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    password: passwordInput,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setPwModalOpen(false);
+                setEditModalOpen(true);
+                setPasswordInput("");
+            } else {
+                alertModal.openModal({
+                    svg: '❗',
+                    msg1: "비밀번호 오류",
+                    msg2: data.message || "비밀번호가 틀렸습니다.",
+                    showCancel: false
+                });
+            }
+        } catch (error) {
+            console.error('비밀번호 확인 오류:', error);
+            alertModal.openModal({
+                svg: '❗',
+                msg1: "오류",
+                msg2: "비밀번호 확인 중 오류가 발생했습니다.",
+                showCancel: false
+            });
         }
     };
 
@@ -99,16 +184,106 @@ export default function MyPage() {
     };
 
     // 정보 저장
-    const handleSave = (e) => {
+    const handleSave = async (e) => {
         e.preventDefault();
-        alertModal.openModal({
-            svg: '🔔',
-            msg1: "정보 수정 완료",
-            msg2: `연락처: ${editInfo.phone}\n이메일: ${editInfo.email}`,
-            showCancel: false,
-            onConfirm: () => setEditModalOpen(false)
-        });
+
+        try {
+            const userId = sessionStorage.getItem('userId') || 'testuser';
+
+            const response = await fetch('http://localhost/mypage/update', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    email: editInfo.email,
+                    new_password: editInfo.password,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alertModal.openModal({
+                    svg: '🔔',
+                    msg1: "정보 수정 완료",
+                    msg2: data.message,
+                    showCancel: false,
+                    onConfirm: () => {
+                        setEditModalOpen(false);
+                        // 수정된 정보로 상태 업데이트
+                        setMemberData(prev => ({
+                            ...prev,
+                            email: editInfo.email
+                        }));
+                        // 사용자 정보 다시 가져오기
+                        fetchUserInfo();
+                    }
+                });
+            } else {
+                alertModal.openModal({
+                    svg: '❗',
+                    msg1: "수정 실패",
+                    msg2: data.message || "정보 수정에 실패했습니다.",
+                    showCancel: false
+                });
+            }
+        } catch (error) {
+            console.error('정보 수정 오류:', error);
+            alertModal.openModal({
+                svg: '❗',
+                msg1: "오류",
+                msg2: "정보 수정 중 오류가 발생했습니다.",
+                showCancel: false
+            });
+        }
     };
+
+    // 로딩 중일 때
+    if (isLoading) {
+        return (
+            <div>
+                <Header/>
+                <div className="wrap padding_60_0">
+                    <div className="main_box flex flex_column align_center justify_center gap_20">
+                        <h2 className="card_title font_700 mb_0">마이페이지</h2>
+                        <div className="mypage_card_v2">
+                            <div className="flex align_center justify_center" style={{height: '200px'}}>
+                                <p>로딩 중...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <Footer/>
+            </div>
+        );
+    }
+
+    // 에러가 있을 때
+    if (error) {
+        return (
+            <div>
+                <Header/>
+                <div className="wrap padding_60_0">
+                    <div className="main_box flex flex_column align_center justify_center gap_20">
+                        <h2 className="card_title font_700 mb_0">마이페이지</h2>
+                        <div className="mypage_card_v2">
+                            <div className="flex align_center justify_center" style={{height: '200px'}}>
+                                <p>오류: {error}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <Footer/>
+            </div>
+        );
+    }
+
+    const dept = departments.find(d => d.id === memberData.dept_idx);
+    const profileUrl = memberData.profile_img
+        ? `/${memberData.profile_img}`
+        : "/profile/default_avatar.png";
 
     return (
         <div>
@@ -129,10 +304,10 @@ export default function MyPage() {
                             </div>
                             <div className="mypage_profile_name">{memberData.name}</div>
                             <div className="mypage_profile_position">{
-                                    dept
-                                        ?.name
-                                }
-                                / {memberData.position}</div>
+                                dept
+                                    ?.name
+                            }
+                                / {memberData.lv_idx === 1 ? "사원" : memberData.lv_idx === 2 ? "팀장" : "부장"}</div>
                         </div>
                         <div className="mypage_info_col">
                             <div className="mypage_section_v2">
@@ -140,7 +315,7 @@ export default function MyPage() {
                                 <div className="mypage_info_grid">
                                     <div>
                                         <span className="mypage_info_label">아이디</span>
-                                        <span className="mypage_info_value">{memberData.id}</span>
+                                        <span className="mypage_info_value">{memberData.user_id}</span>
                                     </div>
                                     <div>
                                         <span className="mypage_info_label">이메일</span>
@@ -148,15 +323,11 @@ export default function MyPage() {
                                     </div>
                                     <div>
                                         <span className="mypage_info_label">직급</span>
-                                        <span className="mypage_info_value">{memberData.grade}</span>
+                                        <span className="mypage_info_value">{memberData.lv_idx === 1 ? "사원" : memberData.lv_idx === 2 ? "팀장" : "부장"}</span>
                                     </div>
                                     <div>
                                         <span className="mypage_info_label">입사일</span>
                                         <span className="mypage_info_value">{memberData.hire_date}</span>
-                                    </div>
-                                    <div>
-                                        <span className="mypage_info_label">연락처</span>
-                                        <span className="mypage_info_value">{memberData.phone}</span>
                                     </div>
                                 </div>
                             </div>
@@ -186,7 +357,9 @@ export default function MyPage() {
                     <button className="board_btn" onClick={() => setPwModalOpen(true)}>정보수정</button>
                 </div>
             </div>
-            <Footer/> {/* 비밀번호 확인 모달 */}
+            <Footer/>
+
+            {/* 비밀번호 확인 모달 */}
             {
                 pwModalOpen && (
                     <div className="modal_overlay" onClick={() => setPwModalOpen(false)}>
@@ -226,17 +399,6 @@ export default function MyPage() {
                             <h3 className="card_title font_700 mb_20">회원 정보 수정</h3>
                             <form className="flex flex_column gap_10" onSubmit={handleSave}>
                                 <div className="board_write_row">
-                                    <label htmlFor="phone" className="board_write_label">연락처</label>
-                                    <input
-                                        id="phone"
-                                        name="phone"
-                                        type="text"
-                                        className="board_write_input"
-                                        value={editInfo.phone}
-                                        onChange={handleEditChange}
-                                        required="required"/>
-                                </div>
-                                <div className="board_write_row">
                                     <label htmlFor="email" className="board_write_label">이메일</label>
                                     <input
                                         id="email"
@@ -251,7 +413,7 @@ export default function MyPage() {
                                     <label htmlFor="new_password" className="board_write_label">새 비밀번호</label>
                                     <input
                                         id="new_password"
-                                        name="new_password"
+                                        name="password"
                                         type="password"
                                         className="board_write_input"
                                         value={editInfo.password}
