@@ -58,7 +58,7 @@ export default function Login() {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://localhost:80/member/login', {
+      const response = await fetch('http://localhost/member/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -102,7 +102,7 @@ export default function Login() {
     setIsFindingId(true);
 
     try {
-      const response = await fetch('http://localhost:80/member/find-id', {
+      const response = await fetch('http://localhost/member/find-id', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,9 +142,24 @@ export default function Login() {
     setIsFindingPw(true);
 
     try {
-      // 비밀번호 찾기 API가 구현되면 여기에 추가
-      // 현재는 임시 메시지
-      setFindPwResult("입력하신 이메일로 비밀번호 재설정 안내 메일을 발송했습니다.");
+      const response = await fetch('http://localhost/email/find-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: findPwForm.userId,
+          email: findPwForm.email,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setFindPwResult(data.message);
+      } else {
+        setFindPwResult(data.message);
+      }
     } catch (error) {
       console.error('비밀번호 찾기 오류:', error);
       setFindPwResult('비밀번호 찾기 중 오류가 발생했습니다.');
@@ -319,7 +334,7 @@ export default function Login() {
             {findPwResult && (
                 <div className="modal_result" style={{
                   padding: '10px',
-                  backgroundColor: '#e8f5e8',
+                  backgroundColor: findPwResult.includes('발송되었습니다') ? '#e8f5e8' : '#ffe8e8',
                   borderRadius: '4px',
                   fontSize: '14px'
                 }}>
