@@ -14,19 +14,28 @@ export default function Chatbot() {
     { from: "bot", text: "안녕하세요! 무엇을 도와드릴까요?" }
   ]);
   const [loading, setLoading] = useState(false);
-  const [searchType, setSearchType] = useState("keyword"); // "keyword" or "ai"
+  const [searchType, setSearchType] = useState("keyword");
   const chatEndRef = useRef();
-  const [keywords,setKeywords] = useState([]);
+  const [keywords, setKeywords] = useState([]);
+  const [faqList, setFaqList] = useState([]);
 
+  // 키워드 목록 불러오기
   async function keyword_list() {
-    let {data} = await axios.post(`${api_url}/keyword/list`);
-    const list = data.list.filter((list)=> list.status == 0);
+    let { data } = await axios.post(`${api_url}/keyword/list`);
+    const list = data.list.filter((list) => list.status == 0);
     setKeywords(list);
   }
 
-  useEffect(()=>{
+  // FAQ 전체 불러오기
+  async function fetchFAQList() {
+    const { data } = await axios.post(`${api_url}/keyword/faq/list`, {});
+    setFaqList(data.list || []);
+  }
+
+  useEffect(() => {
     keyword_list();
-  },[])
+    fetchFAQList();
+  }, []);
 
   useEffect(() => {
     if (open && chatEndRef.current) {
@@ -42,7 +51,57 @@ export default function Chatbot() {
     return found ? found.response : "등록된 키워드가 없습니다. AI 검색을 이용해보세요.";
   }
 
-  // Gemini API 호출 (axios)
+  // Gemini + FAQ JSON 포함, 그리고 FAQ insert
+  async function fetchGeminiWithFAQJson(userText) {
+    setLoading(true);
+    try {
+      const faqJson = JSON.stringify(faqList, null, 2);
+      const prompt = `
+      다음은 자주 묻는 질문(FAQ) 목록입니다.
+      아래 JSON 데이터를 참고해서, 사용자의 요청에 가장 적합한 답변을 안내해줘.
+      목록을 전체 보여줘야해.
+
+      [FAQ 목록]
+      ${faqJson}
+
+      [사용자 요청]
+      ${userText}
+      `.trim();
+
+      const res = await axios.post(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + GEMINI_API_KEY,
+        {
+          contents: [
+            { parts: [{ text: prompt }] }
+          ]
+        },
+        { headers: { "Content-Type": "application/json" } }
+      );
+      const data = res.data;
+      const answer =
+        data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "FAQ 안내에 실패했습니다.";
+
+      setMessages(msgs => [
+        ...msgs,
+        { from: "bot", text: answer }
+      ]);
+
+      // FAQ insert (질문/답변 저장)
+      await axios.post(`${api_url}/keyword/faq/insert`, {
+        question: userText,
+        answer: answer
+      });
+    } catch (e) {
+      setMessages(msgs => [
+        ...msgs,
+        { from: "bot", text: "FAQ AI 안내 중 오류가 발생했습니다." }
+      ]);
+    }
+    setLoading(false);
+  }
+
+  // Gemini 일반 AI 검색 + FAQ insert
   async function fetchGeminiAnswer(userText) {
     setLoading(true);
     try {
@@ -65,6 +124,11 @@ export default function Chatbot() {
         ...msgs,
         { from: "bot", text: answer }
       ]);
+      // FAQ insert (질문/답변 저장)
+      await axios.post(`${api_url}/keyword/faq/insert`, {
+        question: userText,
+        answer: answer
+      });
     } catch (e) {
       setMessages(msgs => [
         ...msgs,
@@ -74,13 +138,22 @@ export default function Chatbot() {
     setLoading(false);
   }
 
+  const normalized = input.replace(/\s/g, '').toLowerCase();
+
   // 채팅 전송
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
     setMessages([...messages, { from: "user", text: input }]);
+
+    // "자주묻는 질문" 입력 시 FAQ JSON 전체를 AI에 넘기고 insert
+    if (normalized.includes("자주묻는질문")) {
+      await fetchGeminiWithFAQJson(input);
+      setInput("");
+      return;
+    }
+
     if (searchType === "keyword") {
-      // 키워드 검색
       setTimeout(() => {
         setMessages(msgs => [
           ...msgs,
@@ -88,8 +161,7 @@ export default function Chatbot() {
         ]);
       }, 300);
     } else {
-      // AI 검색
-      fetchGeminiAnswer(input);
+      await fetchGeminiAnswer(input);
     }
     setInput("");
   };
@@ -105,7 +177,7 @@ export default function Chatbot() {
         tabIndex={0}
         aria-label="챗봇 열기"
       >
-        <span className="chatbot_fab_icon"><img style={{width:"40px", aspectRatio:"1/1"}} src="/chat.gif" alt="chatbot_img" /></span>
+        <span className="chatbot_fab_icon"><img style={{ width: "40px", aspectRatio: "1/1" }} src="/chat.gif" alt="chatbot_img" /></span>
         <span className={`chatbot_fab_text${hover ? " show" : " dis_none"}`}>챗봇 상담</span>
       </div>
       {/* 챗봇 모달 */}
@@ -139,7 +211,7 @@ export default function Chatbot() {
                   </div>
                 ))}
                 {loading && (
-                  <div className="chatbot_msg chatbot_msg_bot" style={{opacity:0.6}}>AI 답변 생성중...</div>
+                  <div className="chatbot_msg chatbot_msg_bot" style={{ opacity: 0.6 }}>AI 답변 생성중...</div>
                 )}
                 <div ref={chatEndRef} />
               </div>
