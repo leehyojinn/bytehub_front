@@ -33,8 +33,6 @@ export default function DepartmentManagePage() {
 
   const api_url = process.env.NEXT_PUBLIC_API_URL;
 
-  console.log(departments);
-
   // 부서/멤버 목록 불러오기
   async function deptList() {
     try {
@@ -167,7 +165,7 @@ export default function DepartmentManagePage() {
                     <td><b>{d.name}</b></td>
                     <td>{getMemberName(d.user_id, members)}</td>
                     <td>
-                      <button className="board_btn board_btn_small" onClick={() => openForm(d)}>수정</button>
+                      <button lassName="board_btn board_btn_small" onClick={() => openForm(d)}>수정</button>
                       <button
                         className="board_btn board_btn_small board_btn_cancel"
                         style={{ marginLeft: 8 }}
