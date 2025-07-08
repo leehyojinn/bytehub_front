@@ -151,15 +151,66 @@ export default function GrantUser() {
             ...prev,
             [selectedMember.user_id]: editPerm
         }));
-        console.log(editPerm, selectedMember.user_id);     // editPerm: 해당 유저의 권한(배열), members(Object배열)
-        // let {data}=await axios.post(`http://localhost/auth/grant`, );     // 배열 foreach써서 arr로 저장해서 보내자
 
         editPerm.forEach((perm) => {
             // 완벽한건아니고 대충 이런식으로,,,
-            arr.push({'project':perm, user_id:selectedMember.user_id});
+            switch (perm) {
+                case "board_view":
+                    arr.push({
+                        user_id: selectedMember.user_id,
+                        access_type: 'board',
+                        access_idx: 0,
+                        auth: 'read',
+                        checked: true,
+                    });
+                    break;
+                case "chat_create":
+                    arr.push({
+                        user_id: selectedMember.user_id,
+                        access_type: 'chat',
+                        access_idx: 0,
+                        auth: 'write',
+                        checked: true,
+                    });
+                    break;
+                case "project_create":
+                    arr.push({
+                        user_id: selectedMember.user_id,
+                        access_type: 'project',
+                        access_idx: 0,
+                        auth: 'write',
+                        checked: true,
+                    });
+                    break;
+                case "leave_view":
+                    arr.push({
+                        user_id: selectedMember.user_id,
+                        access_type: 'leave',
+                        access_idx: 0,
+                        auth: 'read',
+                        checked: true,
+                    });
+                    break;
+                case "attendance_view":
+                    arr.push({
+                        user_id: selectedMember.user_id,
+                        access_type: 'attendance',
+                        access_idx: 0,
+                        auth: 'read',
+                        checked: true,
+                    });
+                    break;
+                default:
+                    break;
+            }
         });
-
-        setModalOpen(false);
+        let {data}=await axios.post(`http://localhost/auth/grant`, arr);     // 배열 foreach써서 arr로 저장해서
+        if(data.success){
+            setModalOpen(false);
+        }
+        else{
+            alert('오류가 발생했습니다.');
+        }
     };
 
     return (
