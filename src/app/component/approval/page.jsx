@@ -335,7 +335,7 @@ export default function ApprovalSystem() {
                   </div>
                   <div>
                     <b>결재 내역:</b>
-                    <span>진행 중</span>
+                    <span>{getStatusDisplay(selectedDoc.final_status)}</span>
                   </div>
                 </div>
                 <div className="approval_modal_footer">
