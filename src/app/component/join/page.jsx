@@ -1,20 +1,11 @@
 'use client';
 
-import React, { useState } from "react";
-
-const departments = [
-  { id: 1, name: "개발팀" },
-  { id: 2, name: "기획팀" },
-  { id: 3, name: "디자인팀" },
-];
+import axios from "axios";
+import React, { useEffect, useState } from "react";
 
 const gender = [
   { id: 1, name: "남자" },
   { id: 2, name: "여자" },
-];
-
-const positions = [
-  "사원", "주임", "대리", "과장", "차장", "부장", "이사", "팀장"
 ];
 
 export default function Signup() {
@@ -35,6 +26,27 @@ export default function Signup() {
   const [pwFocus, setPwFocus] = useState(false);
   const [isIdAvailable, setIsIdAvailable] = useState(false); // 아이디 사용 가능 여부
   const [isIdChecked, setIsIdChecked] = useState(false); // 아이디 중복체크 완료 여부
+
+  const [dept,setDept] = useState([]);
+  const [level,setLevel] = useState([]);
+
+  const api_url = process.env.NEXT_PUBLIC_API_URL;
+
+  async function dept_list() {
+    let {data} = await axios.post(`${api_url}/dept/list`);
+    const list = data.list.filter((item)=>item.status == false)
+    setDept(list);
+  }
+
+  async function level_list() {
+    let {data} = await axios.post(`${api_url}/level/list`);
+    const list = data.list.filter((item)=>item.status == false)
+    setLevel(list);
+  }
+  useEffect(()=>{
+    dept_list();
+    level_list();
+  },[])
 
   React.useEffect(() => {
     const len = form.user_id.length;
@@ -264,8 +276,8 @@ export default function Signup() {
                   <label htmlFor="dept_idx" className="login_label small_text">부서</label>
                   <select id="dept_idx" name="dept_idx" className="login_input" value={form.dept_idx} onChange={handleChange} required>
                     <option value="">부서 선택</option>
-                    {departments.map(dep => (
-                        <option key={dep.id} value={dep.id}>{dep.name}</option>
+                    {dept.map(dep => (
+                        <option key={dep.dept_idx} value={dep.dept_idx}>{dep.dept_name}</option>
                     ))}
                   </select>
                 </div>
@@ -275,8 +287,8 @@ export default function Signup() {
                   <label htmlFor="lv_idx" className="login_label small_text">직책</label>
                   <select id="lv_idx" name="lv_idx" className="login_input" value={form.lv_idx} onChange={handleChange} required>
                     <option value="">직책 선택</option>
-                    {positions.map((pos, index) => (
-                        <option key={pos} value={index + 1}>{pos}</option>
+                    {level.map((pos) => (
+                        <option key={pos.lv_idx} value={pos.lv_idx}>{pos.lv_name}</option>
                     ))}
                   </select>
                 </div>
@@ -285,7 +297,7 @@ export default function Signup() {
                   <input id="hire_date" name="hire_date" className="login_input" type="date" value={form.hire_date} onChange={handleChange} required />
                 </div>
               </div>
-              <div className="login_input_row">
+              {/* <div className="login_input_row">
                 <label htmlFor="phone" className="login_label small_text">연락처</label>
                 <input
                     id="phone"
@@ -298,7 +310,7 @@ export default function Signup() {
                     placeholder="010-0000-0000"
                     maxLength={13}
                 />
-              </div>
+              </div> */}
               <button type="submit" className="login_btn">회원가입</button>
             </form>
           </div>
