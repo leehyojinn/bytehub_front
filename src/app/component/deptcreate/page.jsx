@@ -1,24 +1,16 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
 
-const initialMembers = [
-  { id: "hong123", name: "홍길동" },
-  { id: "kim456", name: "김철수" },
-  { id: "lee789", name: "이영희" },
-];
-
-const initialDepartments = [
-  { id: 1, name: "백엔드팀", description: "서버 개발팀", manager_id: "hong123" },
-  { id: 2, name: "프론트팀", description: "프론트엔드 개발팀", manager_id: "kim456" },
-];
-
+// 팀장 이름 매핑 함수
 function getMemberName(id, members) {
   return members.find(m => m.id === id)?.name || "-";
 }
 
+// 모달 컴포넌트
 function Modal({ isOpen, onClose, children }) {
   if (!isOpen) return null;
   return (
@@ -32,50 +24,117 @@ function Modal({ isOpen, onClose, children }) {
 }
 
 export default function DepartmentManagePage() {
-  const [departments, setDepartments] = useState(initialDepartments);
-  const [members] = useState(initialMembers);
+  const [departments, setDepartments] = useState([]);
+  const [members, setMembers] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [form, setForm] = useState({ id: null, name: "", description: "", manager_id: "" });
+  // description 필드 제거
+  const [form, setForm] = useState({ id: null, name: "", user_id: "" });
 
-  // 등록/수정 폼 열기
+  const api_url = process.env.NEXT_PUBLIC_API_URL;
+
+  console.log(departments);
+
+  // 부서/멤버 목록 불러오기
+  async function deptList() {
+    try {
+      const { data } = await axios.post(`${api_url}/dept/list`);
+      setDepartments(
+        data.list.map(d => ({
+          id: d.dept_idx,
+          name: d.dept_name,
+          status: d.status,
+          user_id: d.user_id || "",
+        }))
+      );
+      setMembers(
+        data.member.map(m => ({
+          id: m.user_id,
+          name: m.name,
+        }))
+      );
+    } catch (e) {
+      alert("부서/멤버 목록을 불러오지 못했습니다.");
+    }
+  }
+
+  // 등록
+  async function deptInsert() {
+    const payload = {
+      dept_name: form.name,
+      user_id: form.user_id,
+    };
+    console.log(payload);
+    const { data } = await axios.post(`${api_url}/dept/insert`, payload);
+    if (data.suc) {
+      deptList();
+      setModalOpen(false);
+    } else {
+      alert("등록 실패!");
+    }
+  }
+
+  // 수정
+  async function deptUpdate() {
+    const payload = {
+      dept_idx: form.id,
+      dept_name: form.name,
+      user_id: form.user_id,
+    };
+    const { data } = await axios.post(`${api_url}/dept/update`, payload);
+    if (data.suc) {
+      deptList();
+      setModalOpen(false);
+    } else {
+      alert("수정 실패!");
+    }
+  }
+
+  // 삭제
+  async function deptDelete(id) {
+    if (!window.confirm("정말 삭제하시겠습니까?")) return;
+    const payload = { dept_idx: id };
+    const { data } = await axios.post(`${api_url}/dept/delete`, payload);
+    if (data.suc) {
+      deptList();
+    } else {
+      alert("삭제 실패!");
+    }
+  }
+
+  // 폼 열기
   const openForm = (dept = null) => {
     if (dept) {
       setEditMode(true);
-      setForm(dept);
+      setForm({
+        id: dept.id,
+        name: dept.name,
+        user_id: dept.user_id,
+      });
     } else {
       setEditMode(false);
-      setForm({ id: null, name: "", description: "", manager_id: "" });
+      setForm({ id: null, name: "", user_id: "" });
     }
     setModalOpen(true);
   };
 
   // 등록/수정 처리
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.manager_id) {
+    if (!form.name.trim() || !form.user_id) {
       alert("부서명과 팀장을 입력하세요.");
       return;
     }
     if (editMode) {
-      setDepartments(prev =>
-        prev.map(d => d.id === form.id ? { ...form } : d)
-      );
+      await deptUpdate();
     } else {
-      setDepartments(prev => [
-        ...prev,
-        { ...form, id: Date.now() }
-      ]);
+      await deptInsert();
     }
-    setModalOpen(false);
   };
 
-  // 삭제
-  const handleDelete = (id) => {
-    if (window.confirm("정말 삭제하시겠습니까?")) {
-      setDepartments(prev => prev.filter(d => d.id !== id));
-    }
-  };
+  useEffect(() => {
+    deptList();
+  }, []);
 
   return (
     <div>
@@ -90,33 +149,33 @@ export default function DepartmentManagePage() {
           <table className="department_table">
             <thead>
               <tr>
-                <th style={{width: '20%'}}>부서명</th>
-                <th style={{width: '45%'}}>설명</th>
-                <th style={{width: '20%'}}>팀장</th>
-                <th style={{width: '15%'}}>관리</th>
+                <th style={{ width: '35%' }}>부서명</th>
+                <th style={{ width: '35%' }}>팀장</th>
+                <th style={{ width: '30%' }}>관리</th>
               </tr>
             </thead>
             <tbody>
-              {departments.length === 0 && (
+              {departments.filter(d => d.status !== true).length === 0 && (
                 <tr>
-                  <td colSpan={4} style={{textAlign: 'center', color: '#aaa'}}>등록된 부서가 없습니다.</td>
+                  <td colSpan={3} style={{ textAlign: 'center', color: '#aaa' }}>등록된 부서가 없습니다.</td>
                 </tr>
               )}
-              {departments.map(d => (
-                <tr key={d.id}>
-                  <td><b>{d.name}</b></td>
-                  <td>{d.description}</td>
-                  <td>{getMemberName(d.manager_id, members)}</td>
-                  <td>
-                    <button className="board_btn board_btn_small" onClick={() => openForm(d)}>수정</button>
-                    <button
-                      className="board_btn board_btn_small board_btn_cancel"
-                      style={{marginLeft: 8}}
-                      onClick={() => handleDelete(d.id)}
-                    >삭제</button>
-                  </td>
-                </tr>
-              ))}
+              {departments
+                .filter(d => d.status !== true)
+                .map(d => (
+                  <tr key={d.id}>
+                    <td><b>{d.name}</b></td>
+                    <td>{getMemberName(d.user_id, members)}</td>
+                    <td>
+                      <button className="board_btn board_btn_small" onClick={() => openForm(d)}>수정</button>
+                      <button
+                        className="board_btn board_btn_small board_btn_cancel"
+                        style={{ marginLeft: 8 }}
+                        onClick={() => deptDelete(d.id)}
+                      >삭제</button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -138,21 +197,11 @@ export default function DepartmentManagePage() {
                 />
               </div>
               <div className="board_write_row">
-                <label className="board_write_label">설명</label>
-                <input
-                  type="text"
-                  className="board_write_input"
-                  value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="부서 설명(선택)"
-                />
-              </div>
-              <div className="board_write_row">
                 <label className="board_write_label">팀장 지정</label>
                 <select
                   className="board_write_input"
-                  value={form.manager_id}
-                  onChange={e => setForm(f => ({ ...f, manager_id: e.target.value }))}
+                  value={form.user_id}
+                  onChange={e => setForm(f => ({ ...f, user_id: e.target.value }))}
                   required
                 >
                   <option value="">팀장 선택</option>
