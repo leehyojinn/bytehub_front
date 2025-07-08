@@ -79,7 +79,7 @@ export default function BoardWrite() {
       alert("상단 고정은 최대 3개까지만 가능합니다.");
       return;
     }
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
     if (!token) {
       alert("로그인 후 이용해 주세요.");
       return;

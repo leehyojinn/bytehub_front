@@ -27,7 +27,7 @@ export default function Board() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
         const response = await axios.get(`${apiUrl}/post/list/${page}`, {
           headers: {
             Authorization: token,

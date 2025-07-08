@@ -57,7 +57,7 @@ export default function MeetingWrite() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
     if (!token) {
       alert("로그인 후 이용해 주세요.");
       return;

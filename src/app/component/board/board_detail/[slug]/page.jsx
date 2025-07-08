@@ -47,7 +47,7 @@ export default function BoardDetail() {
     useEffect(() => {
         const fetchAllPosts = async () => {
             try {
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token');
                 const response = await axios.get(`${apiUrl}/post/list/1`, {
                     headers: {
                         'Authorization': token,
