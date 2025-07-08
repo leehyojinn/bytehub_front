@@ -87,11 +87,12 @@ export default function BoardWrite() {
     try {
       const response = await axios.post(
         `${apiUrl}/board/write`, // 게시글 등록 API
-        {
+        { 
           subject: form.subject,
           content: form.content,
           pinned: checked,
           category: 'NOTICE',
+          user_id: userId
         },
         {
           headers: {

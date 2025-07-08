@@ -2,9 +2,22 @@
 
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
-export default function BoardWrite() {
+// JWT 토큰에서 사용자 ID를 추출하는 함수
+function getUserIdFromToken() {
+  const token = localStorage.getItem("token");
+  if (!token) return "토큰 없음";
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.id || "";  // Payload에 id가 있으면 반환
+  } catch {
+    return "";
+  }
+}
+
+export default function MeetingWrite() {
   const [form, setForm] = useState({
     title: "",
     author: "",
@@ -12,6 +25,15 @@ export default function BoardWrite() {
   });
   const [imageFiles, setImageFiles] = useState([]);      
   const [previewUrls, setPreviewUrls] = useState([]); 
+  const [userId, setUserId] = useState("");
+
+   // API 서버 주소
+   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+   // 토큰에서 userId 추출하여 설정
+   useEffect(() => {
+     setUserId(getUserIdFromToken());
+   });
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -32,9 +54,34 @@ export default function BoardWrite() {
     Promise.all(readers).then((results) => setPreviewUrls(results));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert("글이 등록되었습니다!");
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("로그인 후 이용해 주세요.");
+      return;
+    }
+    try {
+      const response = await axios.post(
+        `${apiUrl}/board/write`,
+        {
+          subject: form.title,
+          content: form.content,
+          category: 'MEETING',
+          user_id: userId,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": token, // JWT 토큰 인증 헤더
+          },
+        }
+      );
+      alert("글이 등록되었습니다!");
+    } catch (error) {
+      console.error("글 등록 중 오류 발생:", error);
+      alert("글 등록 중 오류가 발생했습니다. 다시 시도해주세요.");
+    }
   };
 
   return (
@@ -57,6 +104,8 @@ export default function BoardWrite() {
                 required
               />
             </div>
+
+            {/* 작성자 표시란 */}
             <div className="board_write_row">
               <label htmlFor="author" className="board_write_label small_text font_600">작성자</label>
               <input
@@ -64,12 +113,11 @@ export default function BoardWrite() {
                 name="author"
                 className="board_write_input"
                 type="text"
-                placeholder="이름을 입력하세요"
-                value={form.author}
-                onChange={handleChange}
-                required
+                value={userId}
+                readOnly
               />
             </div>
+
             <div className="board_write_row">
               <label htmlFor="content" className="board_write_label small_text font_600">내용</label>
               <textarea

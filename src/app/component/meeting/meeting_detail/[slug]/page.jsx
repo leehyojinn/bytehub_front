@@ -4,7 +4,7 @@ import Header from "@/app/Header";
 import Footer from "@/app/Footer";
 import { useParams } from "next/navigation";
 import React, { useState } from "react";
-import { meetingMinutes } from "../../page";
+// import { meetingMinutes } from "../../page";
 import Link from "next/link";
 
 async function fakeAISummary(content) {

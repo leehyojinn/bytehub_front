@@ -45,8 +45,12 @@ export default function Board() {
     fetchPosts();
   }, [page]);
 
+
+  // category가 'NOTICE'인 글만 필터링
+  const boardPosts = posts.filter(post => post.category === 'NOTICE');
+
   // 검색 필터링
-  const filteredPosts = posts.filter(
+  const filteredPosts = boardPosts.filter(
     post =>
       (post.subject || "").toLowerCase().includes(search.toLowerCase()) ||
       (post.user_id || "").toLowerCase().includes(search.toLowerCase())
