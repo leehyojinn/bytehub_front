@@ -78,6 +78,7 @@ export default function MeetingWrite() {
         }
       );
       alert("글이 등록되었습니다!");
+      window.location.href = "/component/meeting"; // 등록 후 게시판 페이지로 이동
     } catch (error) {
       console.error("글 등록 중 오류 발생:", error);
       alert("글 등록 중 오류가 발생했습니다. 다시 시도해주세요.");

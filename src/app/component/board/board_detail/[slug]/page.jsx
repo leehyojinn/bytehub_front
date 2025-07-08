@@ -11,6 +11,7 @@ export default function BoardDetail() {
     const params = useParams();
     const router = useRouter();
     const {slug} = params;
+    
     const [post, setPost] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
