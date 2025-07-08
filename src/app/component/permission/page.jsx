@@ -3,7 +3,7 @@
 import AdminPaeneol from "@/app/component/adminpaeneol/AdminPaeneol";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import axios from "axios";
 
 const initialMembers = [
@@ -146,7 +146,7 @@ export default function GrantUser() {
     };
 
     const handleSave = async () => {
-        let arr = [];
+        let arr = useRef([]);
         setUserPermissions(prev => ({
             ...prev,
             [selectedMember.user_id]: editPerm
@@ -154,56 +154,57 @@ export default function GrantUser() {
 
         editPerm.forEach((perm) => {
             // 완벽한건아니고 대충 이런식으로,,,
-            switch (perm) {
-                case "board_view":
-                    arr.push({
-                        user_id: selectedMember.user_id,
-                        access_type: 'board',
-                        access_idx: 0,
-                        auth: 'read',
-                        checked: true,
-                    });
-                    break;
-                case "chat_create":
-                    arr.push({
-                        user_id: selectedMember.user_id,
-                        access_type: 'chat',
-                        access_idx: 0,
-                        auth: 'write',
-                        checked: true,
-                    });
-                    break;
-                case "project_create":
-                    arr.push({
-                        user_id: selectedMember.user_id,
-                        access_type: 'project',
-                        access_idx: 0,
-                        auth: 'write',
-                        checked: true,
-                    });
-                    break;
-                case "leave_view":
-                    arr.push({
-                        user_id: selectedMember.user_id,
-                        access_type: 'leave',
-                        access_idx: 0,
-                        auth: 'read',
-                        checked: true,
-                    });
-                    break;
-                case "attendance_view":
-                    arr.push({
-                        user_id: selectedMember.user_id,
-                        access_type: 'attendance',
-                        access_idx: 0,
-                        auth: 'read',
-                        checked: true,
-                    });
-                    break;
-                default:
-                    break;
-            }
+            // switch (perm) {
+            //     case "board_view":
+            //         arr.push({
+            //             user_id: selectedMember.user_id,
+            //             access_type: 'board',
+            //             access_idx: 0,
+            //             auth: 'read',
+            //             checked: true,
+            //         });
+            //         break;
+            //     case "chat_create":
+            //         arr.push({
+            //             user_id: selectedMember.user_id,
+            //             access_type: 'chat',
+            //             access_idx: 0,
+            //             auth: 'write',
+            //             checked: true,
+            //         });
+            //         break;
+            //     case "project_create":
+            //         arr.push({
+            //             user_id: selectedMember.user_id,
+            //             access_type: 'project',
+            //             access_idx: 0,
+            //             auth: 'write',
+            //             checked: true,
+            //         });
+            //         break;
+            //     case "leave_view":
+            //         arr.push({
+            //             user_id: selectedMember.user_id,
+            //             access_type: 'leave',
+            //             access_idx: 0,
+            //             auth: 'read',
+            //             checked: true,
+            //         });
+            //         break;
+            //     case "attendance_view":
+            //         arr.push({
+            //             user_id: selectedMember.user_id,
+            //             access_type: 'attendance',
+            //             access_idx: 0,
+            //             auth: 'read',
+            //             checked: true,
+            //         });
+            //         break;
+            //     default:
+            //         break;
+            // }
         });
+
         let {data}=await axios.post(`http://localhost/auth/grant`, arr);     // 배열 foreach써서 arr로 저장해서
         if(data.success){
             setModalOpen(false);
