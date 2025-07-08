@@ -22,6 +22,7 @@ export default function MeetingWrite() {
     title: "",
     author: "",
     content: "",
+    attendees: "",
   });
   const [imageFiles, setImageFiles] = useState([]);      
   const [previewUrls, setPreviewUrls] = useState([]); 
@@ -61,10 +62,18 @@ export default function MeetingWrite() {
       alert("로그인 후 이용해 주세요.");
       return;
     }
+
+    // 입력값 ,로 분리해서 배열 만들기
+    const attendeesArr = form.attendees
+    .split(",") // 콤마로 분리
+    .map(s => s.trim()) // 앞뒤 공백 제거
+    .filter(Boolean); // 빈문자열 제거
+
     try {
       const response = await axios.post(
-        `${apiUrl}/board/write`,
-        {
+
+          `${apiUrl}/board/write`,
+        {attendees : attendeesArr,
           subject: form.title,
           content: form.content,
           category: 'MEETING',
@@ -78,6 +87,7 @@ export default function MeetingWrite() {
         }
       );
       alert("글이 등록되었습니다!");
+      console.log(attendeesArr);
       window.location.href = "/component/meeting"; // 등록 후 게시판 페이지로 이동
     } catch (error) {
       console.error("글 등록 중 오류 발생:", error);
@@ -116,6 +126,18 @@ export default function MeetingWrite() {
                 type="text"
                 value={userId}
                 readOnly
+              />
+            </div>
+
+            <div className="board_write_row">
+              <label htmlFor="author" className="board_write_label small_text font_600">참석자</label>
+              <input
+                  type="text"
+                  name="attendees"
+                  className="board_write_input"
+                  value={form.attendees}
+                  onChange={handleChange}
+                  placeholder="참가자 아이디를 콤마(,)로 구분해 입력하세요"
               />
             </div>
 
