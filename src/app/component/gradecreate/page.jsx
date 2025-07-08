@@ -1,16 +1,9 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
-
-// 예시: 직급 데이터 (실제 서비스라면 DB/API 연동)
-const initialLevels = [
-  { id: 1, name: "사원", description: "초급 직원" },
-  { id: 2, name: "주임", description: "경력 직원" },
-  { id: 3, name: "대리", description: "중간 관리자" },
-  { id: 4, name: "과장", description: "관리자" },
-];
 
 function Modal({ isOpen, onClose, children }) {
   if (!isOpen) return null;
@@ -25,16 +18,84 @@ function Modal({ isOpen, onClose, children }) {
 }
 
 export default function LevelManagePage() {
-  const [levels, setLevels] = useState(initialLevels);
+  const [levels, setLevels] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({ id: null, name: "", description: "" });
 
-  // 등록/수정 폼 열기
+  const api_url = process.env.NEXT_PUBLIC_API_URL;
+
+  // 목록 불러오기
+  async function lvList() {
+    try {
+      const { data } = await axios.post(`${api_url}/level/list`);
+      setLevels(
+        data.list
+          .filter(l => l.status !== true) // status=1(삭제) 제외
+          .map(l => ({
+            id: l.lv_idx,
+            name: l.lv_name,
+            description: l.description || "",
+            status: l.status,
+          }))
+      );
+    } catch (e) {
+      alert("직급 목록을 불러오지 못했습니다.");
+    }
+  }
+
+  // 등록
+  async function lvInsert() {
+    const payload = {
+      lv_name: form.name,
+      description: form.description,
+    };
+    const { data } = await axios.post(`${api_url}/level/insert`, payload);
+    if (data.suc) {
+      lvList();
+      setModalOpen(false);
+    } else {
+      alert("등록 실패!");
+    }
+  }
+
+  // 수정
+  async function lvUpdate() {
+    const payload = {
+      lv_idx: form.id,
+      lv_name: form.name,
+      description: form.description,
+    };
+    const { data } = await axios.post(`${api_url}/level/update`, payload);
+    if (data.suc) {
+      lvList();
+      setModalOpen(false);
+    } else {
+      alert("수정 실패!");
+    }
+  }
+
+  // 삭제 (status=1로 soft delete)
+  async function lvDelete(id) {
+    if (!window.confirm("정말 삭제하시겠습니까?")) return;
+    const payload = { lv_idx: id };
+    const { data } = await axios.post(`${api_url}/level/delete`, payload);
+    if (data.suc) {
+      lvList();
+    } else {
+      alert("삭제 실패!");
+    }
+  }
+
+  // 폼 열기
   const openForm = (level = null) => {
     if (level) {
       setEditMode(true);
-      setForm(level);
+      setForm({
+        id: level.id,
+        name: level.name,
+        description: level.description,
+      });
     } else {
       setEditMode(false);
       setForm({ id: null, name: "", description: "" });
@@ -43,31 +104,22 @@ export default function LevelManagePage() {
   };
 
   // 등록/수정 처리
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) {
       alert("직급명을 입력하세요.");
       return;
     }
     if (editMode) {
-      setLevels(prev =>
-        prev.map(l => l.id === form.id ? { ...form } : l)
-      );
+      await lvUpdate();
     } else {
-      setLevels(prev => [
-        ...prev,
-        { ...form, id: Date.now() }
-      ]);
+      await lvInsert();
     }
-    setModalOpen(false);
   };
 
-  // 삭제
-  const handleDelete = (id) => {
-    if (window.confirm("정말 삭제하시겠습니까?")) {
-      setLevels(prev => prev.filter(l => l.id !== id));
-    }
-  };
+  useEffect(() => {
+    lvList();
+  }, []);
 
   return (
     <div>
@@ -102,7 +154,7 @@ export default function LevelManagePage() {
                     <button
                       className="board_btn board_btn_small board_btn_cancel"
                       style={{marginLeft: 8}}
-                      onClick={() => handleDelete(l.id)}
+                      onClick={() => lvDelete(l.id)}
                     >삭제</button>
                   </td>
                 </tr>
