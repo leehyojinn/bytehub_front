@@ -41,7 +41,7 @@ export default function BoardEdit() {
         const fetchPostDetail = async () => {
             try {
                 setLoading(true);
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token');
                 
                 const response = await axios.get(`${apiUrl}/post/detail/${slug}`, {
                     headers: {
