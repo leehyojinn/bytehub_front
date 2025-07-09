@@ -46,14 +46,12 @@ const remainLeave = TOTAL_LEAVE - usedLeave;
 export default function MyPage() {
     // 사용자 정보 상태
     const [memberData, setMemberData] = useState({
-        user_id: "",
+        id: "",
         name: "",
         email: "",
-        dept_idx: 0,
-        lv_idx: 0,
-        gender: "",
-        hire_date: "",
-        profile_img: "profile.png"
+        dept_name: "",
+        level_name: "",
+        hire_date: ""
     });
 
     // 로딩 상태
@@ -76,6 +74,11 @@ export default function MyPage() {
     // zustand alert modal
     const alertModal = useAlertModalStore();
 
+    // 토큰 가져오기
+    const getToken = () => {
+        return sessionStorage.getItem('token');
+    };
+
     // 컴포넌트 마운트 시 사용자 정보 가져오기
     useEffect(() => {
         fetchUserInfo();
@@ -84,23 +87,37 @@ export default function MyPage() {
     // 사용자 정보 가져오기
     const fetchUserInfo = async () => {
         try {
-            // 로컬 스토리지에서 사용자 ID 가져오기 (로그인 시 저장된 정보)
-            const userId = sessionStorage.getItem('userId') || 'testuser'; // 임시로 testuser 사용
+            const token = getToken();
+            if (!token) {
+                setError('로그인이 필요합니다.');
+                alertModal.openModal({
+                    svg: '❗',
+                    msg1: "로그인 필요",
+                    msg2: '로그인이 필요합니다.',
+                    showCancel: false
+                });
+                return;
+            }
 
-            const response = await fetch(`http://localhost/mypage/info/${userId}`);
+            const response = await fetch('http://localhost/mypage/info', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                }
+            });
+
             const data = await response.json();
 
             if (data.success) {
                 const userInfo = data.data;
                 setMemberData({
-                    user_id: userInfo.user_id,
+                    id: userInfo.id,
                     name: userInfo.name,
                     email: userInfo.email,
-                    dept_idx: userInfo.dept_idx,
-                    lv_idx: userInfo.lv_idx,
-                    gender: userInfo.gender,
-                    hire_date: userInfo.hire_date,
-                    profile_img: "profile.png"
+                    dept_name: userInfo.dept_name || '미지정',
+                    level_name: userInfo.level_name || '미지정',
+                    hire_date: userInfo.hire_date
                 });
 
                 // 수정 폼 초기값 설정
@@ -136,15 +153,24 @@ export default function MyPage() {
         e.preventDefault();
 
         try {
-            const userId = sessionStorage.getItem('userId') || 'testuser';
+            const token = getToken();
+            if (!token) {
+                alertModal.openModal({
+                    svg: '❗',
+                    msg1: "로그인 필요",
+                    msg2: '로그인이 필요합니다.',
+                    showCancel: false
+                });
+                return;
+            }
 
             const response = await fetch('http://localhost/mypage/verify-password', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': token
                 },
                 body: JSON.stringify({
-                    user_id: userId,
                     password: passwordInput,
                 }),
             });
@@ -188,18 +214,32 @@ export default function MyPage() {
         e.preventDefault();
 
         try {
-            const userId = sessionStorage.getItem('userId') || 'testuser';
+            const token = getToken();
+            if (!token) {
+                alertModal.openModal({
+                    svg: '❗',
+                    msg1: "로그인 필요",
+                    msg2: '로그인이 필요합니다.',
+                    showCancel: false
+                });
+                return;
+            }
+
+            const updateData = {
+                email: editInfo.email
+            };
+
+            if (editInfo.password) {
+                updateData.new_password = editInfo.password;
+            }
 
             const response = await fetch('http://localhost/mypage/update', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': token
                 },
-                body: JSON.stringify({
-                    user_id: userId,
-                    email: editInfo.email,
-                    new_password: editInfo.password,
-                }),
+                body: JSON.stringify(updateData),
             });
 
             const data = await response.json();
@@ -280,11 +320,6 @@ export default function MyPage() {
         );
     }
 
-    const dept = departments.find(d => d.id === memberData.dept_idx);
-    const profileUrl = memberData.profile_img
-        ? `/${memberData.profile_img}`
-        : "/profile/default_avatar.png";
-
     return (
         <div>
             <Header/>
@@ -295,19 +330,16 @@ export default function MyPage() {
                         <div className="mypage_profile_col">
                             <div className="mypage_profile_imgbox">
                                 <img
-                                    src={profileUrl}
+                                    src="/profile.png"
                                     alt="프로필"
                                     className="mypage_profile_img"
                                     onError={e => {
                                         e.currentTarget.src = "/profile/default_avatar.png";
-                                    }}/>
+                                    }}
+                                />
                             </div>
                             <div className="mypage_profile_name">{memberData.name}</div>
-                            <div className="mypage_profile_position">{
-                                dept
-                                    ?.name
-                            }
-                                / {memberData.lv_idx === 1 ? "사원" : memberData.lv_idx === 2 ? "팀장" : "부장"}</div>
+                            <div className="mypage_profile_position">{memberData.dept_name} / {memberData.level_name}</div>
                         </div>
                         <div className="mypage_info_col">
                             <div className="mypage_section_v2">
@@ -315,19 +347,25 @@ export default function MyPage() {
                                 <div className="mypage_info_grid">
                                     <div>
                                         <span className="mypage_info_label">아이디</span>
-                                        <span className="mypage_info_value">{memberData.user_id}</span>
+                                        <span className="mypage_info_value">{memberData.id}</span>
                                     </div>
                                     <div>
                                         <span className="mypage_info_label">이메일</span>
                                         <span className="mypage_info_value">{memberData.email}</span>
                                     </div>
                                     <div>
-                                        <span className="mypage_info_label">직급</span>
-                                        <span className="mypage_info_value">{memberData.lv_idx === 1 ? "사원" : memberData.lv_idx === 2 ? "팀장" : "부장"}</span>
+                                        <span className="mypage_info_label">부서</span>
+                                        <span className="mypage_info_value">{memberData.dept_name}</span>
                                     </div>
                                     <div>
-                                        <span className="mypage_info_label">입사일</span>
-                                        <span className="mypage_info_value">{memberData.hire_date}</span>
+                                        <span className="mypage_info_label">직급</span>
+                                        <span className="mypage_info_value">{memberData.level_name}</span>
+                                    </div>
+                                    <div>
+                                        <span className="mypage_info_label">가입일</span>
+                                        <span className="mypage_info_value">
+                                          {memberData.hire_date ? memberData.hire_date.slice(0, 10) : ""}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
