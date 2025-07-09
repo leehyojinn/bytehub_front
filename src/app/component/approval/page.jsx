@@ -40,7 +40,7 @@ const TAB_LABELS = [
 export default function ApprovalSystem() {
   let userId = "";
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
     if (token) {
       try {
         const decoded = jwtDecode(token);
@@ -58,6 +58,7 @@ export default function ApprovalSystem() {
   const [approvals, setApprovals] = useState([]);
   const [toApproveList, setToApproveList] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [allApprovals, setAllApprovals] = useState([]); // 전체 결재 목록용
 
   // 기안 폼 상태
   const [approvalType, setApprovalType] = useState("");
@@ -67,8 +68,8 @@ export default function ApprovalSystem() {
   const [content, setContent] = useState("");
   const [files, setFiles] = useState([]); // 파일 첨부 상태
 
-  // 목록 조회 함수 등은 기존과 동일 (생략)
 
+  // 결재 문서 조회
   const fetchApprovals = async () => {
     try {
       setLoading(true);
@@ -99,6 +100,7 @@ export default function ApprovalSystem() {
     }
   };
 
+  // 결재 문서 상세 보기
   const fetchApprovalDetail = async (appr_idx) => {
     try {
       const response = await fetch(`http://localhost/appr/detail/${appr_idx}`);
@@ -144,6 +146,7 @@ export default function ApprovalSystem() {
         body: formData
       });
 
+      // 결재 처리
       const data = await response.json();
       if (data.success) {
         alert('결재 문서가 등록되었습니다.');
@@ -192,9 +195,26 @@ export default function ApprovalSystem() {
     }
   };
 
+  // 전체 결재 목록 보기
+  const fetchAllApprovals = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost/appr/all`);
+      const data = await response.json();
+      if (data.success) {
+        setAllApprovals(data.data);
+      }
+    } catch (error) {
+      console.error('전체 결재 목록 조회 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchApprovals();
     fetchToApproveList();
+    fetchAllApprovals();
   }, [userId]);
 
   const getStatusDisplay = (final_status) => {
@@ -443,64 +463,64 @@ export default function ApprovalSystem() {
           )}
 
           {activeTab === 3 && (
-            // 결재목록 리스트 (전체)
-            <div className="approval_section width_100">
-              <h3 className="card_title font_600 mb_10">결재목록 리스트</h3>
-              <div className="approval_status_legend mb_16 flex gap_10">
-                <span className="approval_status_badge status_rejected">반려</span>
-                <span className="approval_status_badge status_draft">기안</span>
-                <span className="approval_status_badge status_progress">결재중</span>
-                <span className="approval_status_badge status_approved">승인</span>
-              </div>
-              {loading ? (
-                <div>로딩 중...</div>
-              ) : (
-                <table className="approval_table">
-                  <thead>
-                    <tr>
-                      <th>결재번호</th>
-                      <th>제목</th>
-                      <th>기안자</th>
-                      <th>상태</th>
-                      <th>종류</th>
-                      <th>기안일</th>
-                      <th>결재내역</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {approvals.length === 0 && (
+              // 결재목록 리스트 (전체)
+              <div className="approval_section width_100">
+                <h3 className="card_title font_600 mb_10">결재목록 리스트</h3>
+                <div className="approval_status_legend mb_16 flex gap_10">
+                  <span className="approval_status_badge status_rejected">반려</span>
+                  <span className="approval_status_badge status_draft">기안</span>
+                  <span className="approval_status_badge status_progress">결재중</span>
+                  <span className="approval_status_badge status_approved">승인</span>
+                </div>
+                {loading ? (
+                    <div>로딩 중...</div>
+                ) : (
+                    <table className="approval_table">
+                      <thead>
                       <tr>
-                        <td colSpan={7}>결재 문서가 없습니다.</td>
+                        <th>결재번호</th>
+                        <th>제목</th>
+                        <th>기안자</th>
+                        <th>상태</th>
+                        <th>종류</th>
+                        <th>기안일</th>
+                        <th>결재내역</th>
                       </tr>
-                    )}
-                    {approvals.map(doc => (
-                      <tr key={doc.appr_idx}>
-                        <td>{doc.appr_idx}</td>
-                        <td>
-                          <button
-                            className="approval_link"
-                            onClick={() => fetchApprovalDetail(doc.appr_idx)}
-                          >
-                            {doc.subject}
-                          </button>
-                        </td>
-                        <td>{doc.writer_id}</td>
-                        <td>
-                          <span className={`approval_status_badge ${getStatusBadgeClass(doc.final_status)}`}>
-                            {getStatusDisplay(doc.final_status)}
-                          </span>
-                        </td>
-                        <td>{doc.appr_type}</td>
-                        <td>{doc.appr_date ? new Date(doc.appr_date).toLocaleDateString() : '-'}</td>
-                        <td>
-                          <span>-</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+                      </thead>
+                      <tbody>
+                      {allApprovals.length === 0 && (
+                          <tr>
+                            <td colSpan={7}>결재 문서가 없습니다.</td>
+                          </tr>
+                      )}
+                      {allApprovals.map(doc => (
+                          <tr key={doc.appr_idx}>
+                            <td>{doc.appr_idx}</td>
+                            <td>
+                              <button
+                                  className="approval_link"
+                                  onClick={() => fetchApprovalDetail(doc.appr_idx)}
+                              >
+                                {doc.subject}
+                              </button>
+                            </td>
+                            <td>{doc.writer_id}</td>
+                            <td>
+                <span className={`approval_status_badge ${getStatusBadgeClass(doc.final_status)}`}>
+                  {getStatusDisplay(doc.final_status)}
+                </span>
+                            </td>
+                            <td>{doc.appr_type}</td>
+                            <td>{doc.appr_date ? new Date(doc.appr_date).toLocaleDateString() : '-'}</td>
+                            <td>
+                              <span>-</span>
+                            </td>
+                          </tr>
+                      ))}
+                      </tbody>
+                    </table>
+                )}
+              </div>
           )}
 
           {/* 결재 상세/결재 처리 모달 */}

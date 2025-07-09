@@ -112,7 +112,7 @@ export default function MyPage() {
             if (data.success) {
                 const userInfo = data.data;
                 setMemberData({
-                    id: userInfo.id,
+                    id: userInfo.id || userInfo.user_id || "",
                     name: userInfo.name,
                     email: userInfo.email,
                     dept_name: userInfo.dept_name || '미지정',
