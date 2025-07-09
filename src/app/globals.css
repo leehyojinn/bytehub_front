@@ -3079,3 +3079,36 @@ a:hover {
   color: #433878;
   font-weight: 600;
 }
+.tab_btn {
+  padding: 10px 24px;
+  border: none;
+  background: #f4f4f4;
+  color: #333;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  outline: none;
+  margin-bottom: -2px;
+  border-bottom: 2px solid transparent;
+}
+
+.tab_btn:not(:last-child) {
+  margin-right: 6px;
+}
+
+.tab_btn:hover,
+.tab_btn:focus {
+  background: var(--primary-color2);
+  color: #fff;
+}
+
+.tab_btn.active {
+  background: var(--primary-color2);
+  color: #fff;
+  border-bottom: 2px solid var(--primary-color1);
+  font-weight: 700;
+  z-index: 2;
+  position: relative;
+}
