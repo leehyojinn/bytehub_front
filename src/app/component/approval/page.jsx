@@ -65,7 +65,7 @@ export default function ApprovalSystem() {
   const fetchApprovals = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost/appr/list');
+      const response = await fetch(`http://localhost/appr/my?writer_id=${userId}`);
       const data = await response.json();
       if (data.success) {
         setApprovals(data.data);
@@ -84,6 +84,13 @@ export default function ApprovalSystem() {
       const data = await response.json();
       if (data.success) {
         setSelectedDoc(data.data);
+
+        // 결재 내역도 함께 가져오기
+        const historyResponse = await fetch(`http://localhost/appr/history/${appr_idx}`);
+        const historyData = await historyResponse.json();
+        if (historyData.success) {
+          setSelectedDoc(prev => ({ ...prev, history: historyData.data }));
+        }
       }
     } catch (error) {
       console.error('결재 문서 상세 조회 실패:', error);
@@ -335,7 +342,26 @@ export default function ApprovalSystem() {
                   </div>
                   <div>
                     <b>결재 내역:</b>
-                    <span>{getStatusDisplay(selectedDoc.final_status)}</span>
+                    {selectedDoc.history && selectedDoc.history.length > 0 ? (
+                        <div className="approval_history_list">
+                          {selectedDoc.history.map((history, index) => (
+                              <div key={index} className="approval_history_item">
+                                <span className="approval_step">Step {history.step}</span>
+                                <span className="approval_checker">{history.checker_name} ({history.level_name})</span>
+                                <span className={`approval_status ${history.status === '승인' ? 'status_approved' :
+                                    history.status === '반려' ? 'status_rejected' : 'status_progress'}`}>
+                                  {history.status}
+                                </span>
+                                {history.reason && <span className="approval_reason">사유: {history.reason}</span>}
+                                {history.check_time && <span className="approval_time">
+                                  {new Date(history.check_time).toLocaleString()}
+                                </span>}
+                              </div>
+                          ))}
+                        </div>
+                    ) : (
+                        <span>결재 내역이 없습니다.</span>
+                    )}
                   </div>
                 </div>
                 <div className="approval_modal_footer">
