@@ -97,7 +97,7 @@ export default function Signup() {
     }
 
     try {
-      const response = await fetch(`http://localhost:80/member/overlay/${form.user_id}`, {
+      const response = await fetch(`http://localhost/member/overlay/${form.user_id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -136,7 +136,7 @@ export default function Signup() {
     }
 
     try {
-      const response = await fetch('http://localhost:80/member/join', {
+      const response = await fetch('http://localhost/member/join', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -147,8 +147,6 @@ export default function Signup() {
           name: form.name,
           email: form.email,
           gender: form.gender === "1" ? "M" : "F",
-          dept_idx: parseInt(form.dept_idx) || 0,
-          lv_idx: parseInt(form.lv_idx) || 0,
           hire_date: form.hire_date,
           file_idx: 1, // 기본값 (0이면 회원가입이 안되기에...)
         }),
@@ -271,7 +269,7 @@ export default function Signup() {
                         <option key={g.id} value={g.id}>{g.name}</option>
                     ))}
                   </select>
-                </div>
+                {/*</div>
                 <div className="login_input_row flex_1">
                   <label htmlFor="dept_idx" className="login_label small_text">부서</label>
                   <select id="dept_idx" name="dept_idx" className="login_input" value={form.dept_idx} onChange={handleChange} required>
@@ -280,9 +278,9 @@ export default function Signup() {
                         <option key={dep.dept_idx} value={dep.dept_idx}>{dep.dept_name}</option>
                     ))}
                   </select>
-                </div>
+                </div>*/}
               </div>
-              <div className="flex gap_10 justify_center align_center">
+              {/*<div className="flex gap_10 justify_center align_center">
                 <div className="login_input_row flex_1">
                   <label htmlFor="lv_idx" className="login_label small_text">직책</label>
                   <select id="lv_idx" name="lv_idx" className="login_input" value={form.lv_idx} onChange={handleChange} required>
@@ -291,7 +289,7 @@ export default function Signup() {
                         <option key={pos.lv_idx} value={pos.lv_idx}>{pos.lv_name}</option>
                     ))}
                   </select>
-                </div>
+                </div>*/}
                 <div className="login_input_row flex_1">
                   <label htmlFor="hire_date" className="login_label small_text">입사일</label>
                   <input id="hire_date" name="hire_date" className="login_input" type="date" value={form.hire_date} onChange={handleChange} required />
