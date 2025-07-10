@@ -98,11 +98,10 @@ export default function ApprovalSystem() {
 
   // 레벨별 권한 체크 함수
   const canViewApprovalList = () => {
-    if (!userInfo || !userInfo.level_name) return false;
-    
-    // 결재 처리 리스트와 결재 목록 리스트를 볼 수 있는 레벨들
-    const allowedLevels = ["이사", "부장", "차장", "과장"];
-    return allowedLevels.includes(userInfo.level_name);
+    if (!userInfo) return false;
+    // 레벨이 1 이상이면 true (level 또는 level_idx 사용)
+    const levelNum = userInfo.level !== undefined ? Number(userInfo.level) : Number(userInfo.lv_idx);
+    return levelNum >= 1;
   };
 
 
@@ -265,6 +264,30 @@ export default function ApprovalSystem() {
       console.error('전체 결재 목록 조회 실패:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 파일 다운로드 함수 (모달 등에서 사용 가능하게 ApprovalSystem 내부에 정의)
+  const handleFileDownload = async (fileIdx, fileName) => {
+    try {
+      const response = await fetch(`http://localhost/appr/download/${fileIdx}`, {
+        method: 'GET'
+      });
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        alert('파일 다운로드에 실패했습니다.');
+      }
+    } catch (error) {
+      alert('파일 다운로드 중 오류가 발생했습니다.');
     }
   };
 
@@ -561,15 +584,11 @@ export default function ApprovalSystem() {
                       <th>상태</th>
                       <th>종류</th>
                       <th>기안일</th>
+                      <th>첨부파일</th>
                       <th>결재내역</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {toApproveList.length === 0 && (
-                      <tr>
-                        <td colSpan={7}>결재할 문서가 없습니다.</td>
-                      </tr>
-                    )}
                     {currentToApproveList.map(doc => (
                       <tr key={doc.appr_idx}>
                         <td>{doc.appr_idx}</td>
@@ -583,12 +602,27 @@ export default function ApprovalSystem() {
                         </td>
                         <td>{doc.writer_id}</td>
                         <td>
-                          <span className={`approval_status_badge ${getStatusBadgeClass(doc.final_status)}`}>
-                            {getStatusDisplay(doc.final_status)}
-                          </span>
+                          <span className={`approval_status_badge ${getStatusBadgeClass(doc.final_status)}`}>{getStatusDisplay(doc.final_status)}</span>
                         </td>
                         <td>{doc.appr_type}</td>
                         <td>{doc.appr_date ? new Date(doc.appr_date).toLocaleDateString() : '-'}</td>
+                        <td>
+                          {doc.files && doc.files.length > 0 ? (
+                            <div className="file_list">
+                              {doc.files.map((file, idx) => (
+                                <span
+                                  key={idx}
+                                  onClick={() => handleFileDownload(file.file_idx, file.ori_filename)}
+                                  style={{ color: "#433878", cursor: "pointer", marginRight: 15 }}
+                                >
+                                  {file.ori_filename}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span>-</span>
+                          )}
+                        </td>
                         <td>
                           <span>-</span>
                         </td>
@@ -650,15 +684,11 @@ export default function ApprovalSystem() {
                         <th>상태</th>
                         <th>종류</th>
                         <th>기안일</th>
+                        <th>첨부파일</th>
                         <th>결재내역</th>
                       </tr>
                       </thead>
                       <tbody>
-                      {allApprovals.length === 0 && (
-                          <tr>
-                            <td colSpan={7}>결재 문서가 없습니다.</td>
-                          </tr>
-                      )}
                       {currentAllApprovals.map(doc => (
                           <tr key={doc.appr_idx}>
                             <td>{doc.appr_idx}</td>
@@ -672,12 +702,27 @@ export default function ApprovalSystem() {
                             </td>
                             <td>{doc.writer_id}</td>
                             <td>
-                <span className={`approval_status_badge ${getStatusBadgeClass(doc.final_status)}`}>
-                  {getStatusDisplay(doc.final_status)}
-                </span>
+                <span className={`approval_status_badge ${getStatusBadgeClass(doc.final_status)}`}>{getStatusDisplay(doc.final_status)}</span>
                             </td>
                             <td>{doc.appr_type}</td>
                             <td>{doc.appr_date ? new Date(doc.appr_date).toLocaleDateString() : '-'}</td>
+                            <td>
+                              {doc.files && doc.files.length > 0 ? (
+                                <div className="file_list">
+                                  {doc.files.map((file, idx) => (
+                                    <span
+                                      key={idx}
+                                      onClick={() => handleFileDownload(file.file_idx, file.ori_filename)}
+                                      style={{ color: "#433878", cursor: "pointer", marginRight: 15 }}
+                                    >
+                                      {file.ori_filename}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span>-</span>
+                              )}
+                            </td>
                             <td>
                               <span>-</span>
                             </td>
@@ -738,6 +783,28 @@ export default function ApprovalSystem() {
                       {selectedDoc.content}
                     </div>
                   </div>
+                  {/* 첨부파일 표시 */}
+                  {selectedDoc.files && selectedDoc.files.length > 0 && (
+                    <div className="mb_10">
+                      <b>첨부파일:</b>
+                      <div className="approval_files_list">
+                        {selectedDoc.files.map((file, idx) => (
+                          <div key={idx} className="approval_file_item">
+                            <span className="approval_file_name">{file.ori_filename}</span>
+                              <button
+                                onClick={() => handleFileDownload(file.file_idx, file.ori_filename)}
+                                style={{
+                                  color: "#433878",
+                                  cursor: "pointer",
+                                  marginLeft: 15
+                                }}>
+                                다운로드
+                              </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <b>결재 내역:</b>
                     {selectedDoc.history && selectedDoc.history.length > 0 ? (
