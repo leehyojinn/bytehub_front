@@ -89,7 +89,7 @@ export default function ApprovalSystem() {
       if (data.success) {
         setUserInfo(data.data);
         console.log('사용자 정보:', data.data);
-        console.log('사용자 레벨:', data.data.level_name);
+        console.log('사용자 레벨:', data.data.lv_idx);
       }
     } catch (error) {
       console.error('사용자 정보 조회 실패:', error);
