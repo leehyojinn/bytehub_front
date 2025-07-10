@@ -3,7 +3,7 @@
 import Footer from "@/app/Footer";
 import Header from "@/app/Header";
 import Link from "next/link";
-import React, {useEffect, useState} from "react";
+import React, {use, useEffect, useState} from "react";
 import axios from "axios";
 
 const POSTS_PER_PAGE = 15;
@@ -18,6 +18,7 @@ const formatDate = (dateStr) => {
   const dd = String(date.getDate()).padStart(2, "0");
   return `${mm}월 ${dd}일`;
 };
+
 
 export default function MeetingList() {
   const [page, setPage] = useState(1);
@@ -105,7 +106,6 @@ export default function MeetingList() {
                 <th className="small_text">제목</th>
                 <th className="small_text">작성자</th>
                 <th className="small_text">참가자</th>
-                <th className="small_text">요약</th>
                 <th className="small_text">등록일</th>
               </tr>
             </thead>
@@ -125,7 +125,6 @@ export default function MeetingList() {
                     </td>
                     <td>{post.user_id}</td>
                     <td>{post.attendees || '-'}</td>
-                    <td>{post.summary || '-'}</td>
                     <td>{formatDate(post.reg_date)}</td>
                   </tr>
                 ))

@@ -2,38 +2,32 @@
 
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
-import {useParams, useRouter} from "next/navigation";
-import React, {useEffect, useState} from "react";
+import { useParams, useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import axios from "axios";
 
-async function fakeAISummary(content) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      resolve("이 회의록은 AI가 자동으로 요약한 예시입니다. 주요 안건, 결정사항, 다음 일정 등이 간결하게 정리됩니다.");
-    }, 1400);
-  });
-}
-
+const GEMINI_API_KEY = process.env.NEXT_PUBLIC_API_KEY;
 const MIN_LENGTH = 50;
 const MAX_LENGTH = 5000;
 
 export default function MeetingDetail() {
-
   const params = useParams();
   const router = useRouter();
   const { slug } = params;
 
   const [post, setPost] = useState(null);
-  const [summary, setSummary] = useState("");
-  const [editing, setEditing] = useState(false);
+  const [summary, setSummary] = useState("");         // AI 요약 결과
+  const [editing, setEditing] = useState(false);      // 직접수정 모드
   const [loading, setLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [error, setError] = useState(null);
   const [allPosts, setAllPosts] = useState([]);
   const [loginId, setLoginId] = useState(null);
   const [isLogin, setIsLogin] = useState(false);
-  const [editValue, setEditValue] = useState("");
+  const [editValue, setEditValue] = useState("");     // 직접수정 값
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   // 날짜 포맷팅 함수
   const formatDate = (dateString) => {
@@ -55,9 +49,6 @@ export default function MeetingDetail() {
       return null;
     }
   };
-
-  // API 서버 주소
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   // 게시글 목록 가져오기 (이전/다음글용)
   useEffect(() => {
@@ -88,7 +79,6 @@ export default function MeetingDetail() {
       try {
         setLoading(true);
         const token = sessionStorage.getItem('token');
-
         if (!token) {
           setError('로그인이 필요합니다.');
           setLoading(false);
@@ -102,11 +92,8 @@ export default function MeetingDetail() {
           }
         });
 
-        console.log('API 응답:', response.data);
-
         if (response.data.success) {
           setPost(response.data);
-          // 프론트엔드에서 직접 토큰에서 사용자 ID 추출
           const currentUserId = getUserIdFromToken();
           setLoginId(currentUserId);
           setIsLogin(currentUserId !== null);
@@ -114,7 +101,6 @@ export default function MeetingDetail() {
           setError('게시글을 불러올 수 없습니다.');
         }
       } catch (err) {
-        console.error('게시글 상세 조회 오류:', err);
         if (err.response?.status === 500) {
           setError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
         } else if (err.response?.status === 404) {
@@ -132,6 +118,22 @@ export default function MeetingDetail() {
     }
   }, [slug, apiUrl]);
 
+  // AI 요약 불러오기 (최초 1회)
+  useEffect(() => {
+    const fetchAiSummary = async () => {
+      if (!slug) return;
+      try {
+        const response = await axios.post(`${apiUrl}/ai/list`, { post_idx: slug });
+        if (response.data.list && response.data.list.length > 0) {
+          setSummary(response.data.list[0].summary);
+        }
+      } catch (e) {
+        // 요약이 없어도 무시
+      }
+    };
+    fetchAiSummary();
+  }, [slug, apiUrl]);
+
   // 게시글 삭제 함수
   const handleDelete = async () => {
     if (!confirm('정말 삭제하시겠습니까?')) {
@@ -140,11 +142,6 @@ export default function MeetingDetail() {
 
     try {
       const token = localStorage.getItem('token');
-      console.log('삭제 요청 데이터:', {
-        post_idx: parseInt(slug),
-        token: token ? '토큰 존재' : '토큰 없음'
-      });
-
       const currentUserId = getUserIdFromToken();
       const response = await axios.delete(`${apiUrl}/post/delete`, {
         headers: {
@@ -157,8 +154,6 @@ export default function MeetingDetail() {
         }
       });
 
-      console.log('삭제 응답:', response.data);
-
       if (response.data.success) {
         alert('게시글이 삭제되었습니다.');
         router.push('/component/meeting');
@@ -166,8 +161,6 @@ export default function MeetingDetail() {
         alert('삭제에 실패했습니다: ' + (response.data.message || '알 수 없는 오류'));
       }
     } catch (err) {
-      console.error('게시글 삭제 오류:', err);
-      console.error('에러 응답:', err.response?.data);
       alert('삭제 중 오류가 발생했습니다: ' + (err.response?.data?.message || err.message));
     }
   };
@@ -177,102 +170,125 @@ export default function MeetingDetail() {
   const prevPost = currentIndex > 0 ? allPosts[currentIndex - 1] : null;
   const nextPost = currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : null;
 
+  // 본문 텍스트 정제
+  const contentText =
+    typeof post?.content === "string"
+      ? post.content.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()
+      : "";
+
+  const contentLength = contentText.length;
+  const canSummarize =
+    contentLength >= MIN_LENGTH && contentLength <= MAX_LENGTH;
+
+  // ------------------------------
+  // AI 요약 함수 (Gemini API → /ai/insert)
+  // ------------------------------
+  const fetchGeminiSummary = async () => {
+    setLoading(true);
+    setAiError("");
+    setSummary("");
+    setEditing(false);
+    try {
+      const prompt = `
+다음은 회의록 내용입니다. 
+회의 내용 상세정보만 짧게 요약해주세요.
+
+[회의록]
+${contentText}
+      `.trim();
+
+      // 1. Gemini 요약
+      const res = await axios.post(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + GEMINI_API_KEY,
+        {
+          contents: [
+            { parts: [{ text: prompt }] }
+          ]
+        },
+        { headers: { "Content-Type": "application/json" } }
+      );
+      const data = res.data;
+      const answer =
+        data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "요약에 실패했습니다.";
+
+      // 2. /ai/insert로 저장
+      await axios.post(`${apiUrl}/ai/insert`, {
+        post_idx: slug,
+        summary: answer
+      });
+
+      setSummary(answer);
+      setEditValue(answer);
+    } catch (e) {
+      setAiError("AI 요약 중 오류가 발생했습니다.");
+    }
+    setLoading(false);
+  };
+
+  // 직접 요약/수정
+  const handleEdit = () => {
+    setEditing(true);
+    setEditValue(summary || "");
+  };
+
+  // 직접수정 저장 → /ai/update
+  const handleEditSave = async () => {
+    setLoading(true);
+    setAiError("");
+    try {
+      await axios.post(`${apiUrl}/ai/update`, {
+        post_idx: slug,
+        summary: editValue
+      });
+      setSummary(editValue);
+      setEditing(false);
+    } catch (e) {
+      setAiError("AI 요약 수정 중 오류가 발생했습니다.");
+    }
+    setLoading(false);
+  };
+
   // 로딩 중
   if (loading) {
     return (
-        <div>
-          <Header/>
-          <div className="wrap padding_60_0">
-            <div className="board_card padding_40">
-              <div className="text_center">
-                <div className="small_text">게시글을 불러오는 중...</div>
-              </div>
+      <div>
+        <Header />
+        <div className="wrap padding_60_0">
+          <div className="board_card padding_40">
+            <div className="text_center">
+              <div className="small_text">게시글을 불러오는 중...</div>
             </div>
           </div>
-          <Footer/>
         </div>
+        <Footer />
+      </div>
     );
   }
 
   // 에러 발생
   if (error) {
     return (
-        <div>
-          <Header/>
-          <div className="wrap padding_60_0">
-            <div className="board_card padding_40">
-              <h2 className="card_title font_700">오류가 발생했습니다.</h2>
-              <div className="small_text mt_20">{error}</div>
-              <div className="width_100 mt_30 flex justify_end">
-                <div className="board_btn">
-                  <Link href="/component/board">목록으로</Link>
-                </div>
+      <div>
+        <Header />
+        <div className="wrap padding_60_0">
+          <div className="board_card padding_40">
+            <h2 className="card_title font_700">오류가 발생했습니다.</h2>
+            <div className="small_text mt_20">{error}</div>
+            <div className="width_100 mt_30 flex justify_end">
+              <div className="board_btn">
+                <Link href="/component/board">목록으로</Link>
               </div>
             </div>
           </div>
-          <Footer/>
         </div>
+        <Footer />
+      </div>
     );
   }
 
   // 게시글이 없는 경우
   if (!post || !post.subject) {
-    return (
-        <div>
-          <Header/>
-          <div className="wrap padding_60_0">
-            <div className="board_card padding_40">
-              <h2 className="card_title font_700">게시글을 찾을 수 없습니다.</h2>
-              <div className="small_text mt_20">존재하지 않는 게시글이거나, 삭제된 게시글입니다.</div>
-              <div className="width_100 mt_30 flex justify_end">
-                <div className="board_btn">
-                  <Link href="/component/board">목록으로</Link>
-                </div>
-              </div>
-            </div>
-          </div>
-          <Footer/>
-        </div>
-    );
-  }
-
-
-  const contentText =
-    typeof post.content === "string"
-      ? post.content.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()
-      : "";
-
-  const contentLength = contentText.length;
-
-  const canSummarize =
-    contentLength >= MIN_LENGTH && contentLength <= MAX_LENGTH;
-
-  const handleAISummary = async () => {
-    setLoading(true);
-    setAiError("");
-    setSummary("");
-    setEditing(false);
-    try {
-      const result = await fakeAISummary(contentText);
-      setSummary(result);
-      setEditValue(result);
-    } catch (e) {
-      setAiError("AI 요약에 실패했습니다. 다시 시도해 주세요.");
-    }
-    setLoading(false);
-  };
-
-  const handleEdit = () => {
-    setEditing(true);
-    setEditValue(summary || "");
-  };
-
-  const handleEditSave = () => {
-    setSummary(editValue);
-    setEditing(false);
-  };
-
-  if (!post) {
     return (
       <div>
         <Header />
@@ -291,34 +307,25 @@ export default function MeetingDetail() {
     <div>
       <Header />
       <div className="wrap padding_60_0">
-        <div className="board_card padding_40" style={{position: 'relative'}}>
-
-          {/* 수정/삭제 버튼 (작성자인 경우만 표시) - 오른쪽 상단 구석 */}
-          {(() => {
-            console.log('버튼 표시 조건 확인:', {
-              isLogin,
-              loginId,
-              postUserId: post.user_id,
-              shouldShow: isLogin && loginId === post.user_id
-            });
-            return isLogin && loginId === post.user_id;
-          })() && (
-              <div className="flex gap_10" style={{
-                position: 'absolute',
-                top: '20px',
-                right: '20px',
-                zIndex: 10
-              }}>
-                <div className="board_btn" style={{background: '#28a745', padding: '8px 16px'}}>
-                  <Link href={`/component/meeting/meeting_edit/${post.post_idx}`}>수정</Link>
-                </div>
-                <div className="board_btn" style={{background: '#dc3545', padding: '8px 16px'}}>
-                  <button onClick={handleDelete}>삭제</button>
-                </div>
+        <div className="board_card padding_40" style={{ position: 'relative' }}>
+          {/* 수정/삭제 버튼 (작성자인 경우만 표시) */}
+          {isLogin && loginId === post.user_id && (
+            <div className="flex gap_10" style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              zIndex: 10
+            }}>
+              <div className="board_btn" style={{ background: '#28a745', padding: '8px 16px' }}>
+                <Link href={`/component/meeting/meeting_edit/${post.post_idx}`}>수정</Link>
               </div>
+              <div className="board_btn" style={{ background: '#dc3545', padding: '8px 16px' }}>
+                <button onClick={handleDelete}>삭제</button>
+              </div>
+            </div>
           )}
 
-          {/* 제목 - 가운데 정렬 */}
+          {/* 제목 */}
           <h2 className="card_title font_700 text_center">{post.subject}</h2>
 
           <div className="flex gap_20 align_center mt_10 small_text detail_meta">
@@ -353,43 +360,28 @@ export default function MeetingDetail() {
             <div className="ai_summary_guide su_small_text mb_8">
               {`본문 글자 수: ${contentLength} / 최소 ${MIN_LENGTH}자, 최대 ${MAX_LENGTH}자`}
             </div>
-            {!canSummarize && (
-              <div className="ai_summary_error mb_10">
-                {contentLength < MIN_LENGTH
-                  ? `본문이 너무 짧아 요약할 수 없습니다. (${MIN_LENGTH}자 이상)`
-                  : `본문이 너무 깁니다. (${MAX_LENGTH}자 이하)`}
-              </div>
-            )}
-            <button
-              className="ai_summary_btn"
-              onClick={handleAISummary}
-              disabled={!canSummarize || loading}
-            >
-              {loading ? "AI 요약 중..." : "AI로 요약하기"}
-            </button>
-            {aiError && (
-              <div className="ai_summary_error mt_10">
-                {aiError}
+            {!summary && (
+              <>
+                {!canSummarize && (
+                  <div className="ai_summary_error mb_10">
+                    {contentLength < MIN_LENGTH
+                      ? `본문이 너무 짧아 요약할 수 없습니다. (${MIN_LENGTH}자 이상)`
+                      : `본문이 너무 깁니다. (${MAX_LENGTH}자 이하)`}
+                  </div>
+                )}
                 <button
-                  className="ai_summary_retry_btn"
-                  onClick={handleAISummary}
-                  disabled={loading}
-                  style={{
-                    marginLeft: 10,
-                    fontSize: "1rem",
-                    padding: "3px 14px",
-                    borderRadius: "5px",
-                    border: "none",
-                    background: "var(--primary-color2)",
-                    color: "#fff",
-                    cursor: "pointer",
-                  }}
+                  className="ai_summary_btn"
+                  onClick={fetchGeminiSummary}
+                  disabled={!canSummarize || loading}
                 >
-                  재시도
+                  {loading ? "AI 요약 중..." : "AI로 요약하기"}
                 </button>
-              </div>
+                {aiError && (
+                  <div className="ai_summary_error mt_10">{aiError}</div>
+                )}
+              </>
             )}
-            {(summary || editing) && (
+            {summary && (
               <div className="ai_summary_result mt_20">
                 <div className="ai_summary_label font_600 mb_6">
                   {editing ? "직접 요약/수정" : "AI 요약 결과"}
@@ -415,14 +407,9 @@ export default function MeetingDetail() {
                     <button className="ai_summary_btn mt_10" onClick={handleEdit}>직접 요약/수정</button>
                   </div>
                 )}
-              </div>
-            )}
-            {/* AI 요약 결과가 없을 때 직접 입력 */}
-            {!summary && !editing && canSummarize && !loading && (
-              <div className="mt_20">
-                <button className="ai_summary_btn" onClick={() => { setEditing(true); setEditValue(""); }}>
-                  직접 요약 입력
-                </button>
+                {aiError && (
+                  <div className="ai_summary_error mt_10">{aiError}</div>
+                )}
               </div>
             )}
           </div>
@@ -433,7 +420,7 @@ export default function MeetingDetail() {
               <div className="board_nav_item">
                 <span className="board_nav_label su_small_text">이전글</span>
                 <Link href={`/component/meeting/meeting_detail/${prevPost.post_idx}`}
-                      className="board_nav_link small_text">
+                  className="board_nav_link small_text">
                   {prevPost.subject}
                 </Link>
               </div>
@@ -442,7 +429,7 @@ export default function MeetingDetail() {
               <div className="board_nav_item">
                 <span className="board_nav_label su_small_text">다음글</span>
                 <Link href={`/component/meeting/meeting_detail/${nextPost.post_idx}`}
-                      className="board_nav_link small_text">
+                  className="board_nav_link small_text">
                   {nextPost.subject}
                 </Link>
               </div>
