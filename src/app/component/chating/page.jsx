@@ -5,53 +5,19 @@ import Footer from "@/app/Footer";
 import React, { useState, useRef, useEffect } from "react";
 import AlertModal from "../alertmodal/page";
 import { useAlertModalStore } from "@/app/zustand/store";
+import { Client } from '@stomp/stompjs';
+import SockJS from "sockjs-client";
+import axios from "axios";
 
-const allMembers = [
-  { id: "hong", name: "홍길동" },
-  { id: "kim", name: "김철수" },
-  { id: "lee", name: "이영희" },
-  { id: "park", name: "박민수" },
-];
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const wsUrl = process.env.NEXT_PUBLIC_WS_URL; // ex) "http://localhost:8080/ws-chat"
 
-const currentUser = "홍길동";
-
-const chatRoomsInit = [
-  {
-    id: 1,
-    name: "개발팀 단체방",
-    avatar: "/profile.png",
-    lastMsg: "오늘 회의자료 공유드려요!",
-    lastTime: "2025-07-01 14:12",
-    unread: 2,
-    archived: false,
-    lastActive: "2025-07-01 14:12",
-    members: ["홍길동", "김철수", "이영희"],
-    messages: [
-      { id: 1, from: "홍길동", text: "오늘 회의자료 공유드려요!", time: "2025-07-01 14:12", me: true, files: [] },
-      { id: 2, from: "김철수", text: "확인했습니다!", time: "2025-07-01 14:13", me: false, files: [] },
-      { id: 3, from: "이영희", text: "감사합니다!", time: "2025-07-01 14:14", me: false, files: [] },
-    ],
-    files: [
-      { id: 1, name: "회의자료.pdf", url: "/dummy.pdf", size: 1024 * 1024, uploadedAt: "2025-07-01 14:12", expireAt: "2025-07-08" }
-    ]
-  },
-  {
-    id: 2,
-    name: "디자인팀",
-    avatar: "/profile.png",
-    lastMsg: "시안 수정본 확인 부탁드려요.",
-    lastTime: "2025-07-01 11:30",
-    unread: 0,
-    archived: false,
-    lastActive: "2025-07-01 11:30",
-    members: ["홍길동", "박민수"],
-    messages: [
-      { id: 1, from: "박민수", text: "시안 수정본 확인 부탁드려요.", time: "2025-07-01 11:30", me: false, files: [] },
-      { id: 2, from: "홍길동", text: "네 바로 확인할게요!", time: "2025-07-01 11:32", me: true, files: [] },
-    ],
-    files: []
-  },
-];
+function getCurrentUser() {
+  if (typeof window !== "undefined") {
+    return sessionStorage.getItem("userId") || "";
+  }
+  return "";
+}
 
 function formatTime(str) {
   if (!str) return "";
@@ -60,8 +26,8 @@ function formatTime(str) {
 }
 
 export default function ChatPage() {
-  const [rooms, setRooms] = useState(chatRoomsInit);
-  const [selectedRoomId, setSelectedRoomId] = useState(chatRoomsInit[0].id);
+  const [rooms, setRooms] = useState([]);
+  const [selectedRoomId, setSelectedRoomId] = useState(null);
   const [input, setInput] = useState("");
   const [fileInput, setFileInput] = useState(null);
   const [search, setSearch] = useState("");
@@ -69,12 +35,150 @@ export default function ChatPage() {
   const [createModal, setCreateModal] = useState(false);
   const [editMembersModal, setEditMembersModal] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
-  const [newRoomMembers, setNewRoomMembers] = useState([currentUser]);
+  const [newRoomMembers, setNewRoomMembers] = useState([getCurrentUser()]);
   const [editMembers, setEditMembers] = useState([]);
   const [searchResultIds, setSearchResultIds] = useState([]);
+  const [memberList, setMemberList] = useState([]);
+  const [memberModalOpen, setMemberModalOpen] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [selectedMembers, setSelectedMembers] = useState([getCurrentUser()]);
   const msgRefs = useRef({});
   const alertModal = useAlertModalStore();
   const chatEndRef = useRef(null);
+
+  // WebSocket
+  const stompClientRef = useRef(null);
+  const subscriptionRef = useRef(null);
+  const [connected, setConnected] = useState(false);
+
+  // 멤버리스트 불러오기 (user_id, name, email)
+  async function fetchMemberList() {
+    try {
+      const { data } = await axios.post(`${apiUrl}/member/list`);
+      setMemberList(data.list || []);
+    } catch (e) {
+      setMemberList([]);
+    }
+  }
+
+  // 채팅방 목록 불러오기
+  async function fetchRooms() {
+    try {
+      const res = await axios.get(`${apiUrl}/chat/rooms`);
+      setRooms(res.data.map(room => ({
+        ...room,
+        id: room.chat_idx,
+        name: room.chat_name,
+        avatar: room.avatar,
+        lastMsg: room.last_msg,
+        lastTime: room.last_time,
+        unread: room.unread ?? 0,
+        archived: room.archived,
+        lastActive: room.last_active,
+        members: room.members, // user_id 배열
+        messages: (room.messages || []).map(msg => ({
+          id: msg.msg_idx,
+          from: msg.user_id,
+          text: msg.content,
+          time: msg.reg_date,
+          me: msg.user_id === getCurrentUser(),
+          files: (msg.files || []).map(f => ({
+            id: f.file_idx,
+            name: f.name,
+            url: f.url,
+            size: f.size,
+            uploadedAt: f.uploaded_at,
+            expireAt: f.expire_at
+          }))
+        })),
+        files: (room.files || []).map(f => ({
+          id: f.file_idx,
+          name: f.name,
+          url: f.url,
+          size: f.size,
+          uploadedAt: f.uploaded_at,
+          expireAt: f.expire_at
+        }))
+      })));
+      if (res.data.length > 0) setSelectedRoomId(res.data[0].chat_idx);
+    } catch (e) {
+      setRooms([]);
+    }
+  }
+
+  useEffect(() => {
+    fetchMemberList();
+    fetchRooms();
+  }, []);
+
+  // WebSocket 연결
+  useEffect(() => {
+    const client = new Client({
+      webSocketFactory: () => new SockJS(wsUrl),
+      reconnectDelay: 5000,
+      debug: function (str) {
+        // console.log(str);
+      },
+      onConnect: () => {
+        setConnected(true);
+      },
+      onDisconnect: () => {
+        setConnected(false);
+      }
+    });
+    client.activate();
+    stompClientRef.current = client;
+    return () => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+      }
+      client.deactivate();
+    };
+  }, []);
+
+  // 채팅방 입장시 WebSocket 구독
+  useEffect(() => {
+    if (!connected || !selectedRoomId || !stompClientRef.current) return;
+    if (subscriptionRef.current) {
+      subscriptionRef.current.unsubscribe();
+    }
+    subscriptionRef.current = stompClientRef.current.subscribe(
+      `/topic/chat/${selectedRoomId}`,
+      (message) => {
+        const msg = JSON.parse(message.body);
+        setRooms(prev =>
+          prev.map(r =>
+            r.id === selectedRoomId
+              ? {
+                  ...r,
+                  messages: [...r.messages, {
+                    id: msg.msg_idx,
+                    from: msg.user_id,
+                    text: msg.content,
+                    time: msg.reg_date,
+                    me: msg.user_id === getCurrentUser(),
+                    files: msg.files ? msg.files.map(f => ({
+                      id: f.file_idx,
+                      name: f.name,
+                      url: f.url,
+                      size: f.size,
+                      uploadedAt: f.uploaded_at,
+                      expireAt: f.expire_at
+                    })) : []
+                  }]
+                }
+              : r
+          )
+        );
+      }
+    );
+    return () => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+      }
+    };
+    // eslint-disable-next-line
+  }, [connected, selectedRoomId]);
 
   const selectedRoom = rooms.find(r => r.id === selectedRoomId);
 
@@ -86,23 +190,54 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (searchResultIds.length > 0) {
-      // 첫 번째 결과로 스크롤
       const firstId = searchResultIds[0];
       if (msgRefs.current[firstId]) {
         msgRefs.current[firstId].scrollIntoView({ behavior: "smooth", block: "center" });
       }
-      // 2초 후 하이라이트 해제
       const timer = setTimeout(() => setSearchResultIds([]), 2000);
       return () => clearTimeout(timer);
     }
   }, [searchResultIds]);
 
   const isOldRoom = (room) => {
-    const last = new Date(room.lastActive.replace(/-/g, '/'));
+    const last = new Date(room?.lastActive?.replace(/-/g, '/'));
     const now = new Date();
     const diff = (now - last) / (1000 * 60 * 60 * 24);
     return diff > 10;
   };
+
+  // 멤버 초대 모달 관련
+  const openMemberModal = () => {
+    setSelectedMembers([...newRoomMembers]);
+    setSearchKeyword("");
+    setMemberModalOpen(true);
+  };
+  const closeMemberModal = () => setMemberModalOpen(false);
+
+  const handleSearchMember = (e) => {
+    setSearchKeyword(e.target.value);
+  };
+  const handleSelectMember = (user_id) => {
+    setSelectedMembers(prev =>
+      prev.includes(user_id)
+        ? prev.filter(n => n !== user_id)
+        : [...prev, user_id]
+    );
+  };
+  const handleMemberConfirm = () => {
+    if (selectedMembers.length === 0) {
+      alertModal.openModal({ svg: "❗", msg1: "멤버 선택", msg2: "최소 1명 이상 선택하세요.", showCancel: false });
+      return;
+    }
+    setNewRoomMembers(selectedMembers);
+    setMemberModalOpen(false);
+  };
+
+  const filteredMembers = memberList.filter(m =>
+    (m.name && m.name.includes(searchKeyword)) ||
+    (m.user_id && m.user_id.includes(searchKeyword)) ||
+    (m.email && m.email.includes(searchKeyword))
+  );
 
   // 메시지 전송 (텍스트/파일)
   const handleSend = (e) => {
@@ -113,154 +248,62 @@ export default function ChatPage() {
       return;
     }
     const now = new Date();
-    const msgId = Date.now();
-    const fileObj = fileInput
-      ? [{
-          id: msgId,
-          name: fileInput.name,
-          url: URL.createObjectURL(fileInput),
-          size: fileInput.size,
-          uploadedAt: now.toISOString().slice(0, 16).replace("T", " "),
-          expireAt: formatTime(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16).replace("T", " "))
-        }]
-      : [];
-    setRooms(prev =>
-      prev.map(r =>
-        r.id === selectedRoomId
-          ? {
-              ...r,
-              messages: [
-                ...r.messages,
-                {
-                  id: msgId,
-                  from: currentUser,
-                  text: input,
-                  time: now.toISOString().slice(0, 16).replace("T", " "),
-                  me: true,
-                  files: fileObj
-                }
-              ],
-              files: fileObj.length > 0 ? [...r.files, ...fileObj] : r.files,
-              lastMsg: input || (fileObj[0]?.name ? `파일: ${fileObj[0].name}` : ""),
-              lastTime: now.toISOString().slice(0, 16).replace("T", " "),
-              lastActive: now.toISOString().slice(0, 16).replace("T", " "),
-              unread: 0
-            }
-          : r
-      )
-    );
+    if (stompClientRef.current && connected) {
+      const msg = {
+        chat_idx: selectedRoomId,
+        user_id: getCurrentUser(),
+        content: input,
+        msg_type: fileInput ? "file" : "text",
+        is_read: false,
+        reg_date: now.toISOString().slice(0, 16).replace("T", " "),
+        files: [] // 파일 첨부는 별도 처리 필요
+      };
+      stompClientRef.current.publish({
+        destination: `/app/chat/${selectedRoomId}`,
+        body: JSON.stringify(msg)
+      });
+    }
     setInput("");
     setFileInput(null);
   };
 
-  // 파일만 업로드
-  const handleFileOnlyUpload = (e) => {
+  // 파일만 업로드 (REST, 파일 메타만)
+  const handleFileOnlyUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
       alertModal.openModal({ svg: "❗", msg1: "파일 용량 초과", msg2: "5MB 이하 파일만 업로드 가능합니다.", showCancel: false });
       return;
     }
-    const now = new Date();
-    const msgId = Date.now();
-    const fileObj = {
-      id: msgId,
-      name: file.name,
-      url: URL.createObjectURL(file),
-      size: file.size,
-      uploadedAt: now.toISOString().slice(0, 16).replace("T", " "),
-      expireAt: formatTime(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16).replace("T", " "))
-    };
-    setRooms(prev =>
-      prev.map(r =>
-        r.id === selectedRoomId
-          ? {
-              ...r,
-              messages: [
-                ...r.messages,
-                {
-                  id: msgId,
-                  from: currentUser,
-                  text: "",
-                  time: now.toISOString().slice(0, 16).replace("T", " "),
-                  me: true,
-                  files: [fileObj]
-                }
-              ],
-              files: [...r.files, fileObj],
-              lastMsg: `파일: ${file.name}`,
-              lastTime: now.toISOString().slice(0, 16).replace("T", " "),
-              lastActive: now.toISOString().slice(0, 16).replace("T", " "),
-              unread: 0
-            }
-          : r
-      )
-    );
-  };
-
-  // 채팅방 아카이브
-  const handleArchiveRoom = (roomId) => {
-    setRooms(prev =>
-      prev.map(r =>
-        r.id === roomId ? { ...r, archived: true } : r
-      )
-    );
-    alertModal.openModal({ svg: "📦", msg1: "채팅방 보관", msg2: "채팅방이 보관 처리되었습니다.", showCancel: false });
-  };
-
-  // 채팅 검색
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (!search.trim()) return;
-    const matches = selectedRoom.messages
-      .filter(m => m.text && m.text.includes(search))
-      .map(m => m.id);
-    if (matches.length > 0) {
-      setSearchResultIds(matches);
-    } else {
-      alertModal.openModal({ svg: "🔍", msg1: "검색 결과 없음", msg2: "일치하는 메시지가 없습니다.", showCancel: false });
-    }
-  };
-
-  // 파일 다운로드 안내
-  const handleDownload = (file) => {
-    alertModal.openModal({
-      svg: "⬇️",
-      msg1: "파일 다운로드",
-      msg2: `파일명: ${file.name}\n만료일: ${file.expireAt}`,
-      showCancel: false,
-      onConfirm: () => window.open(file.url, "_blank")
-    });
+    alertModal.openModal({ svg: "ℹ️", msg1: "파일 업로드", msg2: "실제 파일 업로드는 별도 구현 필요", showCancel: false });
   };
 
   // 채팅방 생성
-  const handleCreateRoom = (e) => {
+  const handleCreateRoom = async (e) => {
     e.preventDefault();
     if (!newRoomName.trim() || newRoomMembers.length === 0) {
       alertModal.openModal({ svg: "❗", msg1: "입력 오류", msg2: "채팅방 이름과 멤버를 입력하세요.", showCancel: false });
       return;
     }
-    const newId = Date.now();
-    setRooms(prev => [
-      ...prev,
-      {
-        id: newId,
+    try {
+      // 서버에 채팅방 생성 요청
+      const payload = {
         name: newRoomName,
         avatar: "/profile.png",
-        lastMsg: "",
-        lastTime: "",
-        unread: 0,
-        archived: false,
-        lastActive: "",
-        members: newRoomMembers,
-        messages: [],
-        files: []
-      }
-    ]);
-    setSelectedRoomId(newId);
-    setCreateModal(false);
-    setNewRoomName("");
-    setNewRoomMembers([currentUser]);
+        members: newRoomMembers
+      };
+      const res = await axios.post(`${apiUrl}/chat/room`, payload);
+      const chatIdx = res.data.id; // 서버가 반환한 chat_idx 사용
+
+      // 방 목록 새로고침
+      await fetchRooms();
+      setSelectedRoomId(chatIdx); // 서버가 준 chat_idx로 선택
+      setCreateModal(false);
+      setNewRoomName("");
+      setNewRoomMembers([getCurrentUser()]);
+    } catch (error) {
+      alertModal.openModal({ svg: "❗", msg1: "생성 오류", msg2: "채팅방 생성 중 오류가 발생했습니다.", showCancel: false });
+    }
   };
 
   // 채팅방 멤버 추가/수정
@@ -279,7 +322,6 @@ export default function ChatPage() {
     ? <div className="chat_oldroom_notice">이 채팅방은 10일 이상 사용하지 않아 자동 삭제 대상입니다.</div>
     : null;
 
-  // 보관된 채널도 리스트에 항상 노출
   const visibleRooms = rooms;
 
   return (
@@ -323,6 +365,7 @@ export default function ChatPage() {
           {/* 오른쪽: 채팅창 */}
           <div className="chat_main_box">
             {/* 채팅 헤더 */}
+            {selectedRoom && (
             <div className="chat_main_head">
                 <div className="flex gap_10 align_center">
                     <img src={selectedRoom.avatar} alt="방아바타" className="chat_main_avatar" />
@@ -335,13 +378,14 @@ export default function ChatPage() {
                     <button className="chat_main_menu_btn" onClick={() => setEditMembersModal(true)}>
                         멤버관리
                     </button>
-                    <button className="chat_main_menu_btn" onClick={() => handleArchiveRoom(selectedRoom.id)}>
+                    <button className="chat_main_menu_btn" onClick={() => {/* 아카이브 처리 구현 */}}>
                         보관
                     </button>
                 </div>
             </div>
+            )}
             {/* 채팅 검색 */}
-            <form className="chat_search_row" onSubmit={handleSearch}>
+            <form className="chat_search_row" onSubmit={e => { e.preventDefault(); }}>
               <input
                 className="chat_search_input"
                 placeholder="채팅 메시지 검색"
@@ -353,7 +397,7 @@ export default function ChatPage() {
             {/* 채팅 메시지 리스트 */}
             <div className="chat_main_messages">
               {oldRoomNotice}
-              {selectedRoom.messages.map(msg => (
+              {selectedRoom && selectedRoom.messages.map(msg => (
                 <div
                 key={msg.id}
                 className={`chat_msg_row${msg.me ? " right" : " left"}${searchResultIds.includes(msg.id) ? " search_highlight" : ""}`}
@@ -373,7 +417,7 @@ export default function ChatPage() {
                             <span className="chat_file_name">{file.name}</span>
                             <button
                               className="chat_file_download_btn"
-                              onClick={() => handleDownload(file)}
+                              onClick={() => {/* 파일 다운로드 구현 */}}
                               type="button"
                             >
                               다운로드
@@ -430,6 +474,7 @@ export default function ChatPage() {
               </div>
             )}
             {/* 채팅방 파일 리스트 */}
+            {selectedRoom && (
             <div className="chat_filelist_box">
               <div className="chat_filelist_head">채팅방 파일함</div>
               {selectedRoom.files.length === 0 ? (
@@ -441,13 +486,14 @@ export default function ChatPage() {
                     <span className="chat_filelist_expire">({file.expireAt}까지)</span>
                     <button
                       className="chat_filelist_download"
-                      onClick={() => handleDownload(file)}
+                      onClick={() => {/* 파일 다운로드 구현 */}}
                       type="button"
                     >다운로드</button>
                   </div>
                 ))
               )}
             </div>
+            )}
           </div>
         </div>
       </div>
@@ -469,23 +515,18 @@ export default function ChatPage() {
               </div>
               <div className="board_write_row">
                 <label className="board_write_label">멤버 선택</label>
-                <div className="member_checkbox_group">
-                  {allMembers.map(m => (
-                    <label key={m.id} className="member_checkbox_label">
-                      <input
-                        type="checkbox"
-                        checked={newRoomMembers.includes(m.name)}
-                        onChange={() => {
-                          setNewRoomMembers(prev =>
-                            prev.includes(m.name)
-                              ? prev.filter(n => n !== m.name)
-                              : [...prev, m.name]
-                          );
-                        }}
-                      />
-                      {m.name}
-                    </label>
-                  ))}
+                <div className="member_checkbox_group" style={{display:"flex", flexWrap:"wrap", gap:8}}>
+                  {newRoomMembers.map(user_id => {
+                    const m = memberList.find(m => m.user_id === user_id);
+                    return m ? (
+                      <span key={user_id} style={{ background: "#e2f0ff", borderRadius: 4, padding: "2px 8px", marginRight: 4 }}>
+                        {m.name} ({m.user_id})
+                      </span>
+                    ) : null;
+                  })}
+                  <button type="button" className="board_btn" style={{marginLeft:8}} onClick={openMemberModal}>
+                    + 멤버초대
+                  </button>
                 </div>
               </div>
               <div className="modal_buttons">
@@ -493,6 +534,64 @@ export default function ChatPage() {
                 <button type="button" className="board_btn board_btn_cancel" onClick={() => setCreateModal(false)}>취소</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* 멤버 초대 모달 */}
+      {memberModalOpen && (
+        <div className="modal_overlay" style={{
+          position: "fixed", left: 0, top: 0, width: "100vw", height: "100vh",
+          background: "rgba(0,0,0,0.35)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center"
+        }}>
+          <div className="modal_content" style={{
+            background: "#fff", borderRadius: "12px", padding: "32px 24px", minWidth: 420, maxHeight: "70vh", overflowY: "auto"
+          }}>
+            <div className="modal_header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div className="font_700" style={{ fontSize: "1.2rem" }}>참석자 선택</div>
+              <button onClick={closeMemberModal} style={{ fontSize: "1.3rem", background: "none", border: "none", cursor: "pointer" }}>×</button>
+            </div>
+            <div className="modal_body" style={{ marginTop: 16 }}>
+              <input
+                type="text"
+                value={searchKeyword}
+                onChange={handleSearchMember}
+                placeholder="이름, 아이디, 이메일 검색"
+                style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #ddd", marginBottom: 14 }}
+              />
+              <div style={{ maxHeight: 240, overflowY: "auto", border: "1px solid #eee", borderRadius: 6 }}>
+                {filteredMembers.length === 0 && (
+                  <div style={{ padding: "16px", color: "#888" }}>검색 결과가 없습니다.</div>
+                )}
+                {filteredMembers.map(member => (
+                  <div
+                    key={member.user_id}
+                    onClick={() => handleSelectMember(member.user_id)}
+                    style={{
+                      padding: "8px 12px",
+                      cursor: "pointer",
+                      background: selectedMembers.includes(member.user_id) ? "#e2f0ff" : "#fff",
+                      borderBottom: "1px solid #f0f0f0"
+                    }}
+                  >
+                    <span style={{ fontWeight: 500 }}>{member.name}</span>
+                    <span style={{ color: "#888", marginLeft: 8 }}>{member.user_id}</span>
+                    <span style={{ color: "#bbb", marginLeft: 8 }}>{member.email}</span>
+                    {selectedMembers.includes(member.user_id) && (
+                      <span style={{marginLeft:"20px"}}>✔</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 18, textAlign: "right" }}>
+                <button
+                  className="board_btn"
+                  onClick={handleMemberConfirm}
+                  type="button"
+                >
+                  선택완료
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -505,25 +604,25 @@ export default function ChatPage() {
               <div className="board_write_row">
                 <label className="board_write_label">멤버 선택</label>
                 <div className="member_checkbox_group">
-                  {allMembers.map(m => (
-                    <label key={m.id} className="member_checkbox_label">
+                  {memberList.map(m => (
+                    <label key={m.user_id} className="member_checkbox_label">
                       <input
                         type="checkbox"
                         checked={
                           editMembers.length > 0
-                            ? editMembers.includes(m.name)
-                            : selectedRoom.members.includes(m.name)
+                            ? editMembers.includes(m.user_id)
+                            : selectedRoom.members.includes(m.user_id)
                         }
                         onChange={() => {
                           setEditMembers(prev => {
                             const base = prev.length > 0 ? prev : selectedRoom.members;
-                            return base.includes(m.name)
-                              ? base.filter(n => n !== m.name)
-                              : [...base, m.name];
+                            return base.includes(m.user_id)
+                              ? base.filter(n => n !== m.user_id)
+                              : [...base, m.user_id];
                           });
                         }}
                       />
-                      {m.name}
+                      {m.name} ({m.user_id})
                     </label>
                   ))}
                 </div>
