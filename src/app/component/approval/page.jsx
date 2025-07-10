@@ -5,12 +5,11 @@ import Footer from "@/app/Footer";
 import React, { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 
-const ranks = ["이사", "부장", "차장", "과장", "대리", "주임", "사원"];
+const ranks = ["사장 ","이사", "팀장", "과장", "대리", "사원"];
 const approvers = [
-  { id2: 1, name: "홍길동", rank: "이사" },
-  { id2: 2, name: "김철수", rank: "부장" },
-  { id2: 3, name: "이영희", rank: "대리" },
-  { id2: 4, name: "박민수", rank: "과장" },
+  { id2: 1, name: "홍길동", rank: "사장" },
+  { id2: 2, name: "김철수", rank: "이사" },
+  { id2: 3, name: "이영희", rank: "팀장" }
 ];
 // 상단에서 공통 상수 정의
 const pageSize = 10;
@@ -466,9 +465,10 @@ export default function ApprovalSystem() {
                 </div>
 
                 <div className="approval_approvers_list">
-                  <span className="font_600 small_text">결재권자 : </span>
-                  {sortedApprovers.map(a => (
-                    <span key={a.id2} className="approval_approver_chip">{a.name} <span className="approval_rank">{a.rank}</span></span>
+                   {approvers && approvers.length > 0 && approvers.map((a, idx) => (
+                    <span key={idx} className="approval_approver_chip">
+                      {a.rank}
+                    </span>
                   ))}
                 </div>
                 <button type="submit" className="approval_btn">기안 등록</button>
@@ -838,7 +838,7 @@ export default function ApprovalSystem() {
                     className="approval_btn approval_btn_reject"
                     onClick={() => handleApproval(selectedDoc.appr_his_idx, '반려')}
                   >
-                    반려
+                    결재 반려
                   </button>
                   <button
                     className="approval_btn approval_btn_secondary"

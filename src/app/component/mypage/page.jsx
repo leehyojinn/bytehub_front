@@ -50,7 +50,7 @@ export default function MyPage() {
         name: "",
         email: "",
         dept_name: "",
-        level_name: "",
+        lv_name: "",
         hire_date: ""
     });
 
@@ -111,12 +111,13 @@ export default function MyPage() {
 
             if (data.success) {
                 const userInfo = data.data;
+                console.log('서버 사용자 정보:', userInfo);
                 setMemberData({
                     id: userInfo.id || userInfo.user_id || "",
                     name: userInfo.name,
                     email: userInfo.email,
-                    dept_name: userInfo.dept_name || '미지정',
-                    level_name: userInfo.level_name || '미지정',
+                    dept_name: userInfo.dept_name || userInfo.department || userInfo.dept || '미지정',
+                    lv_name: userInfo.lv_name || '미지정',
                     hire_date: userInfo.hire_date
                 });
 
@@ -339,7 +340,7 @@ export default function MyPage() {
                                 />
                             </div>
                             <div className="mypage_profile_name">{memberData.name}</div>
-                            <div className="mypage_profile_position">{memberData.dept_name} / {memberData.level_name}</div>
+                            <div className="mypage_profile_position">{memberData.dept_name} / {memberData.lv_name}</div>
                         </div>
                         <div className="mypage_info_col">
                             <div className="mypage_section_v2">
@@ -359,7 +360,7 @@ export default function MyPage() {
                                     </div>
                                     <div>
                                         <span className="mypage_info_label">직급</span>
-                                        <span className="mypage_info_value">{memberData.level_name}</span>
+                                        <span className="mypage_info_value">{memberData.lv_name}</span>
                                     </div>
                                     <div>
                                         <span className="mypage_info_label">가입일</span>
