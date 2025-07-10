@@ -12,6 +12,9 @@ const approvers = [
   { id2: 3, name: "이영희", rank: "대리" },
   { id2: 4, name: "박민수", rank: "과장" },
 ];
+// 상단에서 공통 상수 정의
+const pageSize = 10;
+const ITEMS_PER_PAGE = 10; // 페이지당 표시할 항목 수
 
 function rankSortKey(approver) {
   const idx = ranks.indexOf(approver.rank);
@@ -30,15 +33,9 @@ function Modal({ isOpen, onClose, children }) {
   );
 }
 
-const TAB_LABELS = [
-  "기안작성",
-  "내 결재",
-  "결재 처리 리스트",
-  "결재 목록 리스트"
-];
-
 export default function ApprovalSystem() {
   let userId = "";
+  let userLevel = "";
   if (typeof window !== "undefined") {
     const token = sessionStorage.getItem("token");
     if (token) {
@@ -59,6 +56,12 @@ export default function ApprovalSystem() {
   const [toApproveList, setToApproveList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [allApprovals, setAllApprovals] = useState([]); // 전체 결재 목록용
+  const [userInfo, setUserInfo] = useState(null); // 사용자 정보 상태 추가
+
+  // 페이지네이션 상태 추가
+  const [myPage, setMyPage] = useState(1);
+  const [toApprovePage, setToApprovePage] = useState(1);
+  const [allPage, setAllPage] = useState(1);
 
   // 기안 폼 상태
   const [approvalType, setApprovalType] = useState("");
@@ -68,6 +71,60 @@ export default function ApprovalSystem() {
   const [content, setContent] = useState("");
   const [files, setFiles] = useState([]); // 파일 첨부 상태
 
+  // 사용자 정보 가져오기
+  const fetchUserInfo = async () => {
+    try {
+      const token = sessionStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch('http://localhost/mypage/info', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setUserInfo(data.data);
+        console.log('사용자 정보:', data.data);
+        console.log('사용자 레벨:', data.data.level_name);
+      }
+    } catch (error) {
+      console.error('사용자 정보 조회 실패:', error);
+    }
+  };
+
+  // 레벨별 권한 체크 함수
+  const canViewApprovalList = () => {
+    if (!userInfo || !userInfo.level_name) return false;
+    
+    // 결재 처리 리스트와 결재 목록 리스트를 볼 수 있는 레벨들
+    const allowedLevels = ["이사", "부장", "차장", "과장"];
+    return allowedLevels.includes(userInfo.level_name);
+  };
+
+
+
+  // 페이지네이션 핸들러 함수들
+  const handleMyPageChange = (newPage) => {
+    const totalPages = Math.ceil(myApprovals.length / ITEMS_PER_PAGE);
+    if (newPage < 1 || newPage > totalPages) return;
+    setMyPage(newPage);
+  };
+
+  const handleToApprovePageChange = (newPage) => {
+    const totalPages = Math.ceil(toApproveList.length / ITEMS_PER_PAGE);
+    if (newPage < 1 || newPage > totalPages) return;
+    setToApprovePage(newPage);
+  };
+
+  const handleAllPageChange = (newPage) => {
+    const totalPages = Math.ceil(allApprovals.length / ITEMS_PER_PAGE);
+    if (newPage < 1 || newPage > totalPages) return;
+    setAllPage(newPage);
+  };
 
   // 결재 문서 조회
   const fetchApprovals = async () => {
@@ -215,7 +272,18 @@ export default function ApprovalSystem() {
     fetchApprovals();
     fetchToApproveList();
     fetchAllApprovals();
+    fetchUserInfo(); // 사용자 정보 가져오기
   }, [userId]);
+
+  // 사용자 정보가 로드되면 탭 권한 체크
+  useEffect(() => {
+    if (userInfo) {
+      // 현재 활성 탭이 권한이 없는 탭인 경우 첫 번째 탭으로 이동
+      if (!canViewApprovalList() && activeTab >= 2) {
+        setActiveTab(0);
+      }
+    }
+  }, [userInfo, activeTab]);
 
   const getStatusDisplay = (final_status) => {
     switch (final_status) {
@@ -236,6 +304,22 @@ export default function ApprovalSystem() {
   };
 
   const myApprovals = approvals.filter(doc => doc.writer_id === userId);
+  
+  // 페이지네이션을 위한 데이터 처리
+  const startMyIdx = (myPage - 1) * ITEMS_PER_PAGE;
+  const endMyIdx = startMyIdx + ITEMS_PER_PAGE;
+  const currentMyApprovals = myApprovals.slice(startMyIdx, endMyIdx);
+  const calcTotalMyPages = Math.ceil(myApprovals.length / ITEMS_PER_PAGE);
+  
+  const startToApproveIdx = (toApprovePage - 1) * ITEMS_PER_PAGE;
+  const endToApproveIdx = startToApproveIdx + ITEMS_PER_PAGE;
+  const currentToApproveList = toApproveList.slice(startToApproveIdx, endToApproveIdx);
+  const calcTotalToApprovePages = Math.ceil(toApproveList.length / ITEMS_PER_PAGE);
+  
+  const startAllIdx = (allPage - 1) * ITEMS_PER_PAGE;
+  const endAllIdx = startAllIdx + ITEMS_PER_PAGE;
+  const currentAllApprovals = allApprovals.slice(startAllIdx, endAllIdx);
+  const calcTotalAllPages = Math.ceil(allApprovals.length / ITEMS_PER_PAGE);
 
   return (
     <div>
@@ -243,17 +327,43 @@ export default function ApprovalSystem() {
       <div className="wrap padding_60_0">
         <div className="main_box flex flex_column gap_30 align_center justify_center position_rel">
           <h2 className="card_title font_700">결재 시스템</h2>
-          <div className="approval_tabs flex gap_10 mb_20">
-            {TAB_LABELS.map((label, idx) => (
+                      <div className="approval_tabs flex gap_10 mb_20">
+              {/* 기안작성 탭 */}
               <button
-                key={label}
-                className={`tab_btn${activeTab === idx ? " active" : ""}`}
-                onClick={() => setActiveTab(idx)}
+                className={`tab_btn${activeTab === 0 ? " active" : ""}`}
+                onClick={() => setActiveTab(0)}
               >
-                {label}
+                기안작성
               </button>
-            ))}
-          </div>
+              
+              {/* 내가 올린 결재 탭 */}
+              <button
+                className={`tab_btn${activeTab === 1 ? " active" : ""}`}
+                onClick={() => setActiveTab(1)}
+              >
+                내가 올린 결재
+              </button>
+              
+              {/* 결재 처리 리스트 탭 - 권한이 있는 경우만 표시 */}
+              {canViewApprovalList() && (
+                <button
+                  className={`tab_btn${activeTab === 2 ? " active" : ""}`}
+                  onClick={() => setActiveTab(2)}
+                >
+                  결재 처리 리스트
+                </button>
+              )}
+              
+              {/* 결재 목록 리스트 탭 - 권한이 있는 경우만 표시 */}
+              {canViewApprovalList() && (
+                <button
+                  className={`tab_btn${activeTab === 3 ? " active" : ""}`}
+                  onClick={() => setActiveTab(3)}
+                >
+                  결재 목록 리스트
+                </button>
+              )}
+            </div>
 
           {/* 결재 올리는 페이지 */}
           {activeTab === 0 && (
@@ -348,7 +458,7 @@ export default function ApprovalSystem() {
           {activeTab === 1 && (
             // 내가 올린 결재 페이지
             <div className="approval_section width_100">
-              <h3 className="card_title font_600 mb_10">내 결재</h3>
+              <h3 className="card_title font_600 mb_10">내가 올린 결재</h3>
               <div className="approval_status_legend mb_16 flex gap_10">
                 <span className="approval_status_badge status_rejected">반려</span>
                 <span className="approval_status_badge status_draft">기안</span>
@@ -357,7 +467,7 @@ export default function ApprovalSystem() {
               </div>
               {loading ? (
                 <div>로딩 중...</div>
-              ) : (
+              ) : (<>
                 <table className="approval_table">
                   <thead>
                     <tr>
@@ -371,7 +481,7 @@ export default function ApprovalSystem() {
                     </tr>
                   </thead>
                   <tbody>
-                    {myApprovals.map(doc => (
+                    {currentMyApprovals.map(doc => (
                       <tr key={doc.appr_idx}>
                         <td>{doc.appr_idx}</td>
                         <td>
@@ -397,9 +507,36 @@ export default function ApprovalSystem() {
                     ))}
                   </tbody>
                 </table>
-              )}
-            </div>
-          )}
+
+                  <div className="board_pagination">
+                    <button
+                      className="board_btn"
+                      onClick={() => handleMyPageChange(myPage - 1)}
+                      disabled={myPage === 1}
+                    >
+                      이전
+                    </button>
+                    {[...Array(calcTotalMyPages)].map((_, idx) => (
+                      <button
+                        key={idx + 1}
+                        className={`board_btn board_page_btn${myPage === idx + 1 ? " active" : ""}`}
+                        onClick={() => handleMyPageChange(idx + 1)}
+                      >
+                        {idx + 1}
+                      </button>
+                    ))}
+                    <button
+                      className="board_btn"
+                      onClick={() => handleMyPageChange(myPage + 1)}
+                      disabled={myPage === calcTotalMyPages}
+                    >
+                      다음
+                    </button>
+                  </div>
+          </>
+        )}
+      </div>
+      )}
 
           {activeTab === 2 && (
             // 내가 결재할 결재 페이지
@@ -414,6 +551,7 @@ export default function ApprovalSystem() {
               {loading ? (
                 <div>로딩 중...</div>
               ) : (
+                <>
                 <table className="approval_table">
                   <thead>
                     <tr>
@@ -432,7 +570,7 @@ export default function ApprovalSystem() {
                         <td colSpan={7}>결재할 문서가 없습니다.</td>
                       </tr>
                     )}
-                    {toApproveList.map(doc => (
+                    {currentToApproveList.map(doc => (
                       <tr key={doc.appr_idx}>
                         <td>{doc.appr_idx}</td>
                         <td>
@@ -458,6 +596,33 @@ export default function ApprovalSystem() {
                     ))}
                   </tbody>
                 </table>
+
+                  <div className="board_pagination">
+                    <button
+                      className="board_btn"
+                      onClick={() => handleToApprovePageChange(toApprovePage - 1)}
+                      disabled={toApprovePage === 1}
+                    >
+                      이전
+                    </button>
+                    {[...Array(calcTotalToApprovePages)].map((_, idx) => (
+                      <button
+                        key={idx + 1}
+                        className={`board_btn board_page_btn${toApprovePage === idx + 1 ? " active" : ""}`}
+                        onClick={() => handleToApprovePageChange(idx + 1)}
+                      >
+                        {idx + 1}
+                      </button>
+                    ))}
+                    <button
+                      className="board_btn"
+                      onClick={() => handleToApprovePageChange(toApprovePage + 1)}
+                      disabled={toApprovePage === calcTotalToApprovePages}
+                    >
+                      다음
+                    </button>
+                  </div>
+              </>
               )}
             </div>
           )}
@@ -475,6 +640,7 @@ export default function ApprovalSystem() {
                 {loading ? (
                     <div>로딩 중...</div>
                 ) : (
+                  <>
                     <table className="approval_table">
                       <thead>
                       <tr>
@@ -493,7 +659,7 @@ export default function ApprovalSystem() {
                             <td colSpan={7}>결재 문서가 없습니다.</td>
                           </tr>
                       )}
-                      {allApprovals.map(doc => (
+                      {currentAllApprovals.map(doc => (
                           <tr key={doc.appr_idx}>
                             <td>{doc.appr_idx}</td>
                             <td>
@@ -519,9 +685,37 @@ export default function ApprovalSystem() {
                       ))}
                       </tbody>
                     </table>
-                )}
-              </div>
-          )}
+
+
+                  <div className="board_pagination">
+                    <button
+                      className="board_btn"
+                      onClick={() => handleAllPageChange(allPage - 1)}
+                      disabled={allPage === 1}
+                    >
+                      이전
+                    </button>
+                    {[...Array(calcTotalAllPages)].map((_, idx) => (
+                      <button
+                        key={idx + 1}
+                        className={`board_btn board_page_btn${allPage === idx + 1 ? " active" : ""}`}
+                        onClick={() => handleAllPageChange(idx + 1)}
+                      >
+                        {idx + 1}
+                      </button>
+                    ))}
+                    <button
+                      className="board_btn"
+                      onClick={() => handleAllPageChange(allPage + 1)}
+                      disabled={allPage === calcTotalAllPages}
+                    >
+                      다음
+                    </button>
+                  </div>
+              </>
+            )}
+          </div>
+      )}
 
           {/* 결재 상세/결재 처리 모달 */}
           <Modal isOpen={!!selectedDoc} onClose={() => setSelectedDoc(null)}>
