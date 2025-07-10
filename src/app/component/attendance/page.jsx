@@ -8,6 +8,9 @@ const ATTENDANCE_STANDARD = "09:00";
 const OTP_VALID_MINUTES = 10;
 const LOGS_PER_PAGE = 10;
 
+// API 서버 주소
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
 function generateOtp() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -63,6 +66,7 @@ export default function Attendance() {
   const timerRef = useRef();
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false); // 발송 중 상태
 
   useEffect(() => {
     createOtps();
@@ -86,6 +90,54 @@ export default function Attendance() {
     }
     return () => clearInterval(timerRef.current);
   }, [expireIn, expireOut, mode]);
+
+  // 이메일 인증번호 발송 함수
+  async function sendEmailOtp() {
+    setIsSending(true);
+    try {
+      // userId 키에서 꺼내기
+      let userId = sessionStorage.getItem('userId') || localStorage.getItem('userId');
+      console.log('최종 전송할 user_id:', userId);
+
+      if (!userId) {
+        alert('로그인 정보가 없습니다. 다시 로그인 해주세요.');
+        setIsSending(false);
+        return;
+      }
+
+      const response = await fetch(`${apiUrl}/email/attendance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.msg && result.msg.includes("발송")) {
+        setOtpIn(result.authCode);
+        setOtpOut(result.authCode);
+        const now = new Date();
+        const expire = new Date(now.getTime() + OTP_VALID_MINUTES * 60000);
+        setExpireIn(expire);
+        setExpireOut(expire);
+        setUsedOtpIn(false);
+        setUsedOtpOut(false);
+        setInput("");
+        alert("인증번호가 이메일로 발송되었습니다.");
+      } else {
+        alert("인증번호 발송에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error('인증번호 발송 오류:', error);
+      alert("인증번호 발송 중 오류가 발생했습니다.");
+    } finally {
+      setIsSending(false);
+    }
+  }
 
   function createOtps() {
     const now = new Date();
@@ -233,10 +285,57 @@ export default function Attendance() {
           <div className="small_text font_600">
             {mode === "in" ? "출근 인증번호" : "퇴근 인증번호"}
           </div>
-          <div className="otp_code font_700">{mode === "in" ? otpIn : otpOut}</div>
+
+            
+            {/* 인증번호 발송 버튼 */}
+            <div className="flex align_center">
+              <button
+                type="button"
+                className="att_btn"
+                onClick={sendEmailOtp}
+                disabled={isSending}
+                style={{
+                  width: "120px",
+                  height: "120px",
+                  borderRadius: "50%",
+                  background: isSending 
+                    ? "linear-gradient(135deg, #ccc 0%, #999 100%)"
+                    : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  color: "white",
+                  fontWeight: "700",
+                  fontSize: "16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  boxShadow: "0 8px 25px rgba(102, 126, 234, 0.3)",
+                  border: "none",
+                  cursor: isSending ? "not-allowed" : "pointer",
+                  transition: "all 0.3s ease",
+                  textAlign: "center",
+                  lineHeight: "1.2"
+                }}
+                onMouseOver={e => {
+                  if (!isSending) {
+                    e.currentTarget.style.transform = "translateY(-3px)";
+                    e.currentTarget.style.boxShadow = "0 12px 35px rgba(102, 126, 234, 0.4)";
+                  }
+                }}
+                onMouseOut={e => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 8px 25px rgba(102, 126, 234, 0.3)";
+                }}
+              >
+                <span style={{fontSize: "24px"}}>📱</span>
+                <span>{isSending ? "발송중..." : "인증\n번호 발송"}</span>
+              </button>
+            </div>
+
           <div className="su_small_text" style={{ color: "#ff6f61" }}>
             유효시간 : {formatRemain(remain)} (분:초)
           </div>
+
           <form onSubmit={handleSubmit} className="flex gap_10 align_center">
             <input
               className="otp_input"
