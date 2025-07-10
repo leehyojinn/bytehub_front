@@ -33,6 +33,21 @@ function Modal({ isOpen, onClose, children }) {
   );
 }
 
+// 인증번호 검증 함수
+async function verifyOtp(userId, inputCode, expectedCode, mode) {
+  const res = await fetch(`${apiUrl}/attendance/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id: userId,
+      input_code: inputCode,
+      expected_code: expectedCode,
+      mode: mode
+    })
+  });
+  return await res.json();
+}
+
 export default function Attendance() {
   const [otpIn, setOtpIn] = useState("");
   const [otpOut, setOtpOut] = useState("");
@@ -151,38 +166,46 @@ export default function Attendance() {
     setInput("");
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     const now = new Date();
+    const expectedCode = mode === "in" ? otpIn : otpOut;
+    const usedOtp = mode === "in" ? usedOtpIn : usedOtpOut;
+    const expire = mode === "in" ? expireIn : expireOut;
+    let userId = sessionStorage.getItem('userId') || localStorage.getItem('userId');
+
+    if (usedOtp) return alert(mode === "in" ? "이미 출근 처리됨" : "이미 퇴근 처리됨");
+    if (now > expire) return alert("인증번호가 만료되었습니다. 새로고침 후 시도하세요.");
+    if (!userId) return alert('로그인 정보가 없습니다. 다시 로그인 해주세요.');
+
+    // 백엔드에 인증번호 검증 및 기록 요청
+    const result = await verifyOtp(userId, input, expectedCode, mode);
+    if (!result.success) {
+      alert(result.msg || "인증번호가 일치하지 않습니다.");
+      return;
+    }
+
     if (mode === "in") {
-      if (usedOtpIn) return alert("이미 출근 처리됨");
-      if (input !== otpIn) return alert("출근 인증번호가 일치하지 않습니다.");
-      if (now > expireIn) return alert("인증번호가 만료되었습니다. 새로고침 후 시도하세요.");
       const standard = parseTime(ATTENDANCE_STANDARD);
       const status = now <= standard ? "정상" : "지각";
+      const timeStr = now.getHours().toString().padStart(2, "0") + ":" + now.getMinutes().toString().padStart(2, "0");
       setLogs((prev) => [
-        { type: "출근", time: now.toLocaleTimeString().slice(0, 5), date: now.toISOString().slice(0, 10), status },
+        { type: "출근", time: timeStr, date: now.toISOString().slice(0, 10), status },
         ...prev,
       ]);
       setUsedOtpIn(true);
-      setInput("");
-      setPage(1);
-      setModalOpen(false);
-      alert("출근이 기록되었습니다.");
     } else {
-      if (usedOtpOut) return alert("이미 퇴근 처리됨");
-      if (input !== otpOut) return alert("퇴근 인증번호가 일치하지 않습니다.");
-      if (now > expireOut) return alert("인증번호가 만료되었습니다. 새로고침 후 시도하세요.");
+      const timeStr = now.getHours().toString().padStart(2, "0") + ":" + now.getMinutes().toString().padStart(2, "0");
       setLogs((prev) => [
-        { type: "퇴근", time: now.toLocaleTimeString().slice(0, 5), date: now.toISOString().slice(0, 10), status: "정상" },
+        { type: "퇴근", time: timeStr, date: now.toISOString().slice(0, 10), status: "정상" },
         ...prev,
       ]);
       setUsedOtpOut(true);
-      setInput("");
-      setPage(1);
-      setModalOpen(false);
-      alert("퇴근이 기록되었습니다.");
     }
+    setInput("");
+    setPage(1);
+    setModalOpen(false);
+    alert(mode === "in" ? "출근이 기록되었습니다." : "퇴근이 기록되었습니다.");
   }
 
   function formatRemain(sec) {
