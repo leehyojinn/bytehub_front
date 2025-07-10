@@ -89,7 +89,6 @@ export default function ApprovalSystem() {
       if (data.success) {
         setUserInfo(data.data);
         console.log('사용자 정보:', data.data);
-        console.log('사용자 레벨:', data.data.lv_idx);
       }
     } catch (error) {
       console.error('사용자 정보 조회 실패:', error);
@@ -99,9 +98,8 @@ export default function ApprovalSystem() {
   // 레벨별 권한 체크 함수
   const canViewApprovalList = () => {
     if (!userInfo) return false;
-    // 레벨이 1 이상이면 true (level 또는 level_idx 사용)
-    const levelNum = userInfo.level !== undefined ? Number(userInfo.level) : Number(userInfo.lv_idx);
-    return levelNum >= 1;
+    // lv_idx가 3 이상인 경우만 true
+    return Number(userInfo.lv_idx) >= 3;
   };
 
 
