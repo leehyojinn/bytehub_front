@@ -275,7 +275,7 @@ export default function ChatPage() {
   };
 
   // 메시지 전송(텍스트만)
-  const handleSend = async(e) => {
+  const handleSend = (e) => {
     e.preventDefault();
     if (!input.trim()) return;
     if (stompClientRef.current && connected) {
@@ -293,7 +293,7 @@ export default function ChatPage() {
         destination: `/app/chat/${selectedRoomId}`,
         body: JSON.stringify(msg)
       });
-      await axios.post(`${apiUrl}/chat/room/${selectedRoomId}/message`, {
+      axios.post(`${apiUrl}/chat/room/${selectedRoomId}/message`, {
         last_active: now.toISOString().slice(0, 19).replace("T", " ")
       });
     }
@@ -308,6 +308,40 @@ export default function ChatPage() {
       });
     } catch (e) {}
   }
+
+  const handleCreateRoom = async (e) => {
+    e.preventDefault();
+    if (!newRoomName.trim() || newRoomMembers.length === 0) {
+      alertModal.openModal({
+        svg: "❗",
+        msg1: "입력 오류",
+        msg2: "채팅방 이름과 멤버를 입력하세요.",
+        showCancel: false
+      });
+      return;
+    }
+    try {
+      const payload = {
+        name: newRoomName,
+        avatar: "/profile.png", 
+        members: newRoomMembers
+      };
+      const res = await axios.post(`${apiUrl}/chat/room`, payload);
+      const chatIdx = res.data.id;
+      await fetchRooms();
+      setSelectedRoomId(chatIdx);
+      setCreateModal(false);
+      setNewRoomName("");
+      setNewRoomMembers([getCurrentUser()]);
+    } catch (error) {
+      alertModal.openModal({
+        svg: "❗",
+        msg1: "생성 오류",
+        msg2: "채팅방 생성 중 오류가 발생했습니다.",
+        showCancel: false
+      });
+    }
+  };
 
   // 채팅방 선택 시 unread 0 처리
   const handleSelectRoom = async (roomId) => {
