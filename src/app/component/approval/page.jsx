@@ -6,11 +6,6 @@ import React, { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 
 const ranks = ["사장 ","이사", "팀장", "과장", "대리", "사원"];
-const approvers = [
-  { id2: 1, name: "홍길동", rank: "사장" },
-  { id2: 2, name: "김철수", rank: "이사" },
-  { id2: 3, name: "이영희", rank: "팀장" }
-];
 // 상단에서 공통 상수 정의
 const pageSize = 10;
 const ITEMS_PER_PAGE = 10; // 페이지당 표시할 항목 수
@@ -49,7 +44,7 @@ export default function ApprovalSystem() {
 
   const [activeTab, setActiveTab] = useState(0);
   const [writerId, setWriterId] = useState(userId);
-  const sortedApprovers = [...approvers].sort((a, b) => rankSortKey(a) - rankSortKey(b));
+  const [sortedApprovers, setSortedApprovers] = useState([]);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [approvals, setApprovals] = useState([]);
   const [toApproveList, setToApproveList] = useState([]);
@@ -69,6 +64,10 @@ export default function ApprovalSystem() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [files, setFiles] = useState([]); // 파일 첨부 상태
+  const [rejectReason, setRejectReason] = useState(""); // 반려 사유
+  const [showRejectModal, setShowRejectModal] = useState(false); // 반려 사유 입력 모달
+  const [currentRejectHistory, setCurrentRejectHistory] = useState(null); // 현재 반려할 결재 이력
+  const [expandedReasons, setExpandedReasons] = useState(new Set()); // 확장된 반려 사유들
 
   // 사용자 정보 가져오기
   const fetchUserInfo = async () => {
@@ -99,6 +98,49 @@ export default function ApprovalSystem() {
     if (!userInfo) return false;
     // lv_idx가 1, 2, 3인 경우만 true
     return Number(userInfo.lv_idx) >= 1 && Number(userInfo.lv_idx) <= 3;
+  };
+
+  // 사용자 목록 가져오기 (POST)
+  const fetchUserList = async () => {
+    try {
+      const response = await fetch('http://localhost/member/list', { method: 'POST' });
+      const data = await response.json();
+      if (data.list) {
+        return data.list;
+      }
+    } catch (error) {
+      console.error('사용자 목록 조회 실패:', error);
+    }
+    return [];
+  };
+
+  // 결재권자 설정
+  const setApproversByUserLevel = async () => {
+    if (!userInfo) return;
+    const userList = await fetchUserList();
+
+    if (Number(userInfo.lv_idx) === 3) {
+      // 팀장: 같은 부서의 팀장(lv_idx 3)만
+      const deptLeaders = userList.filter(
+        user => Number(user.dept_idx) === Number(userInfo.dept_idx) && Number(user.lv_idx) === 4
+      );
+      console.log(deptLeaders);
+      setSortedApprovers(deptLeaders.map(user => ({
+        id2: user.user_id,
+        name: user.name,
+        rank: user.lv_name
+      })));
+    } else {
+      // lv_idx 1,2: 전체 lv_idx 1,2,3만
+      const leaders = userList.filter(
+        user => [1, 2, 3].includes(Number(user.lv_idx))
+      );
+      setSortedApprovers(leaders.map(user => ({
+        id2: user.user_id,
+        name: user.name,
+        rank: user.lv_name
+      })));
+    }
   };
 
 
@@ -144,15 +186,11 @@ export default function ApprovalSystem() {
       console.log('결재 처리 리스트 조회 시작, userId:', userId);
       const response = await fetch(`http://localhost/appr/toapprove?user_id=${userId}`);
       const data = await response.json();
-      console.log('결재 처리 리스트 응답:', data);
       if (data.success) {
         setToApproveList(data.data);
-        console.log('결재 처리 리스트 설정 완료:', data.data);
       } else {
-        console.error('결재 처리 리스트 조회 실패:', data.msg);
       }
     } catch (error) {
-      console.error('내가 결재할 문서 조회 실패:', error);
     } finally {
       setLoading(false);
     }
@@ -301,7 +339,7 @@ export default function ApprovalSystem() {
     fetchUserInfo(); // 사용자 정보 가져오기
   }, [userId]);
 
-  // 사용자 정보가 로드되면 탭 권한 체크
+  // 사용자 정보가 로드되면 탭 권한 체크 및 결재권자 설정
   useEffect(() => {
     if (userInfo) {
       // lv_idx가 1인 경우 처음 로드될 때만 결재 처리 리스트(탭2)로 이동
@@ -312,6 +350,9 @@ export default function ApprovalSystem() {
       else if (!canViewApprovalList() && activeTab >= 2) {
         setActiveTab(0);
       }
+      
+      // 결재권자 설정
+      setApproversByUserLevel();
     }
   }, [userInfo]);
 
@@ -490,9 +531,9 @@ export default function ApprovalSystem() {
                 </div>
                 <div className="approval_approvers_list">
                 <b>결재권자:</b>
-                   {approvers && approvers.length > 0 && approvers.map((a, idx) => (
+                   {sortedApprovers.map((a, idx) => (
                     <span key={idx} className="approval_approver_chip">
-                      {a.rank}
+                      <span style={{color: "#433878", fontWeight: 600}}>{a.name}</span> <span className="approval_rank">{a.rank}</span>
                     </span>
                   ))}
                 </div>
@@ -843,7 +884,45 @@ export default function ApprovalSystem() {
                               history.status === '반려' ? 'status_rejected' : 'status_progress'}`}>
                               {history.status}
                             </span>
-                            {history.reason && <span className="approval_reason">사유: {history.reason}</span>}
+                            {history.reason && (
+                              <span className="approval_reason">
+                                사유: {history.reason.length > 20
+                                  ? (
+                                    <>
+                                      {expandedReasons.has(index) 
+                                        ? history.reason
+                                        : `${history.reason.substring(0, 20)}...`
+                                      }
+                                      <button
+                                        onClick={() => {
+                                          if (expandedReasons.has(index)) {
+                                            setExpandedReasons(prev => {
+                                              const newSet = new Set(prev);
+                                              newSet.delete(index);
+                                              return newSet;
+                                            });
+                                          } else {
+                                            setExpandedReasons(prev => new Set([...prev, index]));
+                                          }
+                                        }}
+                                        style={{
+                                          background: 'none',
+                                          border: 'none',
+                                          color: '#433878',
+                                          textDecoration: 'underline',
+                                          cursor: 'pointer',
+                                          marginLeft: 5,
+                                          fontSize: '0.9rem'
+                                        }}
+                                      >
+                                        {expandedReasons.has(index) ? '간략히 보기' : '더보기'}
+                                      </button>
+                                    </>
+                                  )
+                                  : history.reason
+                                }
+                              </span>
+                            )}
                             {history.check_time && <span className="approval_time">
                               {new Date(history.check_time).toLocaleString()}
                             </span>}
@@ -879,7 +958,10 @@ export default function ApprovalSystem() {
                               </button>
                               <button
                                 className="approval_btn approval_btn_reject"
-                                onClick={() => handleApproval(myHistory.appr_his_idx, '반려')}
+                                onClick={() => {
+                                  setCurrentRejectHistory(myHistory);
+                                  setShowRejectModal(true);
+                                }}
                               >
                                 결재 반려
                               </button>
@@ -897,6 +979,59 @@ export default function ApprovalSystem() {
                 </div>
               </div>
             )}
+          </Modal>
+
+          {/* 반려 사유 입력 모달 */}
+          <Modal isOpen={showRejectModal} onClose={() => setShowRejectModal(false)}>
+            <div>
+              <h3 className="card_title font_600 mb_10">반려 사유 입력</h3>
+              <div className="approval_modal_content">
+                <div className="mb_10">
+                  <b>반려 사유:</b>
+                  <textarea
+                    className="approval_input"
+                    rows={4}
+                    placeholder="반려 사유를 입력해주세요 (최대 100자)"
+                    value={rejectReason}
+                    onChange={(e) => {
+                      if (e.target.value.length <= 100) {
+                        setRejectReason(e.target.value);
+                      }
+                    }}
+                    maxLength={100}
+                    style={{ marginTop: 8, width: '100%' }}
+                  />
+                  <div style={{ textAlign: 'right', fontSize: '0.9rem', color: '#666', marginTop: 4 }}>
+                    {rejectReason.length}/100
+                  </div>
+                </div>
+              </div>
+              <div className="approval_modal_footer" style={{ display: "flex", justifyContent: "center", gap: 10 }}>
+                <button
+                  className="approval_btn"
+                  onClick={() => {
+                    if (currentRejectHistory) {
+                      handleApproval(currentRejectHistory.appr_his_idx, '반려', rejectReason);
+                    }
+                    setShowRejectModal(false);
+                    setRejectReason("");
+                    setCurrentRejectHistory(null);
+                  }}
+                >
+                  반려 처리
+                </button>
+                <button
+                  className="approval_btn approval_btn_secondary"
+                  onClick={() => {
+                    setShowRejectModal(false);
+                    setRejectReason("");
+                    setCurrentRejectHistory(null);
+                  }}
+                >
+                  취소
+                </button>
+              </div>
+            </div>
           </Modal>
         </div>
       </div>

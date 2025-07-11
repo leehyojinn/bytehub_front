@@ -7,7 +7,7 @@ import React, { useState } from "react";
 const initialForms = [
   { id: 1, name: "연차", description: "연차 사용 신청 양식", blind: false },
   { id: 2, name: "지출", description: "지출 결재 양식", blind: false },
-  { id: 3, name: "일반", description: "일반 결재 양식", blind: false },
+  { id: 3, name: "일반", description: "일반 결재 양식", blind: false }
 ];
 
 function Modal({ isOpen, onClose, children }) {
