@@ -1247,7 +1247,7 @@ a:hover {
 .approval_btn:hover { background: var(--primary-color1); }
 .approval_btn_secondary { background: #eee; color: #888; }
 .approval_btn_reject { background: #ff6f61; color: #fff; }
-.approval_approvers_list { margin-top: 4px; }
+.approval_approvers_list { margin-top: 10px; margin-right: 10px;}
 .approval_approver_chip { display: inline-block; background: #faf8ff; border-radius: 6px; padding: 4px 10px; margin-right: 5px; font-size: 1rem; color: var(--primary-color1); }
 .approval_rank { color: #888; font-size: 0.98em; margin-left: 2px; }
 .approval_sign { color: var(--primary-color2); font-weight: 700; margin-left: 4px; }

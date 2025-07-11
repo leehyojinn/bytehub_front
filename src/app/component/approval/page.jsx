@@ -304,12 +304,16 @@ export default function ApprovalSystem() {
   // 사용자 정보가 로드되면 탭 권한 체크
   useEffect(() => {
     if (userInfo) {
+      // lv_idx가 1인 경우 처음 로드될 때만 결재 처리 리스트(탭2)로 이동
+      if (Number(userInfo.lv_idx) === 1 && activeTab < 2) {
+        setActiveTab(2);
+      }
       // 현재 활성 탭이 권한이 없는 탭인 경우 첫 번째 탭으로 이동
-      if (!canViewApprovalList() && activeTab >= 2) {
+      else if (!canViewApprovalList() && activeTab >= 2) {
         setActiveTab(0);
       }
     }
-  }, [userInfo, activeTab]);
+  }, [userInfo]);
 
   const getStatusDisplay = (final_status) => {
     switch (final_status) {
@@ -351,9 +355,9 @@ export default function ApprovalSystem() {
     return doc.history && doc.history.some(h => h.checker_id === userId && h.status !== '대기중');
   }
 
-  // '대기중'이 아닌 문서 또는 내가 결재한(isMyApproved) 문서만 결재 목록 리스트에 사용
+  // 결재 이력이 하나라도 있고, 내 lv_idx보다 writer_lv_idx가 크거나 같은 전체 결재 문서만 결재 목록 리스트에 사용
   const filteredAllApprovals = allApprovals.filter(doc =>
-    doc.final_status !== '대기중' || doc.isMyApproved
+    doc.final_status !== '결재중' || doc.isMyApproved
   );
   const currentAllApprovals = filteredAllApprovals.slice(startAllIdx, endAllIdx);
   const calcTotalAllPages = Math.ceil(filteredAllApprovals.length / ITEMS_PER_PAGE);
@@ -484,8 +488,8 @@ export default function ApprovalSystem() {
                     </div>
                   )}
                 </div>
-
                 <div className="approval_approvers_list">
+                <b>결재권자:</b>
                    {approvers && approvers.length > 0 && approvers.map((a, idx) => (
                     <span key={idx} className="approval_approver_chip">
                       {a.rank}
