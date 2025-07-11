@@ -160,7 +160,7 @@ export default function GrantUser() {
             //             user_id: selectedMember.user_id,
             //             access_type: 'board',
             //             access_idx: 0,
-            //             auth: 'read',
+            //             auth: 'r',
             //             checked: true,
             //         });
             //         break;
@@ -169,7 +169,7 @@ export default function GrantUser() {
             //             user_id: selectedMember.user_id,
             //             access_type: 'chat',
             //             access_idx: 0,
-            //             auth: 'write',
+            //             auth: 'w',
             //             checked: true,
             //         });
             //         break;
@@ -178,7 +178,7 @@ export default function GrantUser() {
             //             user_id: selectedMember.user_id,
             //             access_type: 'project',
             //             access_idx: 0,
-            //             auth: 'write',
+            //             auth: 'w',
             //             checked: true,
             //         });
             //         break;
@@ -187,7 +187,7 @@ export default function GrantUser() {
             //             user_id: selectedMember.user_id,
             //             access_type: 'leave',
             //             access_idx: 0,
-            //             auth: 'read',
+            //             auth: 'r',
             //             checked: true,
             //         });
             //         break;
@@ -196,7 +196,7 @@ export default function GrantUser() {
             //             user_id: selectedMember.user_id,
             //             access_type: 'attendance',
             //             access_idx: 0,
-            //             auth: 'read',
+            //             auth: 'r',
             //             checked: true,
             //         });
             //         break;
