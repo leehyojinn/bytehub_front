@@ -97,8 +97,8 @@ export default function ApprovalSystem() {
   // 레벨별 권한 체크 함수
   const canViewApprovalList = () => {
     if (!userInfo) return false;
-    // lv_idx가 3 이상인 경우만 true
-    return Number(userInfo.lv_idx) >= 3;
+    // lv_idx가 1, 2, 3인 경우만 true
+    return Number(userInfo.lv_idx) >= 1 && Number(userInfo.lv_idx) <= 3;
   };
 
 
@@ -141,10 +141,15 @@ export default function ApprovalSystem() {
   const fetchToApproveList = async () => {
     try {
       setLoading(true);
+      console.log('결재 처리 리스트 조회 시작, userId:', userId);
       const response = await fetch(`http://localhost/appr/toapprove?user_id=${userId}`);
       const data = await response.json();
+      console.log('결재 처리 리스트 응답:', data);
       if (data.success) {
         setToApproveList(data.data);
+        console.log('결재 처리 리스트 설정 완료:', data.data);
+      } else {
+        console.error('결재 처리 리스트 조회 실패:', data.msg);
       }
     } catch (error) {
       console.error('내가 결재할 문서 조회 실패:', error);
@@ -239,6 +244,7 @@ export default function ApprovalSystem() {
         setSelectedDoc(null);
         fetchApprovals();
         fetchToApproveList();
+        fetchAllApprovals(); // 결재 목록 리스트 갱신 추가
       } else {
         alert('처리 실패: ' + data.msg);
       }
@@ -331,15 +337,26 @@ export default function ApprovalSystem() {
   const currentMyApprovals = myApprovals.slice(startMyIdx, endMyIdx);
   const calcTotalMyPages = Math.ceil(myApprovals.length / ITEMS_PER_PAGE);
   
+  // '대기중'인 문서만 필터링하여 결재 처리 리스트에 사용
+  const filteredToApproveList = toApproveList.filter(doc => doc.final_status === '대기중');
   const startToApproveIdx = (toApprovePage - 1) * ITEMS_PER_PAGE;
   const endToApproveIdx = startToApproveIdx + ITEMS_PER_PAGE;
-  const currentToApproveList = toApproveList.slice(startToApproveIdx, endToApproveIdx);
-  const calcTotalToApprovePages = Math.ceil(toApproveList.length / ITEMS_PER_PAGE);
+  const currentToApproveList = filteredToApproveList.slice(startToApproveIdx, endToApproveIdx);
+  const calcTotalToApprovePages = Math.ceil(filteredToApproveList.length / ITEMS_PER_PAGE);
   
   const startAllIdx = (allPage - 1) * ITEMS_PER_PAGE;
   const endAllIdx = startAllIdx + ITEMS_PER_PAGE;
-  const currentAllApprovals = allApprovals.slice(startAllIdx, endAllIdx);
-  const calcTotalAllPages = Math.ceil(allApprovals.length / ITEMS_PER_PAGE);
+  // 내가 결재한 문서인지 확인하는 함수
+  function hasUserApproved(doc, userId) {
+    return doc.history && doc.history.some(h => h.checker_id === userId && h.status !== '대기중');
+  }
+
+  // '대기중'이 아닌 문서 또는 내가 결재한(isMyApproved) 문서만 결재 목록 리스트에 사용
+  const filteredAllApprovals = allApprovals.filter(doc =>
+    doc.final_status !== '대기중' || doc.isMyApproved
+  );
+  const currentAllApprovals = filteredAllApprovals.slice(startAllIdx, endAllIdx);
+  const calcTotalAllPages = Math.ceil(filteredAllApprovals.length / ITEMS_PER_PAGE);
 
   return (
     <div>
@@ -349,20 +366,24 @@ export default function ApprovalSystem() {
           <h2 className="card_title font_700">결재 시스템</h2>
                       <div className="approval_tabs flex gap_10 mb_20">
               {/* 기안작성 탭 */}
-              <button
-                className={`tab_btn${activeTab === 0 ? " active" : ""}`}
-                onClick={() => setActiveTab(0)}
-              >
-                기안작성
-              </button>
+              {userInfo && Number(userInfo.lv_idx) !== 1 && (
+                <button
+                  className={`tab_btn${activeTab === 0 ? " active" : ""}`}
+                  onClick={() => setActiveTab(0)}
+                >
+                  기안작성
+                </button>
+              )}
               
               {/* 내가 올린 결재 탭 */}
-              <button
-                className={`tab_btn${activeTab === 1 ? " active" : ""}`}
-                onClick={() => setActiveTab(1)}
-              >
-                내가 올린 결재
-              </button>
+              {userInfo && Number(userInfo.lv_idx) !== 1 && (
+                <button
+                  className={`tab_btn${activeTab === 1 ? " active" : ""}`}
+                  onClick={() => setActiveTab(1)}
+                >
+                  내가 올린 결재
+                </button>
+              )}
               
               {/* 결재 처리 리스트 탭 - 권한이 있는 경우만 표시 */}
               {canViewApprovalList() && (
@@ -498,6 +519,7 @@ export default function ApprovalSystem() {
                       <th>상태</th>
                       <th>종류</th>
                       <th>기안일</th>
+                      <th>첨부파일</th>
                       <th>결재내역</th>
                     </tr>
                   </thead>
@@ -522,7 +544,9 @@ export default function ApprovalSystem() {
                         <td>{doc.appr_type}</td>
                         <td>{doc.appr_date ? new Date(doc.appr_date).toLocaleDateString() : '-'}</td>
                         <td>
-                          <span>-</span>
+                          <span style={{ textAlign: "center" }}>
+                            {doc.files && doc.files.length > 0 ? "O" : "X"}
+                          </span>
                         </td>
                       </tr>
                     ))}
@@ -662,7 +686,7 @@ export default function ApprovalSystem() {
           {activeTab === 3 && (
               // 결재목록 리스트 (전체)
               <div className="approval_section width_100">
-                <h3 className="card_title font_600 mb_10">결재목록 리스트</h3>
+                <h3 className="card_title font_600 mb_10">결재 목록 리스트</h3>
                 <div className="approval_status_legend mb_16 flex gap_10">
                   <span className="approval_status_badge status_rejected">반려</span>
                   <span className="approval_status_badge status_draft">기안</span>
@@ -827,25 +851,45 @@ export default function ApprovalSystem() {
                     )}
                   </div>
                 </div>
-                <div className="approval_modal_footer">
-                  <button
-                    className="approval_btn"
-                    onClick={() => handleApproval(selectedDoc.appr_his_idx, '승인')}
-                  >
-                    결재 승인
-                  </button>
-                  <button
-                    className="approval_btn approval_btn_reject"
-                    onClick={() => handleApproval(selectedDoc.appr_his_idx, '반려')}
-                  >
-                    결재 반려
-                  </button>
-                  <button
-                    className="approval_btn approval_btn_secondary"
-                    onClick={() => setSelectedDoc(null)}
-                  >
-                    닫기
-                  </button>
+                <div className="approval_modal_footer" style={{ display: "flex", justifyContent: "center" }}>
+                  {activeTab === 1 ? (
+                    <button
+                      className="approval_btn"
+                      onClick={() => setSelectedDoc(null)}
+                    >
+                      닫기
+                    </button>
+                  ) : (
+                    <>
+                      {/* 결재자이면서 대기중인 경우에만 승인/반려 버튼 노출 */}
+                      {selectedDoc.history && selectedDoc.history.length > 0 && userId && (
+                        selectedDoc.history
+                          .filter(h => h.checker_id === userId && h.status === '대기중')
+                          .map((myHistory, idx) => (
+                            <React.Fragment key={idx}>
+                              <button
+                                className="approval_btn"
+                                onClick={() => handleApproval(myHistory.appr_his_idx, '승인')}
+                              >
+                                결재 승인
+                              </button>
+                              <button
+                                className="approval_btn approval_btn_reject"
+                                onClick={() => handleApproval(myHistory.appr_his_idx, '반려')}
+                              >
+                                결재 반려
+                              </button>
+                            </React.Fragment>
+                          ))
+                      )}
+                      <button
+                        className="approval_btn approval_btn_secondary"
+                        onClick={() => setSelectedDoc(null)}
+                      >
+                        닫기
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             )}
