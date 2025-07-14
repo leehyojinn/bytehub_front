@@ -16,6 +16,16 @@ function rankSortKey(approver) {
 }
 
 function Modal({ isOpen, onClose, children }) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [isOpen, onClose]);
   if (!isOpen) return null;
   return (
     <div className="modal_overlay">
@@ -119,27 +129,49 @@ export default function ApprovalSystem() {
     if (!userInfo) return;
     const userList = await fetchUserList();
 
-    if (Number(userInfo.lv_idx) === 3) {
-      // 팀장: 같은 부서의 팀장(lv_idx 3)만
-      const deptLeaders = userList.filter(
-        user => Number(user.dept_idx) === Number(userInfo.dept_idx) && Number(user.lv_idx) === 4
+    if (Number(userInfo.lv_idx) === 1) {
+      // lv_idx 1: 결재권자 없음 (기안만 가능)
+      setSortedApprovers([]);
+    } else if (Number(userInfo.lv_idx) === 2) {
+      // lv_idx 2: lv_idx 1만 결재권자로 보임
+      const approvers = userList.filter(
+        user => Number(user.lv_idx) === 1
       );
-      console.log(deptLeaders);
-      setSortedApprovers(deptLeaders.map(user => ({
+      console.log('lv_idx 2용 결재권자:', approvers);
+      const sortedApprovers = approvers.map(user => ({
         id2: user.user_id,
         name: user.name,
-        rank: user.lv_name
-      })));
-    } else {
-      // lv_idx 1,2: 전체 lv_idx 1,2,3만
-      const leaders = userList.filter(
-        user => [1, 2, 3].includes(Number(user.lv_idx))
+        rank: user.lv_name,
+        lv_idx: Number(user.lv_idx)
+      })).sort((a, b) => a.lv_idx - b.lv_idx);
+      setSortedApprovers(sortedApprovers);
+    } else if (Number(userInfo.lv_idx) === 3) {
+      // lv_idx 3: lv_idx 1,2인 사람들만 결재권자로 보여줌
+      const approvers = userList.filter(
+        user => [1, 2].includes(Number(user.lv_idx))
       );
-      setSortedApprovers(leaders.map(user => ({
+      console.log('팀장용 결재권자:', approvers);
+      const sortedApprovers = approvers.map(user => ({
         id2: user.user_id,
         name: user.name,
-        rank: user.lv_name
-      })));
+        rank: user.lv_name,
+        lv_idx: Number(user.lv_idx)
+      })).sort((a, b) => a.lv_idx - b.lv_idx);
+      setSortedApprovers(sortedApprovers);
+    } else if ([4, 5, 6].includes(Number(userInfo.lv_idx))) {
+      // lv_idx 4,5,6: lv_idx 1,2는 무조건, lv_idx 3은 같은 부서만
+      const approvers = userList.filter(
+        user => [1, 2].includes(Number(user.lv_idx)) || 
+               (Number(user.lv_idx) === 3 && Number(user.dept_idx) === Number(userInfo.dept_idx))
+      );
+      console.log(`lv_idx ${userInfo.lv_idx}용 결재권자:`, approvers);
+      const sortedApprovers = approvers.map(user => ({
+        id2: user.user_id,
+        name: user.name,
+        rank: user.lv_name,
+        lv_idx: Number(user.lv_idx)
+      })).sort((a, b) => a.lv_idx - b.lv_idx);
+      setSortedApprovers(sortedApprovers);
     }
   };
 
@@ -185,12 +217,17 @@ export default function ApprovalSystem() {
       setLoading(true);
       console.log('결재 처리 리스트 조회 시작, userId:', userId);
       const response = await fetch(`http://localhost/appr/toapprove?user_id=${userId}`);
+      console.log('결재 처리 리스트 응답:', response);
       const data = await response.json();
+      console.log('결재 처리 리스트 데이터:', data);
       if (data.success) {
         setToApproveList(data.data);
+        console.log('결재 처리 리스트 설정 완료:', data.data);
       } else {
+        console.log('결재 처리 리스트 조회 실패:', data.msg);
       }
     } catch (error) {
+      console.error('결재 처리 리스트 조회 에러:', error);
     } finally {
       setLoading(false);
     }
@@ -296,10 +333,16 @@ export default function ApprovalSystem() {
   const fetchAllApprovals = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost/appr/all`);
+      console.log('전체 결재 목록 조회 시작');
+      const response = await fetch(`http://localhost/appr/all?user_id=${userId}`);
+      console.log('전체 결재 목록 응답:', response);
       const data = await response.json();
+      console.log('전체 결재 목록 데이터:', data);
       if (data.success) {
         setAllApprovals(data.data);
+        console.log('전체 결재 목록 설정 완료:', data.data);
+      } else {
+        console.log('전체 결재 목록 조회 실패:', data.msg);
       }
     } catch (error) {
       console.error('전체 결재 목록 조회 실패:', error);
@@ -382,8 +425,16 @@ export default function ApprovalSystem() {
   const currentMyApprovals = myApprovals.slice(startMyIdx, endMyIdx);
   const calcTotalMyPages = Math.ceil(myApprovals.length / ITEMS_PER_PAGE);
   
-  // '대기중'인 문서만 필터링하여 결재 처리 리스트에 사용
-  const filteredToApproveList = toApproveList.filter(doc => doc.final_status === '대기중');
+  // 결재 처리 리스트 필터링 - lv_idx 3인 경우 같은 부서만, 나머지는 전체
+  const filteredToApproveList = toApproveList.filter(doc => {
+    // lv_idx 3인 경우 같은 부서만 보여줌
+    if (userInfo && Number(userInfo.lv_idx) === 3) {
+      return Number(doc.writer_dept_idx) === Number(userInfo.dept_idx);
+    }
+    
+    // 나머지는 모든 문서 보여줌
+    return true;
+  });
   const startToApproveIdx = (toApprovePage - 1) * ITEMS_PER_PAGE;
   const endToApproveIdx = startToApproveIdx + ITEMS_PER_PAGE;
   const currentToApproveList = filteredToApproveList.slice(startToApproveIdx, endToApproveIdx);
@@ -396,10 +447,16 @@ export default function ApprovalSystem() {
     return doc.history && doc.history.some(h => h.checker_id === userId && h.status !== '대기중');
   }
 
-  // 결재 이력이 하나라도 있고, 내 lv_idx보다 writer_lv_idx가 크거나 같은 전체 결재 문서만 결재 목록 리스트에 사용
-  const filteredAllApprovals = allApprovals.filter(doc =>
-    doc.final_status !== '결재중' || doc.isMyApproved
-  );
+  // 결재 목록 리스트(탭 3) - lv_idx 3인 경우 같은 부서만, 나머지는 전체
+  const filteredAllApprovals = allApprovals.filter(doc => {
+    // lv_idx 3인 경우 같은 부서만 보여줌
+    if (userInfo && Number(userInfo.lv_idx) === 3) {
+      return Number(doc.writer_dept_idx) === Number(userInfo.dept_idx);
+    }
+    
+    // 나머지는 모든 문서 보여줌
+    return true;
+  });
   const currentAllApprovals = filteredAllApprovals.slice(startAllIdx, endAllIdx);
   const calcTotalAllPages = Math.ceil(filteredAllApprovals.length / ITEMS_PER_PAGE);
 
@@ -565,7 +622,6 @@ export default function ApprovalSystem() {
                       <th>종류</th>
                       <th>기안일</th>
                       <th>첨부파일</th>
-                      <th>결재내역</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -590,7 +646,7 @@ export default function ApprovalSystem() {
                         <td>{doc.appr_date ? new Date(doc.appr_date).toLocaleDateString() : '-'}</td>
                         <td>
                           <span style={{ textAlign: "center" }}>
-                            {doc.files && doc.files.length > 0 ? "O" : "X"}
+                            {doc.has_files === "있음" ? "O" : "-"}
                           </span>
                         </td>
                       </tr>
@@ -629,7 +685,7 @@ export default function ApprovalSystem() {
       )}
 
           {activeTab === 2 && (
-            // 내가 결재할 결재 페이지
+            // 내가 결재할 결재 처리리 페이지
             <div className="approval_section width_100">
               <h3 className="card_title font_600 mb_10">결재 처리 리스트</h3>
               <div className="approval_status_legend mb_16 flex gap_10">
@@ -652,7 +708,6 @@ export default function ApprovalSystem() {
                       <th>종류</th>
                       <th>기안일</th>
                       <th>첨부파일</th>
-                      <th>결재내역</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -687,11 +742,10 @@ export default function ApprovalSystem() {
                               ))}
                             </div>
                           ) : (
-                            <span>-</span>
+                            <span style={{ textAlign: "center" }}>
+                              {doc.has_files === "있음" ? "O" : "-"}
+                            </span>
                           )}
-                        </td>
-                        <td>
-                          <span>-</span>
                         </td>
                       </tr>
                     ))}
@@ -752,7 +806,6 @@ export default function ApprovalSystem() {
                         <th>종류</th>
                         <th>기안일</th>
                         <th>첨부파일</th>
-                        <th>결재내역</th>
                       </tr>
                       </thead>
                       <tbody>
@@ -787,11 +840,10 @@ export default function ApprovalSystem() {
                                   ))}
                                 </div>
                               ) : (
-                                <span>-</span>
+                                <span style={{ textAlign: "center" }}>
+                                  {doc.has_files === "있음" ? "O" : "-"}
+                                </span>
                               )}
-                            </td>
-                            <td>
-                              <span>-</span>
                             </td>
                           </tr>
                       ))}
