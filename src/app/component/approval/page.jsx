@@ -42,7 +42,7 @@ export default function ApprovalSystem() {
     }
   }
 
-  const [activeTab, setActiveTab] = useState(0);
+
   const [writerId, setWriterId] = useState(userId);
   const [sortedApprovers, setSortedApprovers] = useState([]);
   const [selectedDoc, setSelectedDoc] = useState(null);
@@ -51,7 +51,10 @@ export default function ApprovalSystem() {
   const [loading, setLoading] = useState(false);
   const [allApprovals, setAllApprovals] = useState([]); // 전체 결재 목록용
   const [userInfo, setUserInfo] = useState(null); // 사용자 정보 상태 추가
-
+  const [activeTab, setActiveTab] = useState(() => {
+    if (userInfo && Number(userInfo.lv_idx) === 1) return 2;
+    return 0;
+  });
   // 페이지네이션 상태 추가
   const [myPage, setMyPage] = useState(1);
   const [toApprovePage, setToApprovePage] = useState(1);
@@ -356,6 +359,7 @@ export default function ApprovalSystem() {
     }
   }, [userInfo]);
 
+
   const getStatusDisplay = (final_status) => {
     switch (final_status) {
       case '반려': return '반려';
@@ -450,9 +454,9 @@ export default function ApprovalSystem() {
                 </button>
               )}
             </div>
-
+          
           {/* 결재 올리는 페이지 */}
-          {activeTab === 0 && (
+          {userInfo && userInfo.lv_idx !== 1 && userInfo.lv_name !== "사장" && activeTab === 0 && (
             <div className="approval_section width_100">
               <h3 className="card_title font_600 mb_10">결재 문서 기안</h3>
               <form className="approval_form" onSubmit={handleSubmit} encType="multipart/form-data">

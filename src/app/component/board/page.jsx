@@ -114,7 +114,7 @@ export default function Board() {
                 currentPosts.map((post) => (
                   <tr
                   key={post.post_idx}
-                  style={post.pinned ? { background: "#fffbe6" } : {}}>
+                  style={post.pinned ? { background: "#d9cdfa" } : {}}>
                     <td>{post.post_idx}</td>
                     <td className="board_title">
                       <Link href={`/component/board/board_detail/${post.post_idx}`}>
