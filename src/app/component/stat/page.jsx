@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
 import { Bar } from 'react-chartjs-2';
@@ -15,12 +15,6 @@ import {
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
-const attendanceStats = [
-  { id: "hong123", name: "홍길동", dept: "개발팀", days_present: 20, late: 1, absent: 0, leave: 1 },
-  { id: "kim456", name: "김철수", dept: "경영지원팀", days_present: 18, late: 2, absent: 1, leave: 2 },
-  { id: "lee789", name: "이영희", dept: "디자인팀", days_present: 21, late: 0, absent: 0, leave: 0 },
-];
-
 // 예시 데이터: 파일별 다운로드 상세 기록
 const downloadHistory = [
   { file: "사내규정.pdf", user: "홍길동", userId: "hong123", date: "2025-07-01 09:12" },
@@ -32,10 +26,17 @@ const downloadHistory = [
   { file: "출장비내역.xlsx", user: "김철수", userId: "kim456", date: "2025-07-04 12:30" },
 ];
 
+// API 서버 주소 (환경변수에서 가져오거나 기본값 사용)
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+
 export default function StatisticsPage() {
   const [tab, setTab] = useState("attendance");
   const [search, setSearch] = useState("");
   const [downloadSearch, setDownloadSearch] = useState("");
+  const [statLoading, setStatLoading] = useState(false);
+  const [statError, setStatError] = useState("");
+  const [attendanceStats, setAttendanceStats] = useState([]);
 
   // 직원 근태 통계 검색 필터
   const filteredAttendance = attendanceStats.filter(
@@ -51,12 +52,62 @@ export default function StatisticsPage() {
       h.date.includes(downloadSearch)
   );
 
-  // 그래프 데이터
+  // 근태 통계 + 사용자 정보 한번에 가져오기
+  useEffect(() => {
+    const token = sessionStorage.getItem('token');
+    let userId = '';
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        userId = payload.id || payload.user_id || '';
+        console.log('토큰에서 추출한 userId:', userId);
+      } catch (e) {
+        console.error('토큰 파싱 실패:', e);
+      }
+    }
+    if (!userId) return;
+    setStatLoading(true);
+    setStatError("");
+    fetch(`${apiUrl}/attendance/stat?user_id=${userId}`)
+      .then(res => res.json())
+      .then(result => {
+        console.log('근태 통계 API 응답:', result);
+        if (result.success) {
+          // API 데이터 가공 (출근/지각/조퇴/결석/연차)
+          const statMap = {};
+          result.data.forEach(row => {
+            statMap[row.att_type] = row.cnt;
+          });
+          // user_info에서 이름/부서명 추출
+          const userInfo = result.user_info || {};
+          const updated = {
+            id: userId,
+            name: userInfo.name || userId,
+            dept: userInfo.dept_name || '-',
+            days_present: statMap["출근"] || 0,
+            late: statMap["지각"] || 0,
+            earlyLeave: statMap["조퇴"] || 0,
+            absent: statMap["결석"] || 0,
+            leave: statMap["연차"] || 0,
+          };
+          setAttendanceStats([updated]);
+        } else {
+          setStatError(result.msg || "통계 조회 실패");
+        }
+      })
+      .catch((err) => {
+        console.error('근태 통계 조회 실패:', err);
+        setStatError("서버 오류");
+      })
+      .finally(() => setStatLoading(false));
+  }, []);
+
+  // 그래프 데이터 (API 데이터 반영됨)
   const attendanceBarData = {
     labels: filteredAttendance.map(s => s.name),
     datasets: [
       {
-        label: "출근일수",
+        label: "출근",
         data: filteredAttendance.map(s => s.days_present),
         backgroundColor: "#7c6ee6",
       },
@@ -64,6 +115,11 @@ export default function StatisticsPage() {
         label: "지각",
         data: filteredAttendance.map(s => s.late),
         backgroundColor: "#ffb347",
+      },
+      {
+        label: "조퇴",
+        data: filteredAttendance.map(s => s.earlyLeave || 0),
+        backgroundColor: "#6ec6e6",
       },
       {
         label: "결석",
@@ -118,6 +174,8 @@ export default function StatisticsPage() {
                   height={320}
                 />
               </div>
+              {statLoading && <div style={{marginBottom:10}}>로딩 중...</div>}
+              {statError && <div style={{color:'red',marginBottom:10}}>{statError}</div>}
               <table className="stat_table">
                 <thead>
                   <tr>
@@ -126,6 +184,7 @@ export default function StatisticsPage() {
                     <th>부서</th>
                     <th>출근</th>
                     <th>지각</th>
+                    <th>조퇴</th>
                     <th>결석</th>
                     <th>연차</th>
                   </tr>
@@ -133,7 +192,7 @@ export default function StatisticsPage() {
                 <tbody>
                   {filteredAttendance.length === 0 && (
                     <tr>
-                      <td colSpan={7} style={{ textAlign: 'center', color: '#aaa' }}>검색 결과가 없습니다.</td>
+                      <td colSpan={8} style={{ textAlign: 'center', color: '#aaa' }}>검색 결과가 없습니다.</td>
                     </tr>
                   )}
                   {filteredAttendance.map(s => (
@@ -143,6 +202,7 @@ export default function StatisticsPage() {
                       <td>{s.dept}</td>
                       <td>{s.days_present}</td>
                       <td>{s.late}</td>
+                      <td>{s.earlyLeave || 0}</td>
                       <td>{s.absent}</td>
                       <td>{s.leave}</td>
                     </tr>
