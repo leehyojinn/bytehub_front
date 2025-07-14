@@ -85,21 +85,21 @@ export default function MemberManagePage() {
     setModalOpen(true);
   };
 
-  // 수정 저장
   const handleSave = async (e) => {
-
-    let {data} = await axios.post(`${apiUrl}/member/list/update`,editMember);
-    console.log(data);
-    if(data && data.suc){
-      e.preventDefault();
+    e.preventDefault();
+    let { data } = await axios.post(
+      `${apiUrl}/member/list/update`,
+      { ...editMember, hire_end_date: null }
+    );
+    if (data && data.suc) {
       setMembers(prev =>
-        prev.map(m => m.user_id  === editMember.user_id ? { ...editMember } : m)
+        prev.map(m => m.user_id === editMember.user_id ? { ...editMember, hire_end_date: null } : m)
       );
       setModalOpen(false);
-    }else{
+      await memberList();
+    } else {
       alert('수정실패');
     }
-
   };
 
   const handleBlind = async (user_id) => {
@@ -113,6 +113,7 @@ export default function MemberManagePage() {
               : m
           )
         );
+        await memberList();
       } else {
         alert("퇴사처리에 실패했습니다.");
       }
@@ -169,7 +170,7 @@ export default function MemberManagePage() {
                   <td>{getWorkPeriod(m.hire_date)}</td>
                   <td>{m.lv_name}</td>
                   <td>{formatDate(m.hire_date,"ko-KR")}</td>
-                  <td>{m.leave_date || "-"}</td>
+                  <td>{m.hire_end_date == null ? "-" : formatDate(m.hire_end_date,"ko-KR")}</td>
                   <td>{m.status}</td>
                   <td>
                     <button className="board_btn board_btn_small" onClick={() => openEdit(m)}>수정</button>
