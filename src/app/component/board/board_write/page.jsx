@@ -137,16 +137,17 @@ export default function BoardWrite() {
             </div>
 
             {/* 여기에 상단 고정 여부 넣고 싶은뎅 */}
-            <div>
-              <label htmlFor="pinned" className="board_write_label small_text font_600"> 상단 고정 여부 </label>
+            <label className="my_checkbox_label">
               <input
-                  id="pinned"
-                  type="checkbox"
-                  checked={checked}
-                  onChange={pinChange}
-                  style={{ width: 30, height: 30, display: "inline-block", opacity: 1, position: "static", appearance: "checkbox" }}
+                type="checkbox"
+                name="myfilter"
+                className="my_checkbox_input"
+                checked={checked}
+                onChange={pinChange}
               />
-            </div>
+              <span className="my_checkbox_box"></span>
+              <span className="my_checkbox_text">상단 고정</span>
+            </label>
 
             {/* 작성자 표시란 */}
             <div className="board_write_row">

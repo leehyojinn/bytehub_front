@@ -60,12 +60,10 @@ export default function ApprovalSystem() {
   const [loading, setLoading] = useState(false);
   const [allApprovals, setAllApprovals] = useState([]); // 전체 결재 목록용
   const [userInfo, setUserInfo] = useState(null); // 사용자 정보 상태 추가
-
   const [activeTab, setActiveTab] = useState(() => {
     if (userInfo && Number(userInfo.lv_idx) === 1) return 2;
     return 0;
   });
-
   // 페이지네이션 상태 추가
   const [myPage, setMyPage] = useState(1);
   const [toApprovePage, setToApprovePage] = useState(1);
@@ -403,6 +401,7 @@ export default function ApprovalSystem() {
     }
   }, [userInfo]);
 
+
   const getStatusDisplay = (final_status) => {
     switch (final_status) {
       case '반려': return '반려';
@@ -511,7 +510,7 @@ export default function ApprovalSystem() {
                 </button>
               )}
             </div>
-
+          
           {/* 결재 올리는 페이지 */}
           {userInfo && userInfo.lv_idx !== 1 && userInfo.lv_name !== "사장" && activeTab === 0 && (
             <div className="approval_section width_100">
