@@ -27,36 +27,6 @@ const initialPolicy = {
   workEnd: "18:00",
 };
 
-// 직원 목록 초기값
-const initialMembers = [
-  { id: "hong123", name: "홍길동", dept_id: 1 },
-  { id: "kim456", name: "김철수", dept_id: 2 },
-];
-
-// 근태 데이터 초기값
-const initialAttendance = [
-  {
-    id: 1,
-    member_id: "hong123",
-    name: "홍길동",
-    dept_id: 1,
-    date: "2025-07-05",
-    start_time: "09:02",
-    end_time: "18:01",
-    status: "지각",
-  },
-  {
-    id: 2,
-    member_id: "kim456",
-    name: "김철수",
-    dept_id: 2,
-    date: "2025-07-05",
-    start_time: "09:00",
-    end_time: "17:58",
-    status: "출근",
-  },
-];
-
 // 부서명 반환 함수
 function getDeptName(id) {
   return departments.find(d => d.id === id)?.name || "-";
@@ -69,7 +39,9 @@ export default function AttendanceManagePage() {
   const [editPolicy, setEditPolicy] = useState(false);
   const [policyExists, setPolicyExists] = useState(false); // 정책 존재 여부
   // 근태 데이터 상태
-  const [attendance, setAttendance] = useState(initialAttendance);
+  const [attendance, setAttendance] = useState([]);
+  // 사용자 정보 상태
+  const [userInfo, setUserInfo] = useState(null);
   // 검색 상태
   const [search, setSearch] = useState({ name: "", id: "", dept: "", date: "" });
   // 근태 수정 모달 상태
@@ -100,18 +72,80 @@ export default function AttendanceManagePage() {
       });
   }, []);
 
+  // 컴포넌트 마운트 시 전체 출퇴근 기록 불러오기
+  useEffect(() => {
+    const userId = sessionStorage.getItem('userId');
+    if (!userId) return;
+    fetch(`${apiUrl}/attendance/list?user_id=${userId}`)
+      .then(res => res.json())
+      .then(result => {
+        if (result.success && result.data) {
+          setAttendance(result.data);
+        }
+        if (result.user_info) {
+          setUserInfo(result.user_info);
+        }
+      });
+  }, []);
+
   // 근태 수정 모달 열기
-  const openEditModal = (row) => {
-    setEditRow({ ...row });
-    setEditModal(true);
+  const openEditModal = async (row) => {
+    try {
+      const res = await fetch(`${apiUrl}/attendance/detail?att_idx=${row.att_idx}`);
+      const result = await res.json();
+      if (result.success && result.data) {
+        const data = result.data;
+        setEditRow({
+          ...row,
+          start_time: data.in_time ? data.in_time.slice(11, 16) : "",
+          end_time: data.out_time ? data.out_time.slice(11, 16) : "",
+          status: data.att_type || "",
+        });
+        setEditModal(true);
+      } else {
+        alert('상세 정보를 불러오지 못했습니다.');
+      }
+    } catch (e) {
+      alert('상세 정보 조회 중 오류가 발생했습니다.');
+    }
   };
   // 근태 수정 저장 함수
-  const handleEditSave = (e) => {
+  const handleEditSave = async (e) => {
     e.preventDefault();
-    setAttendance(prev =>
-      prev.map(a => a.id === editRow.id ? { ...editRow } : a)
-    );
-    setEditModal(false);
+    const body = {
+      att_idx: editRow.att_idx,
+      user_id: editRow.user_id,
+      att_date: editRow.att_date,
+      in_time: editRow.start_time ? `2024-01-01T${editRow.start_time}:00` : null,
+      out_time: editRow.end_time ? `2024-01-01T${editRow.end_time}:00` : null,
+      att_type: editRow.status || null,
+    };
+    try {
+      const res = await fetch(`${apiUrl}/attendance/update`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': sessionStorage.getItem('token'), 
+        },
+        body: JSON.stringify(body),
+      });
+      const result = await res.json();
+      if (result.success) {
+        alert('근태 정보가 수정되었습니다.');
+        setEditModal(false);
+        // 리스트 새로고침
+        const userId = sessionStorage.getItem('userId');
+        fetch(`${apiUrl}/attendance/list?user_id=${userId}`)
+          .then(res => res.json())
+          .then(result => {
+            if (result.success && result.data) setAttendance(result.data);
+          });
+      } else {
+        alert(result.msg || '수정에 실패했습니다.');
+      }
+    } catch (err) {
+      alert('서버 오류');
+    }
   };
 
   // 출근/퇴근 설정 저장
@@ -156,10 +190,10 @@ export default function AttendanceManagePage() {
 
   // 검색 필터
   const filtered = attendance.filter(a =>
-    (search.name === "" || a.name.includes(search.name)) &&
-    (search.id === "" || a.member_id.includes(search.id)) &&
-    (search.dept === "" || getDeptName(a.dept_id).includes(search.dept)) &&
-    (search.date === "" || a.date === search.date)
+    (search.name === "" || (a.name || "-").includes(search.name)) &&
+    (search.id === "" || (a.user_id || "").includes(search.id)) &&
+    (search.dept === "" || (a.dept_name|| "").includes(search.dept)) &&
+    (search.date === "" || a.att_date === search.date)
   );
 
   // 렌더링
@@ -225,14 +259,14 @@ export default function AttendanceManagePage() {
                 </tr>
               )}
               {filtered.map(row => (
-                <tr key={row.id}>
-                  <td>{row.name}</td>
-                  <td>{row.member_id}</td>
-                  <td>{getDeptName(row.dept_id)}</td>
-                  <td>{row.date}</td>
-                  <td>{row.start_time}</td>
-                  <td>{row.end_time}</td>
-                  <td>{row.status}</td>
+                <tr key={row.att_idx}>
+                  <td>{row.name || '-'}</td>
+                  <td>{row.user_id}</td>
+                  <td>{row.dept_name || '-'}</td>
+                  <td>{row.att_date}</td>
+                  <td>{row.in_time}</td>
+                  <td>{row.out_time}</td>
+                  <td>{row.att_type}</td>
                   <td>
                     <button className="board_btn board_btn_small" onClick={() => openEditModal(row)}>수정</button>
                   </td>
@@ -288,7 +322,7 @@ export default function AttendanceManagePage() {
                   <input
                     type="time"
                     className="board_write_input"
-                    value={editRow.start_time}
+                    value={editRow?.start_time ?? ""}
                     onChange={e => setEditRow(r => ({ ...r, start_time: e.target.value }))}
                     required
                   />
@@ -298,7 +332,7 @@ export default function AttendanceManagePage() {
                   <input
                     type="time"
                     className="board_write_input"
-                    value={editRow.end_time}
+                    value={editRow?.end_time ?? ""}
                     onChange={e => setEditRow(r => ({ ...r, end_time: e.target.value }))}
                     required
                   />
@@ -307,7 +341,7 @@ export default function AttendanceManagePage() {
                   <label className="board_write_label">근태 상태</label>
                   <select
                     className="board_write_input"
-                    value={editRow.status}
+                    value={editRow?.status ?? ""}
                     onChange={e => setEditRow(r => ({ ...r, status: e.target.value }))}
                   >
                     {attendanceStates.map(s => (
