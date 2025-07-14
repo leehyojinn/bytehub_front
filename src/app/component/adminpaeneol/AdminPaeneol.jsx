@@ -19,24 +19,21 @@ const links = [
         id: 4,
         name: "근태정보 수정",
         link: "/component/attendanceedit"
-    }, {
+    },
+    {
         id: 5,
-        name: "결재양식 수정",
-        link: "/component/formedit"
-    }, {
-        id: 6,
         name: "부서 생성",
         link: "/component/deptcreate"
     }, {
-        id: 7,
+        id: 6,
         name: "직급 생성",
         link: "/component/gradecreate"
     }, {
-        id: 8,
+        id: 7,
         name: "권한부여",
         link: "/component/permission"
     }, {
-        id: 9,
+        id: 8,
         name: "통계",
         link: "/component/stat"
     }
