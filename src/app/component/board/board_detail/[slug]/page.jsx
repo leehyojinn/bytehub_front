@@ -276,7 +276,7 @@ export default function BoardDetail() {
                                             <div key={idx} className="file_item mb_15">
                                                 {isImage ? (
                                                     // 이미지 파일인 경우 미리보기 표시
-                                                    <div className="image_preview_wrap">
+                                                    <div className="image_preview_wrap" style={{ textAlign: 'center' }}>
                                                         <img 
                                                             src={`${apiUrl}/file/download/${file.file_idx}`} 
                                                             alt={file.name}
@@ -287,7 +287,9 @@ export default function BoardDetail() {
                                                                 objectFit: 'contain',
                                                                 border: '1px solid #ddd',
                                                                 borderRadius: '4px',
-                                                                marginBottom: '10px'
+                                                                marginBottom: '10px',
+                                                                display: 'block',
+                                                                margin: '0 auto 10px auto'
                                                             }}
                                                         />
                                                         <div className="file_info">

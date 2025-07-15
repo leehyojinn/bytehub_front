@@ -333,6 +333,13 @@ ${contentText}
             <span>등록일: {formatDate(post.reg_date)}</span>
           </div>
 
+          {/* 참석자 */}
+          {post.attendees && post.attendees.length > 0 && (
+            <div className="mt_10 small_text detail_meta">
+              <span>참석자: <b>{post.attendees.join(', ')}</b></span>
+            </div>
+          )}
+
           {/* 본문 */}
           <div className="su_small_text mt_30 text_left">
             <p>
@@ -352,7 +359,7 @@ ${contentText}
                       <div key={idx} className="file_item mb_15">
                         {isImage ? (
                           // 이미지 파일인 경우 미리보기 표시
-                          <div className="image_preview_wrap">
+                          <div className="image_preview_wrap" style={{ textAlign: 'center' }}>
                             <img 
                               src={`${apiUrl}/file/download/${file.file_idx}`} 
                               alt={file.name}
@@ -363,7 +370,9 @@ ${contentText}
                                 objectFit: 'contain',
                                 border: '1px solid #ddd',
                                 borderRadius: '4px',
-                                marginBottom: '10px'
+                                marginBottom: '10px',
+                                display: 'block',
+                                margin: '0 auto 10px auto'
                               }}
                             />
                             <div className="file_info">
@@ -371,11 +380,11 @@ ${contentText}
                               <a 
                                 href={`${apiUrl}/file/download/${file.file_idx}`} 
                                 download={file.name}
-                                className="download_btn"
+                                className="board_btn"
                                 style={{
                                   marginLeft: '10px',
                                   padding: '5px 10px',
-                                  backgroundColor: '#007bff',
+                                  backgroundColor: '#7e60bf',
                                   color: 'white',
                                   textDecoration: 'none',
                                   borderRadius: '4px',
@@ -393,11 +402,11 @@ ${contentText}
                             <a 
                               href={`${apiUrl}/file/download/${file.file_idx}`} 
                               download={file.name}
-                              className="download_btn"
+                              className="board_btn"
                               style={{
                                 marginLeft: '10px',
                                 padding: '5px 10px',
-                                backgroundColor: '#007bff',
+                                backgroundColor: '#7e60bf',
                                 color: 'white',
                                 textDecoration: 'none',
                                 borderRadius: '4px',

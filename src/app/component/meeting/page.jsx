@@ -23,7 +23,11 @@ const formatDate = (dateStr) => {
 const formatAttendees = (attendees) => {
   if (!attendees || attendees.length === 0) return "-";
   if (Array.isArray(attendees)) {
-    return attendees.join(", ");
+    if (attendees.length === 1) {
+      return attendees[0];
+    } else if (attendees.length > 1) {
+      return `${attendees[0]}, ...`;
+    }
   }
   return attendees;
 };
@@ -67,7 +71,7 @@ export default function MeetingList() {
   // category가 'MEETING'인 글만 필터링
   const meetingPosts = posts.filter(post => post.category === 'MEETING');
 
-  // 검색 필터링 (제목, 작성자, 참가자, 요약)
+  // 검색 필터링 (제목, 작성자, 참가자, 요약은 ㄴㄴ)
   const filteredPosts = meetingPosts.filter(
     post => {
       const attendeesText = Array.isArray(post.attendees) ? post.attendees.join(" ") : (post.attendees || "");
@@ -108,7 +112,7 @@ export default function MeetingList() {
             <input
               className="board_search_input"
               type="text"
-              placeholder="제목, 작성자, 참가자, 요약 검색"
+              placeholder="제목, 작성자, 참가자 검색"
               value={search}
               onChange={handleSearchChange}
             />
