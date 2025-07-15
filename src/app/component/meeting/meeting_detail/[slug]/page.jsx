@@ -339,17 +339,79 @@ ${contentText}
               {post.content ||
                 "이곳에 게시글 본문 내용이 들어갑니다. 실제 서비스에서는 줄바꿈, 이미지, 첨부파일 등 다양한 요소가 들어갈 수 있습니다."}
             </p>
-            {/* 첨부파일 예시 */}
+            {/* 첨부파일 */}
             {post.files && post.files.length > 0 && (
               <div className="mt_20">
                 <span className="font_600 small_text">첨부파일:</span>
-                <ul>
-                  {post.files.map((file, idx) => (
-                    <li key={idx}>
-                      <a href={file.url} download="download" className="board_file_link">{file.name}</a>
-                    </li>
-                  ))}
-                </ul>
+                <div className="file_attachment_wrap mt_10">
+                  {post.files.map((file, idx) => {
+                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(fileExtension);
+                    
+                    return (
+                      <div key={idx} className="file_item mb_15">
+                        {isImage ? (
+                          // 이미지 파일인 경우 미리보기 표시
+                          <div className="image_preview_wrap">
+                            <img 
+                              src={`${apiUrl}/file/download/${file.file_idx}`} 
+                              alt={file.name}
+                              className="image_preview"
+                              style={{
+                                maxWidth: '300px',
+                                maxHeight: '200px',
+                                objectFit: 'contain',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px',
+                                marginBottom: '10px'
+                              }}
+                            />
+                            <div className="file_info">
+                              <span className="file_name">{file.name}</span>
+                              <a 
+                                href={`${apiUrl}/file/download/${file.file_idx}`} 
+                                download={file.name}
+                                className="download_btn"
+                                style={{
+                                  marginLeft: '10px',
+                                  padding: '5px 10px',
+                                  backgroundColor: '#007bff',
+                                  color: 'white',
+                                  textDecoration: 'none',
+                                  borderRadius: '4px',
+                                  fontSize: '12px'
+                                }}
+                              >
+                                다운로드
+                              </a>
+                            </div>
+                          </div>
+                        ) : (
+                          // 일반 파일인 경우 파일명과 다운로드 버튼
+                          <div className="file_info" style={{ display: 'flex', alignItems: 'center' }}>
+                            <span className="file_name">{file.name}</span>
+                            <a 
+                              href={`${apiUrl}/file/download/${file.file_idx}`} 
+                              download={file.name}
+                              className="download_btn"
+                              style={{
+                                marginLeft: '10px',
+                                padding: '5px 10px',
+                                backgroundColor: '#007bff',
+                                color: 'white',
+                                textDecoration: 'none',
+                                borderRadius: '4px',
+                                fontSize: '12px'
+                              }}
+                            >
+                              다운로드
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
