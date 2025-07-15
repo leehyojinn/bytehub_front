@@ -19,6 +19,15 @@ const formatDate = (dateStr) => {
   return `${mm}월 ${dd}일`;
 };
 
+// 참석자 배열을 포맷팅하는 함수
+const formatAttendees = (attendees) => {
+  if (!attendees || attendees.length === 0) return "-";
+  if (Array.isArray(attendees)) {
+    return attendees.join(", ");
+  }
+  return attendees;
+};
+
 
 export default function MeetingList() {
   const [page, setPage] = useState(1);
@@ -38,6 +47,13 @@ export default function MeetingList() {
         });
         const data = response.data;
         // data.list가 실제 게시글 배열
+        console.log("===== 게시글 리스트 데이터 확인 =====");
+        console.log("전체 응답:", data);
+        console.log("게시글 리스트:", data.list);
+        if (data.list && data.list.length > 0) {
+          console.log("첫 번째 게시글:", data.list[0]);
+          console.log("첫 번째 게시글 attendees:", data.list[0].attendees);
+        }
         setPosts(data.list || []);
         // 페이지네이션 정보가 필요하면 data.page 등 활용
         // setTotalPages(data.totalPages || 1); // totalPages가 있으면 사용
@@ -53,11 +69,15 @@ export default function MeetingList() {
 
   // 검색 필터링 (제목, 작성자, 참가자, 요약)
   const filteredPosts = meetingPosts.filter(
-    post =>
-      (post.subject || "").toLowerCase().includes(search.toLowerCase()) ||
-      (post.user_id || "").toLowerCase().includes(search.toLowerCase()) ||
-      (post.attendees || "").toLowerCase().includes(search.toLowerCase()) ||
-      (post.summary || "").toLowerCase().includes(search.toLowerCase())
+    post => {
+      const attendeesText = Array.isArray(post.attendees) ? post.attendees.join(" ") : (post.attendees || "");
+      return (
+        (post.subject || "").toLowerCase().includes(search.toLowerCase()) ||
+        (post.user_id || "").toLowerCase().includes(search.toLowerCase()) ||
+        attendeesText.toLowerCase().includes(search.toLowerCase()) ||
+        (post.summary || "").toLowerCase().includes(search.toLowerCase())
+      );
+    }
   );
 
   const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
@@ -124,7 +144,7 @@ export default function MeetingList() {
                       </Link>
                     </td>
                     <td>{post.user_id}</td>
-                    <td>{post.attendees || '-'}</td>
+                    <td>{formatAttendees(post.attendees)}</td>
                     <td>{formatDate(post.reg_date)}</td>
                   </tr>
                 ))
