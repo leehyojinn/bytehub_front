@@ -85,22 +85,53 @@ export default function BoardWrite() {
       return;
     }
     try {
-      const response = await axios.post(
-        `${apiUrl}/board/write`, // 게시글 등록 API
-        { 
+      let response;
+      
+      if (imageFiles.length > 0) {
+        // 파일이 있으면 FormData로 전송
+        const formData = new FormData();
+        formData.append("dto", JSON.stringify({
           subject: form.subject,
           content: form.content,
           pinned: checked,
           category: 'NOTICE',
           user_id: userId
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": token, // JWT 토큰 인증 헤더
+        }));
+        
+        // 파일들 추가
+        imageFiles.forEach(file => {
+          formData.append("files", file);
+        });
+        
+        response = await axios.post(
+          `${apiUrl}/board/write`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              "Authorization": token,
+            },
+          }
+        );
+      } else {
+        // 파일이 없으면 JSON으로 전송
+        response = await axios.post(
+          `${apiUrl}/board/write`,
+          { 
+            subject: form.subject,
+            content: form.content,
+            pinned: checked,
+            category: 'NOTICE',
+            user_id: userId
           },
-        }
-      );
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": token,
+            },
+          }
+        );
+      }
       const data = response.data;
       if (data.success) {
         alert("글이 등록되었습니다!");
