@@ -18,6 +18,8 @@ function getUserIdFromToken() {
 }
 
 export default function BoardWrite() {
+  console.log("=== BoardWrite 컴포넌트 로드됨 ===");
+  
   // 게시글 제목/내용 form 상태
   const [form, setForm] = useState({
     subject: "",
@@ -47,7 +49,7 @@ export default function BoardWrite() {
     axios.get(`${apiUrl}/post/pinnedCnt`)
         .then(res => setPinnedCnt(res.data))
         .catch(() => setPinnedCnt(0));
-  });
+  }, []); // 빈 dependency array 추가하여 한 번만 실행
 
   // 제목/내용 입력 변경 시 상태 업데이트
   const handleChange = (e) => {
@@ -57,6 +59,11 @@ export default function BoardWrite() {
   // 이미지 파일 선택 시 상태 및 미리보기 설정
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
+    console.log("파일 선택됨:", files);
+    console.log("파일 개수:", files.length);
+    if (files.length > 0) {
+      console.log("첫 번째 파일:", files[0].name, files[0].size);
+    }
     setImageFiles(files);
 
     // 미리보기용
@@ -68,7 +75,14 @@ export default function BoardWrite() {
           reader.readAsDataURL(file);
         })
     );
-    Promise.all(readers).then((results) => setPreviewUrls(results));
+    Promise.all(readers).then((results) => {
+      console.log("미리보기 URL 생성됨:", results.length);
+      setPreviewUrls(results);
+      // 상태 업데이트 후 재확인
+      setTimeout(() => {
+        console.log("상태 업데이트 후 imageFiles 길이:", imageFiles.length);
+      }, 100);
+    });
   };
 
   // 폼 제출(게시글 등록) 처리 함수
@@ -85,26 +99,19 @@ export default function BoardWrite() {
       return;
     }
     try {
-      let response;
+      let file_idx = null;
       
+      console.log("게시글 작성 시작 - 파일 개수:", imageFiles.length);
+      console.log("현재 imageFiles 상태:", imageFiles);
+      
+      // 1단계: 파일이 있으면 먼저 업로드
       if (imageFiles.length > 0) {
-        // 파일이 있으면 FormData로 전송
+        console.log("파일 업로드 시작 - 첫 번째 파일:", imageFiles[0].name);
         const formData = new FormData();
-        formData.append("dto", JSON.stringify({
-          subject: form.subject,
-          content: form.content,
-          pinned: checked,
-          category: 'NOTICE',
-          user_id: userId
-        }));
+        formData.append("file", imageFiles[0]); // 첫 번째 파일만 업로드
         
-        // 파일들 추가
-        imageFiles.forEach(file => {
-          formData.append("files", file);
-        });
-        
-        response = await axios.post(
-          `${apiUrl}/board/write`,
+        const fileResponse = await axios.post(
+          `${apiUrl}/board/file/upload`,
           formData,
           {
             headers: {
@@ -113,25 +120,37 @@ export default function BoardWrite() {
             },
           }
         );
+        
+        if (fileResponse.data.success) {
+          file_idx = fileResponse.data.file_idx;
+          console.log("파일 업로드 성공, file_idx:", file_idx);
+        } else {
+          console.error("파일 업로드 실패:", fileResponse.data);
+          alert("파일 업로드 실패: " + fileResponse.data.message);
+          return;
+        }
       } else {
-        // 파일이 없으면 JSON으로 전송
-        response = await axios.post(
-          `${apiUrl}/board/write`,
-          { 
-            subject: form.subject,
-            content: form.content,
-            pinned: checked,
-            category: 'NOTICE',
-            user_id: userId
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": token,
-            },
-          }
-        );
+        console.log("선택된 파일 없음 - file_idx는 null로 설정");
       }
+      
+      // 2단계: 게시글 작성 (항상 JSON)
+      const response = await axios.post(
+        `${apiUrl}/board/write`,
+        { 
+          subject: form.subject,
+          content: form.content,
+          pinned: checked,
+          category: 'NOTICE',
+          user_id: userId,
+          file_idx: file_idx
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": token,
+          },
+        }
+      );
       const data = response.data;
       if (data.success) {
         alert("글이 등록되었습니다!");
@@ -140,6 +159,8 @@ export default function BoardWrite() {
         alert("글 등록 실패: " + (data.message || "오류"));
       }
     } catch (err) {
+      console.error("전체 에러:", err);
+      console.error("에러 응답:", err.response?.data);
       alert("서버 오류: " + (err.response?.data?.message || err.message));
     }
   };
@@ -220,7 +241,6 @@ export default function BoardWrite() {
                 id="imageUpload"
                 type="file"
                 accept="image/*"
-                multiple
                 onChange={handleImageChange}
                 className="board_write_file"
                 style={{ display: "none" }}

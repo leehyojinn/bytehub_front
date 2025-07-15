@@ -18,6 +18,8 @@ function getUserIdFromToken() {
 }
 
 export default function MeetingWrite() {
+  console.log("=== MeetingWrite 컴포넌트 로드됨 ===");
+  
   const [form, setForm] = useState({
     title: "",
     author: "",
@@ -127,6 +129,7 @@ export default function MeetingWrite() {
 
   // 글 등록
   const handleSubmit = async (e) => {
+    console.log("=== handleSubmit 함수 호출됨 ===");
     e.preventDefault();
     const token = sessionStorage.getItem("token");
     if (!token) {
@@ -140,6 +143,40 @@ export default function MeetingWrite() {
       .filter(Boolean);
 
     try {
+      let file_idx = null;
+      
+      console.log("회의록 작성 시작 - 파일 개수:", imageFiles?.length || 0);
+      
+      // 1단계: 파일이 있으면 먼저 업로드
+      if (imageFiles && imageFiles.length > 0) {
+        console.log("파일 업로드 시작 - 첫 번째 파일:", imageFiles[0].name);
+        const formData = new FormData();
+        formData.append("file", imageFiles[0]); // 첫 번째 파일만 업로드
+        
+        const fileResponse = await axios.post(
+          `${apiUrl}/board/file/upload`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              "Authorization": token,
+            },
+          }
+        );
+        
+        if (fileResponse.data.success) {
+          file_idx = fileResponse.data.file_idx;
+          console.log("파일 업로드 성공, file_idx:", file_idx);
+        } else {
+          console.error("파일 업로드 실패:", fileResponse.data);
+          alert("파일 업로드 실패: " + fileResponse.data.message);
+          return;
+        }
+      } else {
+        console.log("선택된 파일 없음 - file_idx는 null로 설정");
+      }
+
+      // 2단계: 회의록 작성 (항상 JSON)
       await axios.post(
         `${apiUrl}/board/write`,
         {
@@ -148,6 +185,7 @@ export default function MeetingWrite() {
           content: form.content,
           category: 'MEETING',
           user_id: userId,
+          file_idx: file_idx
         },
         {
           headers: {
@@ -160,6 +198,7 @@ export default function MeetingWrite() {
       window.location.href = "/component/meeting";
     } catch (error) {
       console.error("글 등록 중 오류 발생:", error);
+      console.error("에러 응답:", error.response?.data);
       alert("글 등록 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
   };
@@ -261,7 +300,13 @@ export default function MeetingWrite() {
               )}
             </div>
             <div className="board_write_footer">
-              <button type="submit" className="board_btn board_write_btn">등록</button>
+              <button 
+                type="submit" 
+                className="board_btn board_write_btn"
+                onClick={() => console.log("=== 등록 버튼 클릭됨 ===")}
+              >
+                등록
+              </button>
               <button
                 type="button"
                 className="board_btn board_write_btn board_btn_cancel"
