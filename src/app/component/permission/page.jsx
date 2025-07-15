@@ -49,45 +49,46 @@ const PERMISSIONS = [
     {code: "attendance", label: "근태 정보 확인"},
 ];
 
-function PermissionModal({open, onClose, member, userPermissions, onChange, onSave}) {
+function PermissionModal({open, onClose, member, setUserPermissions, userPermissions, onChange, onSave}) {
 
-    // member을 먼저 불러와야 하는데 안불러와줘요 으악
-
+    // member을 먼저 불러와야 하는데 안불러와줘요 왜일까요..................
 
     useEffect(() => {
-        if(member) {
+        if (open && member) {
             callAuth();
         }
-    }, [open]);
+    }, [member]);
 
     const callAuth = async () => {
 
         let {data}=await axios.get(`${apiUrl}/auth/grant/${member.user_id}`);
+        let arr=['','','','',''];
 
         // 수정중(auth 불러와서 매핑해야됨)
         data.auth_list.forEach(item => {
             if (item.access_idx === 0) {
                 switch (item.access_type) {     //access_type= 'leave', 'attendance', 'project', 'chat', 'board'
                     case 'leave':
-                        userPermissions[3]=PERMISSIONS[3].code;
+                        arr[3]=PERMISSIONS[3].code;
                         break;
                     case 'attendance':
-                        userPermissions[4]=PERMISSIONS[4].code;
+                        arr[4]=PERMISSIONS[4].code;
                         break;
                     case 'project':
-                        userPermissions[2]=PERMISSIONS[2].code;
+                        arr[2]=PERMISSIONS[2].code;
                         break;
                     case 'chat':
-                        userPermissions[1]=PERMISSIONS[1].code;
+                        arr[1]=PERMISSIONS[1].code;
                         break;
                     case 'board':
-                        userPermissions[0]=PERMISSIONS[0].code;
+                        arr[0]=PERMISSIONS[0].code;
                         break;
                     default:
                         break;
                 }
             }
         });
+        setUserPermissions(arr);
     }
 
 
@@ -292,6 +293,7 @@ export default function GrantUser() {
                     onClose={() => setModalOpen(false)}
                     member={selectedMember}
                     userPermissions={editPerm}
+                    setUserPermissions={setEditPerm}
                     onChange={togglePermission}
                     onSave={handleSave}
                 />
