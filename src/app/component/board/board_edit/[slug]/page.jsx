@@ -102,7 +102,7 @@ export default function BoardEdit() {
 
         try {
             setSubmitting(true);
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             
             console.log('수정 요청 데이터:', {
                 post_idx: parseInt(slug),
