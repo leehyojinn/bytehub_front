@@ -1,7 +1,7 @@
 'use client';
 
-import axios from "axios";
-import React, { useEffect, useState } from "react";
+
+import React, { useState } from "react";
 
 const gender = [
   { id: 1, name: "남자" },
@@ -15,10 +15,7 @@ export default function Signup() {
     password: "",
     email: "",
     gender: "",
-    dept_idx: "",
-    lv_idx: "",
     hire_date: "",
-    phone: "",
   });
 
   const [idImage, setIdImage] = useState(1);
@@ -27,26 +24,11 @@ export default function Signup() {
   const [isIdAvailable, setIsIdAvailable] = useState(false); // 아이디 사용 가능 여부
   const [isIdChecked, setIsIdChecked] = useState(false); // 아이디 중복체크 완료 여부
 
-  const [dept,setDept] = useState([]);
-  const [level,setLevel] = useState([]);
 
-  const api_url = process.env.NEXT_PUBLIC_API_URL;
 
-  async function dept_list() {
-    let {data} = await axios.post(`${api_url}/dept/list`);
-    const list = data.list.filter((item)=>item.status == false)
-    setDept(list);
-  }
 
-  async function level_list() {
-    let {data} = await axios.post(`${api_url}/level/list`);
-    const list = data.list.filter((item)=>item.status == false)
-    setLevel(list);
-  }
-  useEffect(()=>{
-    dept_list();
-    level_list();
-  },[])
+
+
 
   React.useEffect(() => {
     const len = form.user_id.length;
@@ -71,13 +53,7 @@ export default function Signup() {
     }
   }, [form.password, pwFocus]);
 
-  const handlePhoneChange = e => {
-    let value = e.target.value.replace(/[^0-9]/g, "");
-    if (value.length < 4) value = value;
-    else if (value.length < 8) value = value.replace(/(\d{3})(\d{1,4})/, "$1-$2");
-    else value = value.replace(/(\d{3})(\d{4})(\d{1,4})/, "$1-$2-$3");
-    setForm({ ...form, phone: value });
-  };
+
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -163,10 +139,7 @@ export default function Signup() {
           password: "",
           email: "",
           gender: "",
-          dept_idx: "",
-          lv_idx: "",
           hire_date: "",
-          phone: ""
         });
         setIsIdChecked(false);
         setIsIdAvailable(false);
@@ -269,46 +242,15 @@ export default function Signup() {
                         <option key={g.id} value={g.id}>{g.name}</option>
                     ))}
                   </select>
-                {/*</div>
-                <div className="login_input_row flex_1">
-                  <label htmlFor="dept_idx" className="login_label small_text">부서</label>
-                  <select id="dept_idx" name="dept_idx" className="login_input" value={form.dept_idx} onChange={handleChange} required>
-                    <option value="">부서 선택</option>
-                    {dept.map(dep => (
-                        <option key={dep.dept_idx} value={dep.dept_idx}>{dep.dept_name}</option>
-                    ))}
-                  </select>
-                </div>*/}
+
               </div>
-              {/*<div className="flex gap_10 justify_center align_center">
-                <div className="login_input_row flex_1">
-                  <label htmlFor="lv_idx" className="login_label small_text">직책</label>
-                  <select id="lv_idx" name="lv_idx" className="login_input" value={form.lv_idx} onChange={handleChange} required>
-                    <option value="">직책 선택</option>
-                    {level.map((pos) => (
-                        <option key={pos.lv_idx} value={pos.lv_idx}>{pos.lv_name}</option>
-                    ))}
-                  </select>
-                </div>*/}
+
                 <div className="login_input_row flex_1">
                   <label htmlFor="hire_date" className="login_label small_text">입사일</label>
                   <input id="hire_date" name="hire_date" className="login_input" type="date" value={form.hire_date} onChange={handleChange} required />
                 </div>
               </div>
-              {/* <div className="login_input_row">
-                <label htmlFor="phone" className="login_label small_text">연락처</label>
-                <input
-                    id="phone"
-                    name="phone"
-                    className="login_input"
-                    type="tel"
-                    value={form.phone}
-                    onChange={handlePhoneChange}
-                    required
-                    placeholder="010-0000-0000"
-                    maxLength={13}
-                />
-              </div> */}
+
               <button type="submit" className="login_btn">회원가입</button>
             </form>
           </div>

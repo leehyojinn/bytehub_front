@@ -5,15 +5,7 @@ import Footer from "@/app/Footer";
 import React, { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 
-const ranks = ["사장 ","이사", "팀장", "과장", "대리", "사원"];
-// 상단에서 공통 상수 정의
-const pageSize = 10;
 const ITEMS_PER_PAGE = 10; // 페이지당 표시할 항목 수
-
-function rankSortKey(approver) {
-  const idx = ranks.indexOf(approver.rank);
-  return idx === -1 ? ranks.length : idx;
-}
 
 function Modal({ isOpen, onClose, children }) {
   useEffect(() => {
@@ -39,7 +31,6 @@ function Modal({ isOpen, onClose, children }) {
 
 export default function ApprovalSystem() {
   let userId = "";
-  let userLevel = "";
   if (typeof window !== "undefined") {
     const token = sessionStorage.getItem("token");
     if (token) {
@@ -52,7 +43,7 @@ export default function ApprovalSystem() {
     }
   }
 
-  const [writerId, setWriterId] = useState(userId);
+
   const [sortedApprovers, setSortedApprovers] = useState([]);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [approvals, setApprovals] = useState([]);
@@ -98,7 +89,6 @@ export default function ApprovalSystem() {
       const data = await response.json();
       if (data.success) {
         setUserInfo(data.data);
-        console.log('사용자 정보:', data.data);
       }
     } catch (error) {
       console.error('사용자 정보 조회 실패:', error);
@@ -139,7 +129,6 @@ export default function ApprovalSystem() {
       const approvers = userList.filter(
         user => Number(user.lv_idx) === 1
       );
-      console.log('lv_idx 2용 결재권자:', approvers);
       const sortedApprovers = approvers.map(user => ({
         id2: user.user_id,
         name: user.name,
@@ -152,7 +141,6 @@ export default function ApprovalSystem() {
       const approvers = userList.filter(
         user => [1, 2].includes(Number(user.lv_idx))
       );
-      console.log('팀장용 결재권자:', approvers);
       const sortedApprovers = approvers.map(user => ({
         id2: user.user_id,
         name: user.name,
@@ -166,7 +154,6 @@ export default function ApprovalSystem() {
         user => [1, 2].includes(Number(user.lv_idx)) || 
                (Number(user.lv_idx) === 3 && Number(user.dept_idx) === Number(userInfo.dept_idx))
       );
-      console.log(`lv_idx ${userInfo.lv_idx}용 결재권자:`, approvers);
       const sortedApprovers = approvers.map(user => ({
         id2: user.user_id,
         name: user.name,
@@ -176,8 +163,6 @@ export default function ApprovalSystem() {
       setSortedApprovers(sortedApprovers);
     }
   };
-
-
 
   // 페이지네이션 핸들러 함수들
   const handleMyPageChange = (newPage) => {
@@ -217,16 +202,10 @@ export default function ApprovalSystem() {
   const fetchToApproveList = async () => {
     try {
       setLoading(true);
-      console.log('결재 처리 리스트 조회 시작, userId:', userId);
       const response = await fetch(`http://localhost/appr/toapprove?user_id=${userId}`);
-      console.log('결재 처리 리스트 응답:', response);
       const data = await response.json();
-      console.log('결재 처리 리스트 데이터:', data);
       if (data.success) {
         setToApproveList(data.data);
-        console.log('결재 처리 리스트 설정 완료:', data.data);
-      } else {
-        console.log('결재 처리 리스트 조회 실패:', data.msg);
       }
     } catch (error) {
       console.error('결재 처리 리스트 조회 에러:', error);
@@ -264,7 +243,7 @@ export default function ApprovalSystem() {
     e.preventDefault();
     try {
       const formData = new FormData();
-      formData.append("writer_id", writerId);
+      formData.append("writer_id", userId);
       formData.append("subject", title);
       formData.append("content", content);
       formData.append("appr_type", approvalType);
@@ -335,16 +314,10 @@ export default function ApprovalSystem() {
   const fetchAllApprovals = async () => {
     try {
       setLoading(true);
-      console.log('전체 결재 목록 조회 시작');
       const response = await fetch(`http://localhost/appr/all?user_id=${userId}`);
-      console.log('전체 결재 목록 응답:', response);
       const data = await response.json();
-      console.log('전체 결재 목록 데이터:', data);
       if (data.success) {
         setAllApprovals(data.data);
-        console.log('전체 결재 목록 설정 완료:', data.data);
-      } else {
-        console.log('전체 결재 목록 조회 실패:', data.msg);
       }
     } catch (error) {
       console.error('전체 결재 목록 조회 실패:', error);
@@ -445,10 +418,7 @@ export default function ApprovalSystem() {
   
   const startAllIdx = (allPage - 1) * ITEMS_PER_PAGE;
   const endAllIdx = startAllIdx + ITEMS_PER_PAGE;
-  // 내가 결재한 문서인지 확인하는 함수
-  function hasUserApproved(doc, userId) {
-    return doc.history && doc.history.some(h => h.checker_id === userId && h.status !== '대기중');
-  }
+
 
   // 결재 목록 리스트(탭 3) - lv_idx 3인 경우 같은 부서만, 나머지는 전체
   const filteredAllApprovals = allApprovals.filter(doc => {

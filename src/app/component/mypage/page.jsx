@@ -7,40 +7,8 @@ import {useAlertModalStore} from "@/app/zustand/store";
 import AlertModal from "../alertmodal/page";
 import CountUp from 'react-countup';
 
-// 임시 데이터 (백엔드 연동 전까지 사용)
-const departments = [
-    {
-        id: 1,
-        name: "경영지원팀"
-    }, {
-        id: 2,
-        name: "개발팀"
-    }, {
-        id: 3,
-        name: "디자인팀"
-    }
-];
-
-const leaves = [
-    {
-        leave_idx: 1,
-        user_id: "hong123",
-        start_date: "2025-06-01",
-        end_date: "2025-06-02",
-        status: "승인"
-    }, {
-        leave_idx: 2,
-        user_id: "hong123",
-        start_date: "2025-07-01",
-        end_date: "2025-07-03",
-        status: "대기"
-    }
-];
-
 const TOTAL_LEAVE = 15;
-const usedLeave = leaves
-    .filter(l => l.status === "승인")
-    .length;
+const usedLeave = 2; // 임시 데이터
 const remainLeave = TOTAL_LEAVE - usedLeave;
 
 export default function MyPage() {
@@ -111,7 +79,6 @@ export default function MyPage() {
 
             if (data.success) {
                 const userInfo = data.data;
-                console.log('서버 사용자 정보:', userInfo);
                 setMemberData({
                     id: userInfo.id || userInfo.user_id || "",
                     name: userInfo.name,
@@ -136,7 +103,6 @@ export default function MyPage() {
                 });
             }
         } catch (error) {
-            console.error('사용자 정보 조회 오류:', error);
             setError('사용자 정보를 가져오는데 실패했습니다.');
             alertModal.openModal({
                 svg: '❗',
@@ -191,7 +157,6 @@ export default function MyPage() {
                 });
             }
         } catch (error) {
-            console.error('비밀번호 확인 오류:', error);
             alertModal.openModal({
                 svg: '❗',
                 msg1: "오류",
@@ -271,7 +236,6 @@ export default function MyPage() {
                 });
             }
         } catch (error) {
-            console.error('정보 수정 오류:', error);
             alertModal.openModal({
                 svg: '❗',
                 msg1: "오류",
