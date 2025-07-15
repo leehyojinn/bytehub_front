@@ -547,8 +547,15 @@ export default function FileSystem() {
                                 onClick={async (e) => {
                                     e.preventDefault();
                                     try {
+                                        // 현재 사용자 ID 가져오기
+                                        const userId = sessionStorage.getItem('userId');
+                                        if (!userId) {
+                                            alert('로그인이 필요합니다.');
+                                            return;
+                                        }
+
                                         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
-                                        const response = await fetch(`${apiUrl}/cloud/download/${file.id}`);
+                                        const response = await fetch(`${apiUrl}/cloud/download/${file.id}?userId=${userId}`);
                                         
                                         if (response.ok) {
                                             // 파일 다운로드 처리
@@ -561,9 +568,8 @@ export default function FileSystem() {
                                             a.click();
                                             window.URL.revokeObjectURL(url);
                                             document.body.removeChild(a);
-                                            console.log(`파일 다운로드 완료: ${file.originalName || file.name}`);
                                         } else {
-                                            alert('파일 다운로드에 실패했습니다. 백엔드 API가 준비되지 않았습니다.');
+                                            alert('파일 다운로드에 실패했습니다.');
                                         }
                                     } catch (error) {
                                         console.error('다운로드 오류:', error);
@@ -588,8 +594,10 @@ export default function FileSystem() {
                             cursor: 'pointer',
                             padding: '4px 8px',
                             borderRadius: '4px',
-                            fontSize: '16.32px'
+                            fontSize: '16.32px',
+                            textDecoration: 'underline'
                         }}
+                        
                     >삭제</button>
                     ) : (
                     <span style={{ color: "#bbb" }}>-</span>
