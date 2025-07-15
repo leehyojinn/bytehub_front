@@ -6,6 +6,8 @@ import Footer from "@/app/Footer";
 import {useEffect, useRef, useState} from "react";
 import axios from "axios";
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
 const initialMembers = [
     {
         user_id: "hong123",
@@ -40,15 +42,57 @@ const initialMembers = [
 ];
 
 const PERMISSIONS = [
-    {code: "board_view", label: "게시글 확인"},
-    {code: "chat_create", label: "채팅 채널 개설"},
-    {code: "project_create", label: "프로젝트 생성"},
-    {code: "leave_view", label: "연차 정보 확인"},
-    {code: "attendance_view", label: "근태 정보 확인"},
+    {code: "board", label: "게시글 확인"},
+    {code: "chat", label: "채팅 채널 개설"},
+    {code: "project", label: "프로젝트 생성"},
+    {code: "leave", label: "연차 정보 확인"},
+    {code: "attendance", label: "근태 정보 확인"},
 ];
 
 function PermissionModal({open, onClose, member, userPermissions, onChange, onSave}) {
+
+    // member을 먼저 불러와야 하는데 안불러와줘요 으악
+
+
+    useEffect(() => {
+        if(member) {
+            callAuth();
+        }
+    }, [open]);
+
+    const callAuth = async () => {
+
+        let {data}=await axios.get(`${apiUrl}/auth/grant/${member.user_id}`);
+
+        // 수정중(auth 불러와서 매핑해야됨)
+        data.auth_list.forEach(item => {
+            if (item.access_idx === 0) {
+                switch (item.access_type) {     //access_type= 'leave', 'attendance', 'project', 'chat', 'board'
+                    case 'leave':
+                        userPermissions[3]=PERMISSIONS[3].code;
+                        break;
+                    case 'attendance':
+                        userPermissions[4]=PERMISSIONS[4].code;
+                        break;
+                    case 'project':
+                        userPermissions[2]=PERMISSIONS[2].code;
+                        break;
+                    case 'chat':
+                        userPermissions[1]=PERMISSIONS[1].code;
+                        break;
+                    case 'board':
+                        userPermissions[0]=PERMISSIONS[0].code;
+                        break;
+                    default:
+                        break;
+                }
+            }
+        });
+    }
+
+
     if (!open || !member) return null;
+
     return (
         <div className="modal_overlay" tabIndex={-1} onClick={onClose}>
             <div className="modal_content" onClick={e => e.stopPropagation()}>
@@ -93,22 +137,53 @@ export default function GrantUser() {
     const [selectedMember, setSelectedMember] = useState(null);
     const [editPerm, setEditPerm] = useState([]);
 
+
     //초기
     useEffect(() => {
         callMember();
     }, [])
 
+    useEffect(() => {
+        if(selectedMember) {
+            arr.current=authList(selectedMember.user_id);
+            mapping();
+        }
+    }, [editPerm, selectedMember]);
+
+
+
+    const mapping = () => {
+        if (!selectedMember) return;
+        arr.current = authList(selectedMember.user_id).map(item => ({
+            ...item,
+            checked: editPerm.includes(item.access_type)
+        }));
+    }
+
+
+
     //  더 똑똑하게 할방법이 있을 것 같다...
     const toggleWithDraw = async (id) => {
-        let {data} = await axios.get(`http://localhost/admin/withdraw/${id}`);
+        let {data} = await axios.get(`${apiUrl}/admin/withdraw/${id}`);
         if (data.success) {
             callMember();
         }
     }
 
+    // 각 member 별 perm 기본값
+    const arr = useRef([]);
+    const authList = (id) => [
+        {user_id: id, access_type: PERMISSIONS[0].code, access_idx: 0, auth: "r", checked: false},
+        {user_id: id, access_type: PERMISSIONS[1].code, access_idx: 0, auth: "w", checked: false},
+        {user_id: id, access_type: PERMISSIONS[2].code, access_idx: 0, auth: "w", checked: false},
+        {user_id: id, access_type: PERMISSIONS[3].code, access_idx: 0, auth: "r", checked: false},
+        {user_id: id, access_type: PERMISSIONS[4].code, access_idx: 0, auth: "r", checked: false},
+    ];
+
     // members 불러오기
     const callMember = async () => {
-        let {data} = await axios.get(`http://localhost/admin/memberList`);
+        let {data} = await axios.get(`${apiUrl}/admin/memberList`);
+
         const list = data.member_list.map((item) => {
             return {
                 user_id: item.user_id,
@@ -145,73 +220,21 @@ export default function GrantUser() {
         );
     };
 
+
     const handleSave = async () => {
-        let arr = useRef([]);
         setUserPermissions(prev => ({
             ...prev,
             [selectedMember.user_id]: editPerm
         }));
 
-        editPerm.forEach((perm) => {
-            // 완벽한건아니고 대충 이런식으로,,,
-            // switch (perm) {
-            //     case "board_view":
-            //         arr.push({
-            //             user_id: selectedMember.user_id,
-            //             access_type: 'board',
-            //             access_idx: 0,
-            //             auth: 'r',
-            //             checked: true,
-            //         });
-            //         break;
-            //     case "chat_create":
-            //         arr.push({
-            //             user_id: selectedMember.user_id,
-            //             access_type: 'chat',
-            //             access_idx: 0,
-            //             auth: 'w',
-            //             checked: true,
-            //         });
-            //         break;
-            //     case "project_create":
-            //         arr.push({
-            //             user_id: selectedMember.user_id,
-            //             access_type: 'project',
-            //             access_idx: 0,
-            //             auth: 'w',
-            //             checked: true,
-            //         });
-            //         break;
-            //     case "leave_view":
-            //         arr.push({
-            //             user_id: selectedMember.user_id,
-            //             access_type: 'leave',
-            //             access_idx: 0,
-            //             auth: 'r',
-            //             checked: true,
-            //         });
-            //         break;
-            //     case "attendance_view":
-            //         arr.push({
-            //             user_id: selectedMember.user_id,
-            //             access_type: 'attendance',
-            //             access_idx: 0,
-            //             auth: 'r',
-            //             checked: true,
-            //         });
-            //         break;
-            //     default:
-            //         break;
-            // }
-        });
-
-        let {data}=await axios.post(`http://localhost/auth/grant`, arr);     // 배열 foreach써서 arr로 저장해서
+        let {data}= await axios.post(`${apiUrl}/auth/grant`, arr.current);
         if(data.success){
             setModalOpen(false);
         }
         else{
-            alert('오류가 발생했습니다.');
+            alert('오류가 발생했습니다!');
         }
+
     };
 
     return (
