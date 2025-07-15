@@ -7,7 +7,7 @@ import axios from "axios";
 
 // JWT 토큰에서 사용자 ID를 추출하는 함수
 function getUserIdFromToken() {
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token"); // sessionStorage로 통일
   if (!token) return "토큰 없음";
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
