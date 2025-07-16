@@ -56,8 +56,8 @@ export default function VacationEditPage() {
         throw new Error('로그인이 필요합니다.');
       }
 
-      console.log('API 호출 URL:', `${apiUrl}/leave/all`);
-      console.log('토큰:', token ? '있음' : '없음');
+      console.log('API 호출:', `${apiUrl}/leave/all`);
+      console.log('토큰:', token);
 
       const response = await fetch(`${apiUrl}/leave/all`, {
         method: 'GET',
@@ -67,18 +67,17 @@ export default function VacationEditPage() {
         }
       });
 
+      console.log('응답 상태:', response.status);
+
       if (!response.ok) {
         throw new Error(`서버 오류: ${response.status}`);
       }
 
       const result = await response.json();
+      console.log('응답 데이터:', result);
 
       // 백엔드 응답 구조: { success: true, data: [...] }
-      console.log('백엔드 응답 전체:', result);
-      console.log('백엔드에서 받은 데이터 개수:', result.data ? result.data.length : 0);
-      
       if (!result.success) {
-        console.error('백엔드 에러 세부사항:', result.error);
         throw new Error(result.msg || '데이터 조회에 실패했습니다.');
       }
 
@@ -86,21 +85,19 @@ export default function VacationEditPage() {
       const transformedMembers = result.data.map(member => ({
         id: member.mem_idx,
         name: member.name,
-        dept_name: member.dept_name || '미배정', // 백엔드에서 받은 부서명
-        level_name: member.level_name || '미배정', // 백엔드에서 받은 직급명
+        dept_name: member.dept_name,
+        level_name: member.level_name,
         email: member.email,
         join_date: member.hire_date ? member.hire_date.split('T')[0] : '', // ISO 날짜를 YYYY-MM-DD 형식으로 변환
-        total_leave: 0, // 일단 기본값
-        used_leave: 0, // 일단 기본값
-        remain_days: 0, // 일단 기본값
+        total_leave: member.total_leave,
+        used_leave: member.used_leave,
+        remain_days: member.remain_days,
         // 기존 구조 호환을 위한 필드들
-        annual_used: 0,
-        monthly_used: 0,
-        sick_used: 0
+        annual_used: member.used_leave,
+        monthly_used: 0, // API에서 별도 관리하지 않으므로 기본값
+        sick_used: 0 // API에서 별도 관리하지 않으므로 기본값
       }));
 
-      console.log('변환된 members 데이터:', transformedMembers);
-      console.log('변환된 members 개수:', transformedMembers.length);
       setMembers(transformedMembers);
     } catch (err) {
       console.error('연차 데이터 조회 실패:', err);
@@ -158,33 +155,45 @@ export default function VacationEditPage() {
       return;
     }
 
-    // TODO: 백엔드에 연차 부여 API 구현 필요
-    // 현재는 임시로 로컬 상태만 업데이트
-    console.log("연차 부여:", {
-      selectedMembers,
-      amount: grantLeaveForm.amount,
-      reason: grantLeaveForm.reason
-    });
-    
-    // 임시로 로컬 상태 업데이트 (실제로는 API 호출)
-    setMembers(prev => 
-      prev.map(m => 
-        selectedMembers.includes(m.id)
-          ? { 
-              ...m, 
-              total_leave: m.total_leave + grantLeaveForm.amount,
-              remain_days: m.remain_days + grantLeaveForm.amount
-            }
-          : m
-      )
-    );
-    
-    alert(`선택된 ${selectedMembers.length}명의 사원에게 ${grantLeaveForm.amount}일의 연차가 부여되었습니다.`);
-    
-    // 선택 해제 및 모달 닫기
-    setSelectedMembers([]);
-    setSelectAll(false);
-    setGrantLeaveModal(false);
+    try {
+      const token = sessionStorage.getItem('token');
+      if (!token) {
+        alert('로그인이 필요합니다.');
+        return;
+      }
+
+      const response = await fetch(`${apiUrl}/leave/generate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          selectedMembers
+        })
+      });
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        alert(result.msg || '연차 생성에 실패했습니다.');
+        return;
+      }
+      
+      // 성공시 알림
+      alert(result.msg || `선택된 ${selectedMembers.length}명의 사원에게 정책 기반 연차가 생성되었습니다.`);
+      
+      // 데이터 새로고침
+      await fetchMembersLeaveData();
+      
+      // 선택 해제 및 모달 닫기
+      setSelectedMembers([]);
+      setSelectAll(false);
+      setGrantLeaveModal(false);
+    } catch (error) {
+      console.error('연차 생성 실패:', error);
+      alert('연차 생성 중 오류가 발생했습니다.');
+    }
   };
 
   // 개별 체크박스 토글
@@ -261,10 +270,6 @@ export default function VacationEditPage() {
       (m.dept_name && m.dept_name.includes(search)) ||
       (m.level_name && m.level_name.includes(search))
   );
-  
-  console.log('현재 members 개수:', members.length);
-  console.log('필터링된 개수:', filtered.length);
-  console.log('검색어:', search);
 
   // 필터링된 결과에 따라 전체 선택 상태 업데이트
   useEffect(() => {
@@ -319,7 +324,7 @@ export default function VacationEditPage() {
             <div className="card_title font_700 mt_30 mb_20">사원별 연차/월차 현황</div>
             <div className="flex justify_between align_center mb_20">
               <div></div>
-              <button className="board_btn" onClick={openGrantLeaveModalForSelected}>연차 부여</button>
+              <button className="board_btn" onClick={openGrantLeaveModalForSelected}>연차 생성</button>
             </div>
             <table className="vacation_member_table">
               <thead>
@@ -537,11 +542,11 @@ export default function VacationEditPage() {
               </div>
           )}
 
-          {/* 연차 부여 모달 */}
+          {/* 연차 생성 모달 */}
           {grantLeaveModal && (
               <div className="modal_overlay" onClick={() => setGrantLeaveModal(false)}>
                 <div className="modal_content" onClick={e => e.stopPropagation()}>
-                  <h3 className="card_title font_700 mb_20">연차 부여</h3>
+                  <h3 className="card_title font_700 mb_20">정책 기반 연차 생성</h3>
                   <form onSubmit={handleGrantLeave} className="flex flex_column gap_10">
                     <div className="board_write_row">
                       <label className="board_write_label">선택된 사원 ({selectedMembers.length}명)</label>
@@ -567,40 +572,18 @@ export default function VacationEditPage() {
                         )}
                       </div>
                     </div>
+                    
                     <div className="board_write_row">
-                      <label className="board_write_label">연차 종류</label>
-                      <input
-                          type="text"
-                          className="board_write_input"
-                          value="연차"
-                          disabled
-                          style={{backgroundColor: '#f5f5f5'}}
-                      />
+                      <div style={{background: '#f8f9fa', padding: '15px', borderRadius: '5px', fontSize: '14px'}}>
+                        <strong>연차 생성 정책:</strong><br/>
+                        • 신규 입사자 (1년 미만): 입사월부터 연말까지 월차<br/>
+                        • 기존 사원 (1년 이상): 15일 + (근속년수-1)일<br/>
+                        각 사원의 입사일과 근속년수에 따라 자동으로 계산됩니다.
+                      </div>
                     </div>
-                    <div className="board_write_row">
-                      <label className="board_write_label">부여할 일수</label>
-                      <input
-                          type="number"
-                          className="board_write_input"
-                          value={grantLeaveForm.amount}
-                          min={1}
-                          max={30}
-                          onChange={e => setGrantLeaveForm(f => ({ ...f, amount: Number(e.target.value) }))}
-                          required
-                      />
-                    </div>
-                    <div className="board_write_row">
-                      <label className="board_write_label">사유 (선택사항)</label>
-                      <textarea
-                          className="board_write_textarea"
-                          value={grantLeaveForm.reason}
-                          onChange={e => setGrantLeaveForm(f => ({ ...f, reason: e.target.value }))}
-                          placeholder="연차 부여 사유를 입력하세요"
-                          rows={3}
-                      />
-                    </div>
+
                     <div className="modal_buttons">
-                      <button type="submit" className="board_btn">부여</button>
+                      <button type="submit" className="board_btn">연차 생성</button>
                       <button type="button" className="board_btn board_btn_cancel" onClick={() => setGrantLeaveModal(false)}>취소</button>
                     </div>
                   </form>
