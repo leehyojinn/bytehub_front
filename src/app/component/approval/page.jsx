@@ -909,14 +909,54 @@ export default function ApprovalSystem() {
                               history.status === '반려' ? 'status_rejected' : 'status_progress'}`}>
                               {history.status}
                             </span>
-                            {history.reason && (
-                              <span className="approval_reason">
-                                사유: {history.reason.length > 20
+                            {history.check_time && <span className="approval_time">
+                              {new Date(history.check_time).toLocaleString()}
+                            </span>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span>결재 내역이 없습니다.</span>
+                    )}
+                  </div>
+                  
+                  {/* 반려 사유 별도 표시 */}
+                  {selectedDoc.history && selectedDoc.history.some(h => h.status === '반려' && h.reason) && (
+                    <div className="mb_10">
+                      <b>반려 사유:</b>
+                      <div className="approval_reject_reasons">
+                        {selectedDoc.history
+                          .filter(h => h.status === '반려' && h.reason)
+                          .map((history, index) => (
+                            <div key={index} className="approval_reject_reason_item" style={{
+                              marginBottom: '15px',
+                              padding: '12px',
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '6px',
+                              backgroundColor: '#f8f9fa'
+                            }}>
+                              <div className="approval_reject_header" style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                marginBottom: '8px',
+                                fontSize: '14px',
+                                fontWeight: 'bold',
+                                color: '#433878'
+                              }}>
+                                <span className="approval_reject_checker">{history.checker_name} ({history.level_name})</span>
+                                <span className="approval_reject_time">{new Date(history.check_time).toLocaleString()}</span>
+                              </div>
+                              <div className="approval_reject_content" style={{
+                                fontSize: '14px',
+                                lineHeight: '1.5',
+                                color: '#333'
+                              }}>
+                                {history.reason.length > 50
                                   ? (
                                     <>
                                       {expandedReasons.has(index) 
                                         ? history.reason
-                                        : `${history.reason.substring(0, 20)}...`
+                                        : `${history.reason.substring(0, 50)}...`
                                       }
                                       <button
                                         onClick={() => {
@@ -946,18 +986,12 @@ export default function ApprovalSystem() {
                                   )
                                   : history.reason
                                 }
-                              </span>
-                            )}
-                            {history.check_time && <span className="approval_time">
-                              {new Date(history.check_time).toLocaleString()}
-                            </span>}
-                          </div>
-                        ))}
+                              </div>
+                            </div>
+                          ))}
                       </div>
-                    ) : (
-                      <span>결재 내역이 없습니다.</span>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
                 <div className="approval_modal_footer" style={{ display: "flex", justifyContent: "center" }}>
                   {activeTab === 1 ? (

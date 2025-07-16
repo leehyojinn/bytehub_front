@@ -4,26 +4,7 @@ import Footer from "@/app/Footer";
 import Header from "@/app/Header";
 import React, { useState, useEffect } from "react";
 
-const teams = [
-  { id: 1, name: "프론트엔드" },
-  { id: 2, name: "백엔드" },
-  { id: 3, name: "디자인팀" },
-];
 
-const folderPermissions = [
-  { id: 1, team_id: 1, name: "프론트엔드 파일함", permission: "읽기,쓰기,공유" },
-  { id: 2, team_id: 2, name: "백엔드 파일함", permission: "읽기,쓰기" },
-  { id: 3, team_id: null, name: "공용 파일함", permission: "읽기,공유" }, // 전체 사원
-];
-
-const initialFiles = [
-  { id: 1, folder_id: 1, name: "FE_기획서.pdf", uploader: "김부장", size: 1024 * 1024, uploadDate: "2025-06-25", expireDate: "2025-07-10", url: "#", teamOnly: true },
-  { id: 2, folder_id: 3, name: "공용_디자인.png", uploader: "박팀장", size: 2 * 1024 * 1024, uploadDate: "2025-06-26", expireDate: "2025-07-30", url: "#", teamOnly: false }
-];
-
-const initialLinks = [
-  { id: 1, folder_id: 1, title: "Figma 디자인", url: "https://figma.com", expireDate: "2025-07-15" }
-];
 
 function formatSize(bytes) {
   if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + " MB";
@@ -40,17 +21,22 @@ export default function FileSystem() {
   const [selectedDeptIdx, setSelectedDeptIdx] = useState(null);
   // 파일/링크 리스트
   const [files, setFiles] = useState([]);
-  const [links, setLinks] = useState(initialLinks);
+  const [links, setLinks] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   
   // 페이징 관련 상태
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentLinkPage, setCurrentLinkPage] = useState(1);
   const [pageSize] = useState(10); // 페이지당 파일 수
+  const [linkPageSize] = useState(5); // 페이지당 링크 수
 
   // 업로드 폼
   const [upload, setUpload] = useState({ files: [] });
   // 외부 링크 폼
-  const [link, setLink] = useState({ title: "", url: "", expireDate: "" });
+  const [link, setLink] = useState({ title: "", url: "" });
+  // 링크 수정 관련 상태
+  const [editingLink, setEditingLink] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // 사용자 정보 가져오기
   const fetchUserInfo = async () => {
@@ -74,7 +60,6 @@ export default function FileSystem() {
         const result = await response.json();
         if (result.success) {
           setUserInfo(result.data);
-          console.log('사용자 정보:', result.data);
         } else {
           console.error('사용자 정보 조회 실패:', result.message);
         }
@@ -126,7 +111,6 @@ export default function FileSystem() {
           const result = await response.json();
           if (result.success) {
             const fileList = result.data.map((file, index) => {
-              console.log('개별 파일 데이터:', file);
               return {
                 id: file.file_idx || file.id || `temp-${Date.now()}-${index}`,
                 folder_id: file.dept_idx || file.deptIdx || selectedDeptIdx,
@@ -151,8 +135,6 @@ export default function FileSystem() {
           }
       } else {
           console.error('파일 목록 조회 실패:', response.status);
-          const errorText = await response.text();
-          console.error('에러 응답:', errorText);
           setFiles([]);
         }
       } catch (error) {
@@ -167,6 +149,7 @@ export default function FileSystem() {
   useEffect(() => {
     fetchUserInfo();
     fetchDepartments();
+    fetchLinks();
   }, []);
 
   // 사용자 정보와 부서 목록이 로드되면 사용자의 부서를 기본 선택
@@ -373,34 +356,189 @@ export default function FileSystem() {
   };
 
   // 외부 링크 추가
-  const handleLinkAdd = e => {
+  const handleLinkAdd = async e => {
     e.preventDefault();
-    if (!link.title || !link.url || !link.expireDate) return;
-    setLinks([
-      ...links,
-      {
-        id: Date.now(),
-        folder_id: selectedDeptIdx,
-        title: link.title,
-        url: link.url,
-        expireDate: link.expireDate
+    if (!link.title || !link.url) return;
+    
+    try {
+      const userId = sessionStorage.getItem('userId');
+      if (!userId) {
+        alert('로그인이 필요합니다.');
+        return;
       }
-    ]);
-    setLink({ title: "", url: "", expireDate: "" });
-  };
-  // 외부 링크 삭제
-  const handleLinkDelete = id => {
-    setLinks(links.filter(l => l.id !== id));
+
+      // URL에 https:// 자동 추가
+      let finalUrl = link.url;
+      if (finalUrl && !finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+        finalUrl = 'https://' + finalUrl;
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
+      const formData = new FormData();
+      formData.append('linkName', link.title);
+      formData.append('url', finalUrl);
+      formData.append('userId', userId);
+      formData.append('deptIdx', selectedDeptIdx);
+
+      const response = await fetch(`${apiUrl}/cloud/link/save`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          fetchLinks(); // 링크 목록 새로고침
+          setLink({ title: "", url: "" });
+          alert('링크가 저장되었습니다.');
+        } else {
+          alert(result.message || '링크 저장에 실패했습니다.');
+        }
+      } else {
+        alert('링크 저장에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('링크 저장 오류:', error);
+      alert('링크 저장 중 오류가 발생했습니다.');
+    }
   };
 
-  // 30일이 지난 파일을 필터링하는 함수
-  const isFileExpired = (uploadDate) => {
-    if (!uploadDate) return false;
-    const uploadTime = new Date(uploadDate).getTime();
-    const currentTime = new Date().getTime();
-    const thirtyOneDaysInMs = 30 * 24 * 60 * 60 * 1000; // 30일을 밀리초로
-    return (currentTime - uploadTime) > thirtyOneDaysInMs;
+
+  // 링크 목록 가져오기
+  const fetchLinks = async () => {
+    try {
+      const userId = sessionStorage.getItem('userId');
+      if (!userId) {
+        console.error('사용자 ID가 없습니다.');
+        return;
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
+      // 백엔드 수정 전까지 임시로 userId 파라미터 유지
+      const response = await fetch(`${apiUrl}/cloud/link/list?userId=${userId}`);
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setLinks(result.data || []);
+        } else {
+          console.error('링크 목록 조회 실패:', result.message);
+        }
+      } else {
+        console.error('링크 목록 조회 실패:', response.status);
+      }
+    } catch (error) {
+      console.error('링크 목록 조회 오류:', error);
+    }
   };
+
+  // 링크 수정 모달 열기
+  const handleEditLink = (link) => {
+    setEditingLink({
+      link_idx: link.link_idx,
+      link_name: link.link_name,
+      url: link.url
+    });
+    setShowEditModal(true);
+  };
+
+  // 링크 수정 처리
+  const handleUpdateLink = async (e) => {
+    e.preventDefault();
+    if (!editingLink.link_name || !editingLink.url) return;
+    
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
+      const formData = new FormData();
+      formData.append('linkIdx', editingLink.link_idx);
+      formData.append('linkName', editingLink.link_name);
+      formData.append('url', editingLink.url);
+      formData.append('deptIdx', selectedDeptIdx);
+
+      const response = await fetch(`${apiUrl}/cloud/link/update`, {
+        method: 'PUT',
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          fetchLinks(); // 링크 목록 새로고침
+          setShowEditModal(false);
+          setEditingLink(null);
+          alert('링크가 수정되었습니다.');
+        } else {
+          alert(result.message || '링크 수정에 실패했습니다.');
+        }
+      } else {
+        alert('링크 수정에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('링크 수정 오류:', error);
+      alert('링크 수정 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 링크 수정/삭제 권한 확인
+  const canEditLink = (link) => {
+    if (!userInfo) return false;
+    
+    const userLevel = userInfo.lv_idx || userInfo.lvIdx;
+    const linkUploaderLevel = link.lv_idx || link.uploaderLvIdx;
+    const currentUserId = sessionStorage.getItem('userId');
+    
+    // 본인이 올린 링크는 항상 수정/삭제 가능
+    if (link.user_id === currentUserId) {
+      return true;
+    }
+    
+    // 레벨 1: 1을 제외한 모든 링크 수정/삭제 가능
+    if (userLevel === 1) {
+      return linkUploaderLevel !== 1;
+    }
+    
+    // 레벨 2: 1을 제외한 모든 링크 수정/삭제 가능
+    if (userLevel === 2) {
+      return linkUploaderLevel !== 1;
+    }
+    
+    // 레벨 3: 1,2를 제외한 모든 링크 수정/삭제 가능
+    if (userLevel === 3) {
+      return linkUploaderLevel > 2;
+    }
+    
+    // 레벨 4 이상: 자신이 업로드한 링크만 수정/삭제 가능
+    return link.user_id === userInfo.user_id;
+  };
+
+  // 외부 링크 삭제
+  const handleLinkDelete = async (id) => {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+    
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
+      const response = await fetch(`${apiUrl}/cloud/link/delete/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          fetchLinks(); // 링크 목록 새로고침
+          alert('링크가 삭제되었습니다.');
+        } else {
+          alert(result.message || '링크 삭제에 실패했습니다.');
+        }
+      } else {
+        alert('링크 삭제에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('링크 삭제 오류:', error);
+      alert('링크 삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+
 
   // 파일의 만료일을 계산하는 함수
   const getFileExpireDate = (uploadDate) => {
@@ -421,14 +559,49 @@ export default function FileSystem() {
     return diffDays;
   };
 
-  // 현재 부서 파일/링크만 표시 (숫자 타입으로 일관되게 처리)
+  // 현재 부서 파일만 표시 (숫자 타입으로 일관되게 처리)
   const deptFiles = files
     .filter(f => Number(f.folder_id) === Number(selectedDeptIdx));
-  const deptLinks = links.filter(l => Number(l.folder_id) === Number(selectedDeptIdx));
+  // 링크 필터링 로직: lv_idx 1,2가 올린 링크는 모든 인원에게 보임
+  const getFilteredLinks = () => {
+    if (!userInfo || !links.length) return [];
+    
+    const userLvIdx = userInfo.lv_idx || userInfo.lvIdx;
+    const userDeptIdx = userInfo.dept_idx || userInfo.deptIdx;
+    
+    return links.filter(link => {
+      const linkUploaderLv = link.lv_idx || link.uploaderLvIdx || link.uploader_lv_idx;
+      const linkDeptIdx = link.dept_idx;
+      
+      // lv_idx 1,2가 올린 링크는 모든 인원에게 보임
+      if (linkUploaderLv <= 2) {
+        return true;
+      }
+      
+      // lv_idx 3 이상이 올린 링크는 해당 부서와 lv_idx 1,2에게만 보임
+      if (linkUploaderLv >= 3) {
+        // lv_idx 1,2는 모든 링크를 볼 수 있음
+        if (userLvIdx <= 2) {
+          return true;
+        }
+        // 다른 사용자는 같은 부서의 링크만 볼 수 있음
+        return Number(linkDeptIdx) === Number(userDeptIdx);
+      }
+      
+      return false;
+    });
+  };
+
+  // 필터링된 링크 목록
+  const filteredLinks = getFilteredLinks();
 
   // 페이징 관련 함수들
   const handlePageChange = (page) => {
     setCurrentPage(page);
+  };
+
+  const handleLinkPageChange = (page) => {
+    setCurrentLinkPage(page);
   };
 
   // 현재 페이지의 파일들만 표시
@@ -438,10 +611,16 @@ export default function FileSystem() {
     return deptFiles.slice(startIndex, endIndex);
   };
 
+  // 현재 페이지의 링크들만 표시
+  const getCurrentPageLinks = () => {
+    const startIndex = (currentLinkPage - 1) * linkPageSize;
+    const endIndex = startIndex + linkPageSize;
+    return filteredLinks.slice(startIndex, endIndex);
+  };
+
   // 전체 페이지 수 계산
   const totalPages = Math.ceil(deptFiles.length / pageSize);
-  
-
+  const totalLinkPages = Math.ceil(filteredLinks.length / linkPageSize);
 
   return (
     <div>
@@ -478,7 +657,7 @@ export default function FileSystem() {
         }}>
           {filteredDepartments.map(dept => (
             <button
-              key={dept.dept_idx}
+              key={`dept-${dept.dept_idx}-${dept.dept_name}`}
               onClick={() => onDeptTabClick(dept.dept_idx)}
                               style={{
                   padding: '6px 12px',
@@ -537,7 +716,7 @@ export default function FileSystem() {
                 }}>
                     <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>선택된 파일:</div>
                     {upload.files.map((file, index) => (
-                        <div key={index} style={{
+                        <div key={`upload-${file.name}-${file.size}-${Date.now()}-${index}`} style={{
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
@@ -610,7 +789,7 @@ export default function FileSystem() {
             }}>해당 부서의 파일이 없습니다.</div>
             ) : (
             getCurrentPageFiles().map((file, index) => (
-                <div className="fs_filelist_row" key={`${file.id}-${index}`} style={{
+                <div className="fs_filelist_row" key={`file-${file.file_idx || file.id || Date.now()}-${index}`} style={{
                     display: 'flex',
                     padding: '12px 16px',
                     borderBottom: '1px solid #eee',
@@ -691,7 +870,7 @@ export default function FileSystem() {
                                         }
 
                                         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
-                                        const response = await fetch(`${apiUrl}/cloud/download/${file.id}?userId=${userId}`);
+                                        const response = await fetch(`${apiUrl}/cloud/download/${file.file_idx || file.id}?userId=${userId}`);
                                         
                                         if (response.ok) {
                                             // 파일 다운로드 처리
@@ -722,7 +901,7 @@ export default function FileSystem() {
                     {canDeleteFile(file) ? (
                         <button 
                             className="fs_delete_btn" 
-                            onClick={() => handleDelete(file.id)}
+                            onClick={() => handleDelete(file.file_idx || file.id)}
                             style={{
                                 background: 'none',
                                 border: 'none',
@@ -755,7 +934,7 @@ export default function FileSystem() {
                     </button>
                     {[...Array(totalPages)].map((_, idx) => (
                       <button
-                        key={idx + 1}
+                        key={`page-${idx + 1}-${Date.now()}`}
                         className={`board_btn board_page_btn${currentPage === idx + 1 ? " active" : ""}`}
                         onClick={() => handlePageChange(idx + 1)}
                       >
@@ -772,52 +951,257 @@ export default function FileSystem() {
                   </div>
       
         
+        {/* 링크 추가 폼 */}
+        <div className="fs_link_section" style={{ marginBottom: '20px' }}>
+            <div className="fs_link_head">링크 추가</div>
+            <form className="fs_link_add_form" onSubmit={handleLinkAdd} style={{ marginTop: 10 }}>
+                <input
+                    className="fs_input"
+                    type="text"
+                    placeholder="링크명"
+                    value={link.title}
+                    onChange={e => setLink({ ...link, title: e.target.value })}
+                    style={{ width: 200, marginRight: 8 }}
+                />
+                <input
+                    className="fs_input"
+                    type="text"
+                    placeholder="url을 적어주세요."
+                    value={link.url}
+                    onChange={e => {
+                        const inputValue = e.target.value;
+                        // 영어, 숫자, 점(.), 하이픈(-), 언더스코어(_)만 허용
+                        const filteredValue = inputValue.replace(/[^a-zA-Z0-9.-_]/g, '');
+                        
+                        // 필터링된 값과 원본 값이 다르면 경고 알림
+                        if (inputValue !== filteredValue) {
+                            alert('url과 관련되지 않은 문자는 입력할 수 없습니다.');
+                        }
+                        
+                        setLink({ ...link, url: filteredValue });
+                    }}
+                    style={{ width: 300, marginRight: 8 }}
+                />
+                <button type="submit" className="fs_btn" disabled={!link.title || !link.url}>추가</button>
+            </form>
+        </div>
+
         {/* 외부 링크 공유 */}
         <div className="fs_link_section">
-            <div className="fs_link_head">외부 링크 공유</div>
+            <div className="fs_link_head">링크 공유</div>
             <div className="fs_link_list">
-            {deptLinks.length === 0 ? (
+            {filteredLinks.length === 0 ? (
                 <div className="fs_filelist_empty">등록된 외부 링크가 없습니다.</div>
             ) : (
-                deptLinks.map(link => (
-                <div className="fs_link_row" key={link.id}>
-                    <span className="fs_link_title">{link.title}</span>
-                    <a className="fs_link_url" href={link.url} target="_blank" rel="noopener noreferrer">바로가기</a>
-                    <span className="fs_link_expire">{link.expireDate}</span>
-                    <button className="fs_delete_btn" onClick={() => handleLinkDelete(link.id)}>삭제</button>
+                getCurrentPageLinks().map(link => (
+                <div className="fs_link_row" key={`link-${link.link_idx}-${link.link_name}`} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    borderBottom: '1px solid #eee',
+                    gap: '20px'
+                }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <a 
+                                className="fs_link_title" 
+                                href={link.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                style={{
+                                    color: '#007bff',
+                                    textDecoration: 'underline',
+                                    cursor: 'pointer',
+                                    fontSize: '16px',
+                                    fontWeight: 'bold',
+                                    display: 'inline-block'
+                                }}
+                            >
+                                {link.link_name}
+                            </a>
+                        </div>
+                        <span className="fs_link_uploader" style={{ 
+                            fontSize: '14px', 
+                            color: '#666',
+                            marginTop: '2px'
+                        }}>
+                            {link.uploader_name || '알 수 없음'}
+                        </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        {canEditLink(link) ? (
+                            <>
+                                <button 
+                                    className="fs_edit_btn" 
+                                    onClick={() => handleEditLink(link)}
+                                    style={{
+                                        background: 'none',
+                                        border: '1px solid #007bff',
+                                        color: '#007bff',
+                                        cursor: 'pointer',
+                                        padding: '6px 12px',
+                                        borderRadius: '4px',
+                                        fontSize: '14px'
+                                    }}
+                                >
+                                    수정
+                                </button>
+                                <button 
+                                    className="fs_delete_btn" 
+                                    onClick={() => handleLinkDelete(link.link_idx)}
+                                    style={{
+                                        background: 'none',
+                                        border: '1px solid #dc3545',
+                                        color: '#dc3545',
+                                        cursor: 'pointer',
+                                        padding: '6px 12px',
+                                        borderRadius: '4px',
+                                        fontSize: '14px'
+                                    }}
+                                >
+                                    삭제
+                                </button>
+                            </>
+                        ) : (
+                            <span style={{ color: "#bbb", fontSize: '14px' }}>-</span>
+                        )}
+                    </div>
                 </div>
                 ))
             )}
             </div>
-            {/* 링크 추가 */}
-            <form className="fs_link_add_form" onSubmit={handleLinkAdd} style={{ marginTop: 10 }}>
-            <input
-                className="fs_input"
-                type="text"
-                placeholder="링크명"
-                value={link.title}
-                onChange={e => setLink({ ...link, title: e.target.value })}
-                style={{ width: 120, marginRight: 8 }}
-            />
-            <input
-                className="fs_input"
-                type="url"
-                placeholder="https://"
-                value={link.url}
-                onChange={e => setLink({ ...link, url: e.target.value })}
-                style={{ width: 210, marginRight: 8 }}
-            />
-            <input
-                className="fs_input"
-                type="date"
-                value={link.expireDate}
-                onChange={e => setLink({ ...link, expireDate: e.target.value })}
-                style={{ width: 140, marginRight: 8 }}
-            />
-            <button type="submit" className="fs_btn" disabled={!link.title || !link.url || !link.expireDate}>추가</button>
-            </form>
+            
+            {/* 링크 페이징 */}
+            {filteredLinks.length > 0 && (
+                <div className="board_pagination" style={{ marginTop: '20px' }}>
+                    <button
+                        className="board_btn"
+                        onClick={() => handleLinkPageChange(currentLinkPage - 1)}
+                        disabled={currentLinkPage === 1}
+                    >
+                        이전
+                    </button>
+                    {[...Array(totalLinkPages)].map((_, idx) => (
+                        <button
+                            key={`link-page-${idx + 1}-${Date.now()}`}
+                            className={`board_btn board_page_btn${currentLinkPage === idx + 1 ? " active" : ""}`}
+                            onClick={() => handleLinkPageChange(idx + 1)}
+                        >
+                            {idx + 1}
+                        </button>
+                    ))}
+                    <button
+                        className="board_btn"
+                        onClick={() => handleLinkPageChange(currentLinkPage + 1)}
+                        disabled={currentLinkPage === totalLinkPages}
+                    >
+                        다음
+                    </button>
+                </div>
+            )}
         </div>
         </div>
+        
+        {/* 링크 수정 모달 */}
+        {showEditModal && editingLink && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              padding: '20px',
+              borderRadius: '8px',
+              minWidth: '400px',
+              maxWidth: '500px'
+            }}>
+              <h3 style={{ marginBottom: '20px', color: '#333' }}>링크 수정</h3>
+              <form onSubmit={handleUpdateLink}>
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                    링크명:
+                  </label>
+                  <input
+                    type="text"
+                    value={editingLink.link_name}
+                    onChange={(e) => setEditingLink({
+                      ...editingLink,
+                      link_name: e.target.value
+                    })}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px'
+                    }}
+                    required
+                  />
+                </div>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                    URL:
+                  </label>
+                  <input
+                    type="url"
+                    value={editingLink.url}
+                    onChange={(e) => setEditingLink({
+                      ...editingLink,
+                      url: e.target.value
+                    })}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px'
+                    }}
+                    required
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingLink(null);
+                    }}
+                    style={{
+                      padding: '8px 16px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      backgroundColor: '#f8f9fa',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    style={{
+                      padding: '8px 16px',
+                      border: 'none',
+                      borderRadius: '4px',
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    수정
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        
         <Footer/>
     </div>
   );
