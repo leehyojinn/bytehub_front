@@ -15,8 +15,9 @@ const departments = [
 ];
 // 근태 상태 목록
 const attendanceStates = [
-  { value: "출근", label: "출근" },
+  { value: "정상출근", label: "정상출근" },
   { value: "지각", label: "지각" },
+  { value: "정상퇴근", label: "정상퇴근" },
   { value: "조퇴", label: "조퇴" },
   { value: "결석", label: "결석" },
 ];
@@ -47,6 +48,8 @@ export default function AttendanceManagePage() {
   // 근태 수정 모달 상태
   const [editModal, setEditModal] = useState(false);
   const [editRow, setEditRow] = useState(null);
+  // 결석 처리 상태 (현재 미사용)
+  // const [isProcessingAbsence, setIsProcessingAbsence] = useState(false);
 
   // 정책 정보 불러오기 (최초 1회)
   useEffect(() => {
@@ -72,8 +75,8 @@ export default function AttendanceManagePage() {
       });
   }, []);
 
-  // 컴포넌트 마운트 시 전체 직원 출퇴근 기록 불러오기
-  useEffect(() => {
+  // 전체 직원 출퇴근 기록 불러오기 함수
+  const fetchAttendanceData = () => {
     fetch(`${apiUrl}/attendance/list/all`)
       .then(res => res.json())
       .then(result => {
@@ -87,6 +90,11 @@ export default function AttendanceManagePage() {
       .catch(err => {
         console.error('전체 근태 조회 실패:', err);
       });
+  };
+
+  // 컴포넌트 마운트 시 전체 직원 출퇴근 기록 불러오기
+  useEffect(() => {
+    fetchAttendanceData();
   }, []);
 
   // 근태 수정 모달 열기
@@ -217,6 +225,62 @@ export default function AttendanceManagePage() {
     }
   };
 
+  // 결석 자동 처리 함수 (현재 미사용 - 언젠가 구현 예정)
+  /*
+  const handleProcessAbsence = async () => {
+    console.log('결석 처리 버튼 클릭됨'); // 디버깅용
+    
+    if (isProcessingAbsence) {
+      console.log('이미 처리 중입니다.');
+      return;
+    }
+    
+    const targetDate = prompt("결석 처리할 날짜를 입력하세요 (YYYY-MM-DD 형식, 빈 값이면 전날 처리):");
+    console.log('입력받은 날짜:', targetDate); // 디버깅용
+    
+    // 취소한 경우
+    if (targetDate === null) {
+      console.log('사용자가 취소함');
+      return;
+    }
+    
+    setIsProcessingAbsence(true);
+    
+    try {
+      const requestBody = targetDate.trim() ? { targetDate: targetDate.trim() } : {};
+      console.log('요청 본문:', requestBody); // 디버깅용
+      console.log('API URL:', `${apiUrl}/attendance/process-absence`); // 디버깅용
+      
+      const response = await fetch(`${apiUrl}/attendance/process-absence`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': sessionStorage.getItem('token')
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      console.log('응답 상태:', response.status); // 디버깅용
+      const result = await response.json();
+      console.log('응답 결과:', result); // 디버깅용
+      
+      if (result.success) {
+        alert(result.msg);
+        // 성공 시 데이터 새로고침
+        fetchAttendanceData();
+      } else {
+        alert(result.msg || "결석 처리에 실패했습니다.");
+      }
+      
+    } catch (error) {
+      console.error('결석 처리 중 오류:', error);
+      alert("결석 처리 중 오류가 발생했습니다: " + error.message);
+    } finally {
+      setIsProcessingAbsence(false);
+    }
+  };
+  */
+
   // 렌더링
   return (
     <div>
@@ -257,7 +321,18 @@ export default function AttendanceManagePage() {
               />
             </form>
             {/* 정책 수정 버튼 */}
-            <button className="board_btn" onClick={() => setEditPolicy(true)}>출근/퇴근 설정</button>
+            <div className="flex gap_10">
+              <button className="board_btn" onClick={() => setEditPolicy(true)}>출근/퇴근 설정</button>
+              {/* 결석 처리 기능은 별도 페이지에서 구현 예정
+              <button 
+                className="board_btn board_btn_danger" 
+                onClick={handleProcessAbsence}
+                disabled={isProcessingAbsence}
+              >
+                {isProcessingAbsence ? "처리중..." : "결석 처리"}
+              </button>
+              */}
+            </div>
           </div>
           {/* 근태 테이블 */}
           <table className="attendance_table">

@@ -183,13 +183,16 @@ export default function Attendance() {
         // 백엔드 데이터를 프론트엔드 형식으로 변환
         const formattedLogs = result.data.map(att => {
           const date = new Date(att.att_date);
-          const time = att.in_time ? new Date(att.in_time) : new Date(att.out_time);
+          
+          // 출근/퇴근 구분: in_time이 있으면 출근, out_time이 있으면 퇴근
+          const isInRecord = att.in_time != null;
+          const time = isInRecord ? new Date(att.in_time) : new Date(att.out_time);
           
           return {
             date: date.toISOString().slice(0, 10),
-            type: att.att_type,
+            type: isInRecord ? "출근" : "퇴근", // 출근/퇴근 구분
             time: time.getHours().toString().padStart(2, "0") + ":" + time.getMinutes().toString().padStart(2, "0"),
-            status: determineStatus(att, time)
+            status: att.att_type // 백엔드에서 계산한 상태 그대로 사용
           };
         });
         
@@ -208,22 +211,7 @@ export default function Attendance() {
     }
   }
 
-  /**
-   * 출퇴근 상태를 판정하는 함수
-   * @param {Object} att - 출퇴근 기록 객체
-   * @param {Date} time - 출근 또는 퇴근 시간
-   * @returns {string} 상태 ("정상", "지각", "조퇴" 등)
-   */
-  function determineStatus(att, time) {
-    if (att.att_type === "출근") {
-      const standard = parseTime(ATTENDANCE_STANDARD);
-      return time <= standard ? "정상" : "지각";
-    } else if (att.att_type === "퇴근") {
-      // 퇴근은 기본적으로 정상으로 처리
-      return "정상";
-    }
-    return att.att_type || "정상";
-  }
+
 
   /**
    * 이메일로 인증번호 발송하는 함수
@@ -325,34 +313,10 @@ export default function Attendance() {
       return;
     }
 
-    // 성공 시 출퇴근 기록 추가
+    // 성공 시 처리
     if (mode === "in") {
-      // 출근 처리
-      const standard = parseTime(ATTENDANCE_STANDARD);
-      const status = now <= standard ? "정상" : "지각"; // 09:00 기준으로 지각 판정
-      const timeStr = now.getHours().toString().padStart(2, "0") + ":" + now.getMinutes().toString().padStart(2, "0");
-      
-      // 새로운 기록을 로컬 상태에 추가
-      const newLog = { 
-        type: "출근", 
-        time: timeStr, 
-        date: now.toISOString().slice(0, 10), 
-        status 
-      };
-      setLogs((prev) => [newLog, ...prev]);
       setUsedOtpIn(true);
     } else {
-      // 퇴근 처리
-      const timeStr = now.getHours().toString().padStart(2, "0") + ":" + now.getMinutes().toString().padStart(2, "0");
-      
-      // 새로운 기록을 로컬 상태에 추가
-      const newLog = { 
-        type: "퇴근", 
-        time: timeStr, 
-        date: now.toISOString().slice(0, 10), 
-        status: "정상" 
-      };
-      setLogs((prev) => [newLog, ...prev]);
       setUsedOtpOut(true);
     }
     

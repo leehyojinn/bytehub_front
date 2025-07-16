@@ -831,9 +831,12 @@ a:hover {
   font-weight: 600;
 }
 .att_status_정상 { background: #e3f2fd; color: var(--primary-color1);}
+.att_status_정상출근 { background: #e3f2fd; color: var(--primary-color1);}
+.att_status_정상퇴근 { background: #e3f2fd; color: var(--primary-color1);}
 .att_status_지각 { background: #ffe6e6; color: #ff6f61;}
 .att_status_조퇴 { background: #fff8e1; color: #fbc02d;}
 .att_status_결근 { background: #f5f5f5; color: #bdbdbd;}
+.att_status_결석 { background: #f5f5f5; color: #bdbdbd;}
 
 .otp_box {
   background: #f8f4ff;
