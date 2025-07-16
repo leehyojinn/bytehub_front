@@ -159,6 +159,7 @@ export default function CalendarPage() {
         console.log('events: ', events);
         console.log('startDate: ', startDate);
         console.log('endDate: ', endDate);
+        // 하...효진님이두번하래요
         // let {data}= await axios.post(`${apiUrl}/scd/insert/여기에들어가야해`);
     }
 
