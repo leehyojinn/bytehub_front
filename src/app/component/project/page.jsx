@@ -68,32 +68,34 @@ export default function ProjectManagement() {
     setUserId(getUserIdFromToken());
   }, []);
 
+  const fetchProjects = async () => {
+    try {
+      const res = await axios.get(`${apiUrl}/project/list`);
+      const me = users.find(u => u.user_id === userId);
+      const plist = (res.data.list || []).map(p => ({
+        ...p,
+        id: p.project_idx,
+        dept_idx: p.dept_idx || me?.dept_idx || "",
+        start_date: p.start_date?.split("T")[0] || "",
+        end_date: p.end_date?.split("T")[0] || "",
+        progress: p.progress || 0,
+        priority: p.priority ?? 1,
+        members: (p.members || []).map(m => m.user_id),
+        files: p.files || [],
+        status: p.status || "진행중",
+      }));
+      setProjects(plist);
+      setCurrentUser(me);
+    } catch (err) {
+      console.error("프로젝트 불러오기 실패:", err);
+    }
+  };
+
   // 프로젝트 목록
   useEffect(() => {
-    if (!userId || users.length === 0) return;
-
-    async function fetchProjects() {
-      try {
-        const res = await axios.get(`${apiUrl}/project/list`);
-        const me = users.find(u => u.user_id === userId);
-        // 서버 응답: users(멤버 아이디 배열), files(첨부파일), team(부서명) 등 포함
-        const plist = (res.data.list || []).map(p => ({
-          ...p,
-          id: p.project_idx,
-          dept_idx: p.dept_idx || me?.dept_name || "",
-          start_date: p.start_date?.split("T")[0] || "",
-          end_date: p.end_date?.split("T")[0] || "",
-          progress: p.progress || 0,
-          priority: p.priority ?? 1,
-          members: (p.members || []).map(m => m.user_id),
-          files: p.files || [],
-          status: p.status || "진행중",
-        }));
-        setProjects(plist);
-        setCurrentUser(me);
-      } catch {}
+    if (userId && users.length > 0) {
+      fetchProjects();
     }
-    if (userId && users.length > 0) fetchProjects();
   }, [userId, users]);
 
   if (!currentUser) return <div>사용자 정보를 불러오는 중입니다...</div>;
@@ -247,6 +249,7 @@ export default function ProjectManagement() {
 
       alert(isEdit ? "수정 완료!" : "등록 완료!");
       closeModal();
+      fetchProjects();
     } catch (err) {
       alert(`저장 실패: ${err?.response?.data?.message ?? err.message}`);
     }
