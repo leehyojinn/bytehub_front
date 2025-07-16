@@ -260,9 +260,16 @@ export default function ProjectManagement() {
 
   const deleteProject = async (id) => {
     if (confirm("정말 삭제하시겠습니까?")) {
-      setProjects(prev => prev.filter(p => p.id !== id));
+      let {data} = await axios.post(`${apiUrl}/project/delete`,{project_idx : id},{
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if(data && data.success){
+        fetchProjects();
+      }
     }
   };
+
+  console.log(pagedProjects);
 
   const getDeptName = (dept_idx) => {
     const dept = deptList.find(d => d.dept_idx === dept_idx);
