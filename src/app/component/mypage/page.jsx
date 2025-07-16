@@ -7,11 +7,12 @@ import {useAlertModalStore} from "@/app/zustand/store";
 import AlertModal from "../alertmodal/page";
 import CountUp from 'react-countup';
 
-const TOTAL_LEAVE = 15;
-const usedLeave = 2; // 임시 데이터
-const remainLeave = TOTAL_LEAVE - usedLeave;
+// 연차 데이터는 state로 관리
 
 export default function MyPage() {
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
     // 사용자 정보 상태
     const [memberData, setMemberData] = useState({
         id: "",
@@ -39,6 +40,14 @@ export default function MyPage() {
         password: ""
     });
 
+    // 연차 정보 상태
+    const [leaveInfo, setLeaveInfo] = useState({
+        totalLeave: 0,
+        usedLeave: 0,
+        remainLeave: 0,
+        isLoading: true
+    });
+
     // zustand alert modal
     const alertModal = useAlertModalStore();
 
@@ -51,6 +60,13 @@ export default function MyPage() {
     useEffect(() => {
         fetchUserInfo();
     }, []);
+
+    // 사용자 정보가 로드된 후 연차 정보 가져오기
+    useEffect(() => {
+        if (memberData.hire_date) {
+            fetchLeaveInfo();
+        }
+    }, [memberData.hire_date]);
 
     // 사용자 정보 가져오기
     const fetchUserInfo = async () => {
@@ -112,6 +128,85 @@ export default function MyPage() {
             });
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    // 연차 정보 가져오기
+    const fetchLeaveInfo = async () => {
+        try {
+            const token = getToken();
+            if (!token) {
+                console.log('토큰이 없어서 연차 정보를 가져올 수 없습니다.');
+                setLeaveInfo(prev => ({ ...prev, isLoading: false }));
+                return;
+            }
+
+            const response = await fetch(`${apiUrl}/leave/my`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                }
+            });
+
+            const data = await response.json();
+            console.log('연차 API 응답:', data);
+
+            if (data.success && data.data) {
+                const leaveData = Array.isArray(data.data) ? data.data[0] : data.data;
+                const remainDays = leaveData?.remain_days || 0;
+                
+                // 총 연차를 입사일 기준으로 계산
+                let totalDays = 15; // 기본값
+                
+                if (memberData.hire_date) {
+                    const hireDate = new Date(memberData.hire_date);
+                    const currentDate = new Date();
+                    const yearsWorked = currentDate.getFullYear() - hireDate.getFullYear();
+                    
+                    // 입사일이 지났는지 확인 (생일이 안 지났으면 -1)
+                    const hasAnniversaryPassed = 
+                        currentDate.getMonth() > hireDate.getMonth() || 
+                        (currentDate.getMonth() === hireDate.getMonth() && currentDate.getDate() >= hireDate.getDate());
+                    
+                    const actualYearsWorked = hasAnniversaryPassed ? yearsWorked : yearsWorked - 1;
+                    
+                    if (actualYearsWorked >= 1) {
+                        // 1년 이상 근무: 15 + (근속년수 - 1)
+                        totalDays = 15 + Math.max(0, actualYearsWorked - 1);
+                    } else {
+                        // 1년 미만 근무: 월차 (입사월부터 12월까지)
+                        const monthsWorked = Math.max(1, 12 - hireDate.getMonth());
+                        totalDays = monthsWorked;
+                    }
+                }
+                
+                const usedDays = Math.max(0, totalDays - remainDays);
+
+                setLeaveInfo({
+                    totalLeave: totalDays,
+                    usedLeave: usedDays,
+                    remainLeave: remainDays,
+                    isLoading: false
+                });
+            } else {
+                console.log('연차 데이터가 없거나 오류:', data.msg);
+                // 데이터가 없을 때 기본값 설정
+                setLeaveInfo({
+                    totalLeave: 15,
+                    usedLeave: 0,
+                    remainLeave: 15,
+                    isLoading: false
+                });
+            }
+        } catch (error) {
+            console.error('연차 정보 조회 오류:', error);
+            setLeaveInfo({
+                totalLeave: 15,
+                usedLeave: 0,
+                remainLeave: 15,
+                isLoading: false
+            });
         }
     };
 
@@ -339,18 +434,32 @@ export default function MyPage() {
                                 <div className="mypage_leave_grid">
                                     <div className="mypage_leave_item total">
                                         <span className="leave_title">총 연차</span>
-                                        <b><CountUp duration={2.75} end={TOTAL_LEAVE} />일</b>
+                                        <b>
+                                            {leaveInfo.isLoading ? (
+                                                <span>로딩...</span>
+                                            ) : (
+                                                <><CountUp duration={2.75} end={leaveInfo.totalLeave} />일</>
+                                            )}
+                                        </b>
                                     </div>
                                     <div className="mypage_leave_item used">
                                         <span className="leave_title">사용</span>
                                         <b>
-                                            <CountUp duration={2.75} end={usedLeave} />일
+                                            {leaveInfo.isLoading ? (
+                                                <span>로딩...</span>
+                                            ) : (
+                                                <><CountUp duration={2.75} end={leaveInfo.usedLeave} />일</>
+                                            )}
                                         </b>
                                     </div>
                                     <div className="mypage_leave_item remain">
                                         <span className="leave_title">남음</span>
                                         <b>
-                                            <CountUp duration={2.75} end={remainLeave} />일
+                                            {leaveInfo.isLoading ? (
+                                                <span>로딩...</span>
+                                            ) : (
+                                                <><CountUp duration={2.75} end={leaveInfo.remainLeave} />일</>
+                                            )}
                                         </b>
                                     </div>
                                 </div>
