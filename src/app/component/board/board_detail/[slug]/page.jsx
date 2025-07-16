@@ -71,7 +71,7 @@ export default function BoardDetail() {
         const fetchPostDetail = async () => {
             try {
                 setLoading(true);
-                const token = sessionStorage.getItem('token');
+                const token = localStorage.getItem('token');
                 
                 if (!token) {
                     setError('로그인이 필요합니다.');
@@ -276,7 +276,7 @@ export default function BoardDetail() {
                                             <div key={idx} className="file_item mb_15">
                                                 {isImage ? (
                                                     // 이미지 파일인 경우 미리보기 표시
-                                                    <div className="image_preview_wrap" style={{ textAlign: 'center' }}>
+                                                    <div className="image_preview_wrap">
                                                         <img 
                                                             src={`${apiUrl}/file/download/${file.file_idx}`} 
                                                             alt={file.name}
@@ -287,9 +287,7 @@ export default function BoardDetail() {
                                                                 objectFit: 'contain',
                                                                 border: '1px solid #ddd',
                                                                 borderRadius: '4px',
-                                                                marginBottom: '10px',
-                                                                display: 'block',
-                                                                margin: '0 auto 10px auto'
+                                                                marginBottom: '10px'
                                                             }}
                                                         />
                                                         <div className="file_info">

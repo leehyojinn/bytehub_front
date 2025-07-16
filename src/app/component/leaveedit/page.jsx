@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
+
+// API 서버 주소
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 const initialPolicy = {
   year: 2025,
@@ -14,58 +17,103 @@ const initialPolicy = {
   monthlyStartMonth: 1,
 };
 
-const initialMembers = [
-  {
-    id: "hong123",
-    name: "홍길동",
-    join_date: "2022-01-01",
-    annual_used: 3,
-    monthly_used: 2,
-    sick_used: 0,
-  },
-  {
-    id: "kim456",
-    name: "김철수",
-    join_date: "2023-06-15",
-    annual_used: 1,
-    monthly_used: 1,
-    sick_used: 0,
-  },
-];
-
-// 연차 자동 계산 함수 (입사일 기준, 1년 만근 15개, 3년차 15개, 1달 1개 등)
-function calcAnnualTotal(join_date, now = new Date(), base = 15) {
-  if (!join_date) return 0;
-  const join = new Date(join_date);
-  const years = now.getFullYear() - join.getFullYear();
-  if (years < 1) {
-    const months = (now.getFullYear() - join.getFullYear()) * 12 + (now.getMonth() - join.getMonth());
-    return Math.min(months, 11);
-  } else if (years === 1) {
-    return 15;
-  } else if (years >= 3) {
-    return 15;
-  } else {
-    return 15;
-  }
-}
-function calcMonthlyTotal(join_date, now = new Date(), base = 12) {
-  if (!join_date) return 0;
-  const join = new Date(join_date);
-  const months = (now.getFullYear() - join.getFullYear()) * 12 + (now.getMonth() - join.getMonth());
-  return Math.min(months + 1, base);
-}
-function calcSickTotal(policy) {
-  return policy.sick;
-}
+// API에서 연차 정보를 직접 계산해서 전달하므로 아래 함수들은 사용하지 않음
+// function calcAnnualTotal(join_date, now = new Date(), base = 15) { ... }
+// function calcMonthlyTotal(join_date, now = new Date(), base = 12) { ... }
+// function calcSickTotal(policy) { ... }
 
 export default function VacationEditPage() {
   const [policy, setPolicy] = useState(initialPolicy);
-  const [members, setMembers] = useState(initialMembers);
+  // 사원별 연/월차 현황할거임
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [editPolicy, setEditPolicy] = useState(false);
   const [search, setSearch] = useState("");
   const [editModal, setEditModal] = useState(false);
   const [editMember, setEditMember] = useState(null);
+ 
+  // 연차 부여
+  const [grantLeaveModal, setGrantLeaveModal] = useState(false);
+  const [grantLeaveForm, setGrantLeaveForm] = useState({
+    targetMember: "",
+    amount: 1,
+    reason: ""
+  });
+  
+  // 체크박스 관련 상태
+  const [selectedMembers, setSelectedMembers] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+
+  // API에서 직원 연차 데이터 가져오기
+  const fetchMembersLeaveData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = sessionStorage.getItem('token');
+      if (!token) {
+        throw new Error('로그인이 필요합니다.');
+      }
+
+      console.log('API 호출 URL:', `${apiUrl}/leave/all`);
+      console.log('토큰:', token ? '있음' : '없음');
+
+      const response = await fetch(`${apiUrl}/leave/all`, {
+        method: 'GET',
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      // 백엔드 응답 구조: { success: true, data: [...] }
+      console.log('백엔드 응답 전체:', result);
+      console.log('백엔드에서 받은 데이터 개수:', result.data ? result.data.length : 0);
+      
+      if (!result.success) {
+        console.error('백엔드 에러 세부사항:', result.error);
+        throw new Error(result.msg || '데이터 조회에 실패했습니다.');
+      }
+
+      // API 응답 데이터를 기존 컴포넌트 구조에 맞게 변환
+      const transformedMembers = result.data.map(member => ({
+        id: member.mem_idx,
+        name: member.name,
+        dept_name: member.dept_name || '미배정', // 백엔드에서 받은 부서명
+        level_name: member.level_name || '미배정', // 백엔드에서 받은 직급명
+        email: member.email,
+        join_date: member.hire_date ? member.hire_date.split('T')[0] : '', // ISO 날짜를 YYYY-MM-DD 형식으로 변환
+        total_leave: 0, // 일단 기본값
+        used_leave: 0, // 일단 기본값
+        remain_days: 0, // 일단 기본값
+        // 기존 구조 호환을 위한 필드들
+        annual_used: 0,
+        monthly_used: 0,
+        sick_used: 0
+      }));
+
+      console.log('변환된 members 데이터:', transformedMembers);
+      console.log('변환된 members 개수:', transformedMembers.length);
+      setMembers(transformedMembers);
+    } catch (err) {
+      console.error('연차 데이터 조회 실패:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 컴포넌트 마운트 시 데이터 로드
+  useEffect(() => {
+    fetchMembersLeaveData();
+  }, []);
 
   // 정책 저장
   const handlePolicySave = (e) => {
@@ -82,34 +130,151 @@ export default function VacationEditPage() {
     setEditPolicy(false);
   };
 
-  // 연차/월차/병가 사용(1일 차감)
-  const handleUse = (id, type) => {
-    setMembers(prev =>
-        prev.map(m =>
-            m.id === id
-                ? { ...m, [`${type}_used`]: m[`${type}_used`] + 1 }
-                : m
-        )
-    );
-  };
+  // API 연동으로 인해 더 이상 사용하지 않는 함수
+  // const handleUse = (id, type) => { ... };
 
   // 연차/월차/병가 직접 수정 모달
   const openEditModal = (m) => {
     setEditMember({ ...m });
     setEditModal(true);
   };
-  const handleEditSave = (e) => {
+
+  // 연차 부여 모달 열기
+  const openGrantLeaveModal = () => {
+    setGrantLeaveForm({
+      targetMember: "",
+      amount: 1,
+      reason: ""
+    });
+    setGrantLeaveModal(true);
+  };
+
+  // 연차 부여 처리
+  const handleGrantLeave = async (e) => {
     e.preventDefault();
-    setMembers(prev =>
-        prev.map(m => m.id === editMember.id ? { ...editMember } : m)
+    
+    if (selectedMembers.length === 0) {
+      alert("연차를 부여할 사원을 선택해주세요.");
+      return;
+    }
+
+    // TODO: 백엔드에 연차 부여 API 구현 필요
+    // 현재는 임시로 로컬 상태만 업데이트
+    console.log("연차 부여:", {
+      selectedMembers,
+      amount: grantLeaveForm.amount,
+      reason: grantLeaveForm.reason
+    });
+    
+    // 임시로 로컬 상태 업데이트 (실제로는 API 호출)
+    setMembers(prev => 
+      prev.map(m => 
+        selectedMembers.includes(m.id)
+          ? { 
+              ...m, 
+              total_leave: m.total_leave + grantLeaveForm.amount,
+              remain_days: m.remain_days + grantLeaveForm.amount
+            }
+          : m
+      )
     );
-    setEditModal(false);
+    
+    alert(`선택된 ${selectedMembers.length}명의 사원에게 ${grantLeaveForm.amount}일의 연차가 부여되었습니다.`);
+    
+    // 선택 해제 및 모달 닫기
+    setSelectedMembers([]);
+    setSelectAll(false);
+    setGrantLeaveModal(false);
+  };
+
+  // 개별 체크박스 토글
+  const handleMemberCheck = (memberId) => {
+    setSelectedMembers(prev => {
+      if (prev.includes(memberId)) {
+        const newSelected = prev.filter(id => id !== memberId);
+        setSelectAll(false);
+        return newSelected;
+      } else {
+        const newSelected = [...prev, memberId];
+        const filtered = members.filter(m => 
+          m.id.includes(search) || m.name.includes(search)
+        );
+        setSelectAll(newSelected.length === filtered.length);
+        return newSelected;
+      }
+    });
+  };
+
+  // 전체 선택 토글
+  const handleSelectAll = () => {
+    const filtered = members.filter(m => 
+      m.id.includes(search) || m.name.includes(search)
+    );
+    
+    if (selectAll) {
+      setSelectedMembers([]);
+      setSelectAll(false);
+    } else {
+      setSelectedMembers(filtered.map(m => m.id));
+      setSelectAll(true);
+    }
+  };
+
+  // 선택된 사원들에게 연차 부여
+  const openGrantLeaveModalForSelected = () => {
+    if (selectedMembers.length === 0) {
+      alert("연차를 부여할 사원을 선택해주세요.");
+      return;
+    }
+    
+    setGrantLeaveForm({
+      targetMember: "", // 다중 선택이므로 빈값
+      amount: 1,
+      reason: ""
+    });
+    setGrantLeaveModal(true);
+  };
+  const handleEditSave = async (e) => {
+    e.preventDefault();
+    
+    try {
+      // TODO: 백엔드에 연차 수정 API 구현 필요
+      // const response = await fetch(`${apiUrl}/leave/update`, { ... });
+      
+      // 현재는 로컬 상태만 업데이트
+      setMembers(prev =>
+          prev.map(m => m.id === editMember.id ? { ...editMember } : m)
+      );
+      
+      alert("연차 정보가 수정되었습니다.");
+      setEditModal(false);
+    } catch (error) {
+      console.error("연차 수정 실패:", error);
+      alert("연차 수정에 실패했습니다.");
+    }
   };
 
   // 검색 필터
   const filtered = members.filter(m =>
-      m.id.includes(search) || m.name.includes(search)
+      m.id.includes(search) || 
+      m.name.includes(search) || 
+      (m.dept_name && m.dept_name.includes(search)) ||
+      (m.level_name && m.level_name.includes(search))
   );
+  
+  console.log('현재 members 개수:', members.length);
+  console.log('필터링된 개수:', filtered.length);
+  console.log('검색어:', search);
+
+  // 필터링된 결과에 따라 전체 선택 상태 업데이트
+  useEffect(() => {
+    if (filtered.length > 0) {
+      const allFilteredSelected = filtered.every(m => selectedMembers.includes(m.id));
+      setSelectAll(allFilteredSelected && filtered.length > 0);
+    } else {
+      setSelectAll(false);
+    }
+  }, [filtered, selectedMembers]);
 
   return (
       <div>
@@ -151,43 +316,64 @@ export default function VacationEditPage() {
               </tr>
               </tbody>
             </table>
-            <div className="card_title font_700 mt_30 mb_10">사원별 연차/월차 현황</div>
+            <div className="card_title font_700 mt_30 mb_20">사원별 연차/월차 현황</div>
+            <div className="flex justify_between align_center mb_20">
+              <div></div>
+              <button className="board_btn" onClick={openGrantLeaveModalForSelected}>연차 부여</button>
+            </div>
             <table className="vacation_member_table">
               <thead>
               <tr>
+                <th>
+                  <label className="my_checkbox_label" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', margin: 0}}>
+                    <input
+                      type="checkbox"
+                      className="my_checkbox_input"
+                      checked={selectAll}
+                      onChange={handleSelectAll}
+                    />
+                    <span className="my_checkbox_box"></span>
+                  </label>
+                </th>
                 <th>이름</th>
+                <th>부서</th>
                 <th>직급</th>
                 <th>입사일</th>
-                <th>연차 기본 일수</th>
-                <th>가산 일수</th>
-                <th>차감 일수</th>
+                <th>총 연차</th>
+                <th>사용 연차</th>
+                <th>잔여 연차</th>
                 <th>수정/사용</th>
               </tr>
               </thead>
               <tbody>
-              {filtered.length === 0 && (
+              {loading && <tr><td colSpan={9} style={{textAlign: 'center', color: '#aaa'}}>데이터를 불러오는 중입니다...</td></tr>}
+              {error && <tr><td colSpan={9} style={{textAlign: 'center', color: 'red'}}>{error}</td></tr>}
+              {filtered.length === 0 && !loading && !error && (
                   <tr>
-                    <td colSpan={7} style={{textAlign: 'center', color: '#aaa'}}>검색 결과가 없습니다.</td>
+                    <td colSpan={9} style={{textAlign: 'center', color: '#aaa'}}>검색 결과가 없습니다.</td>
                   </tr>
               )}
               {filtered.map(m => {
-                const annualTotal = calcAnnualTotal(m.join_date, new Date(), policy.annual);
-                const monthlyTotal = calcMonthlyTotal(m.join_date, new Date(), policy.monthly);
-                const sickTotal = calcSickTotal(policy);
                 return (
                     <tr key={m.id}>
+                      <td>
+                        <label className="my_checkbox_label" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', margin: 0}}>
+                          <input
+                            type="checkbox"
+                            className="my_checkbox_input"
+                            checked={selectedMembers.includes(m.id)}
+                            onChange={() => handleMemberCheck(m.id)}
+                          />
+                          <span className="my_checkbox_box"></span>
+                        </label>
+                      </td>
                       <td>{m.name}</td>
-                      <td>{m.id}</td>
+                      <td>{m.dept_name || '-'}</td>
+                      <td>{m.level_name || '-'}</td>
                       <td>{m.join_date}</td>
-                      <td>
-                        <b>{annualTotal - m.annual_used}</b> / {annualTotal}
-                      </td>
-                      <td>
-                        <b>{monthlyTotal - m.monthly_used}</b> / {monthlyTotal}
-                      </td>
-                      <td>
-                        <b>{sickTotal - m.sick_used}</b> / {sickTotal}
-                      </td>
+                      <td><b>{m.total_leave}</b></td>
+                      <td><b>{m.used_leave}</b></td>
+                      <td><b style={{color: m.remain_days > 0 ? '#2196F3' : '#f44336'}}>{m.remain_days}</b></td>
                       <td>
                         <button className="board_btn board_btn_small" onClick={() => openEditModal(m)}>직접수정</button>
                       </td>
@@ -279,48 +465,143 @@ export default function VacationEditPage() {
               </div>
           )}
 
-          {/* 연차/월차/병가 직접 수정 모달 */}
+          {/* 연차 직접 수정 모달 */}
           {editModal && (
               <div className="modal_overlay" onClick={() => setEditModal(false)}>
                 <div className="modal_content" onClick={e => e.stopPropagation()}>
-                  <h3 className="card_title font_700 mb_20">연차/월차/병가 직접 수정</h3>
+                  <h3 className="card_title font_700 mb_20">연차 직접 수정</h3>
                   <form onSubmit={handleEditSave} className="flex flex_column gap_10">
                     <div className="board_write_row">
-                      <label className="board_write_label">연차 기본 일수</label>
+                      <label className="board_write_label">사원명</label>
                       <input
-                          type="number"
+                          type="text"
                           className="board_write_input"
-                          value={editMember.annual_used}
-                          min={0}
-                          max={calcAnnualTotal(editMember.join_date, new Date(), policy.annual)}
-                          onChange={e => setEditMember(m => ({ ...m, annual_used: Number(e.target.value) }))}
+                          value={editMember.name}
+                          disabled
+                          style={{backgroundColor: '#f5f5f5'}}
                       />
                     </div>
                     <div className="board_write_row">
-                      <label className="board_write_label">가산 일수</label>
+                      <label className="board_write_label">부서/직급</label>
                       <input
-                          type="number"
+                          type="text"
                           className="board_write_input"
-                          value={editMember.monthly_used}
-                          min={0}
-                          max={calcMonthlyTotal(editMember.join_date, new Date(), policy.monthly)}
-                          onChange={e => setEditMember(m => ({ ...m, monthly_used: Number(e.target.value) }))}
+                          value={`${editMember.dept_name || '-'} / ${editMember.level_name || '-'}`}
+                          disabled
+                          style={{backgroundColor: '#f5f5f5'}}
                       />
                     </div>
                     <div className="board_write_row">
-                      <label className="board_write_label">차감 일수</label>
+                      <label className="board_write_label">총 연차</label>
                       <input
                           type="number"
                           className="board_write_input"
-                          value={editMember.sick_used}
+                          value={editMember.total_leave}
                           min={0}
-                          max={calcSickTotal(policy)}
-                          onChange={e => setEditMember(m => ({ ...m, sick_used: Number(e.target.value) }))}
+                          max={30}
+                          onChange={e => setEditMember(m => ({ ...m, total_leave: Number(e.target.value) }))}
+                      />
+                    </div>
+                    <div className="board_write_row">
+                      <label className="board_write_label">사용 연차</label>
+                      <input
+                          type="number"
+                          className="board_write_input"
+                          value={editMember.used_leave}
+                          min={0}
+                          max={editMember.total_leave || 0}
+                          onChange={e => setEditMember(m => ({ 
+                            ...m, 
+                            used_leave: Number(e.target.value),
+                            remain_days: m.total_leave - Number(e.target.value),
+                            annual_used: Number(e.target.value) // 호환성을 위해 유지
+                          }))}
+                      />
+                    </div>
+                    <div className="board_write_row">
+                      <label className="board_write_label">잔여 연차</label>
+                      <input
+                          type="text"
+                          className="board_write_input"
+                          value={editMember.remain_days}
+                          disabled
+                          style={{backgroundColor: '#f5f5f5'}}
                       />
                     </div>
                     <div className="modal_buttons">
                       <button type="submit" className="board_btn">저장</button>
                       <button type="button" className="board_btn board_btn_cancel" onClick={() => setEditModal(false)}>취소</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+          )}
+
+          {/* 연차 부여 모달 */}
+          {grantLeaveModal && (
+              <div className="modal_overlay" onClick={() => setGrantLeaveModal(false)}>
+                <div className="modal_content" onClick={e => e.stopPropagation()}>
+                  <h3 className="card_title font_700 mb_20">연차 부여</h3>
+                  <form onSubmit={handleGrantLeave} className="flex flex_column gap_10">
+                    <div className="board_write_row">
+                      <label className="board_write_label">선택된 사원 ({selectedMembers.length}명)</label>
+                      <div className="board_write_input" style={{height: 'auto', minHeight: '40px', padding: '8px'}}>
+                        {selectedMembers.length === 0 ? (
+                          <span style={{color: '#999'}}>선택된 사원이 없습니다.</span>
+                        ) : (
+                          selectedMembers.map(memberId => {
+                            const member = members.find(m => m.id === memberId);
+                            return member ? (
+                              <span key={memberId} style={{
+                                display: 'inline-block',
+                                background: '#e3f2fd',
+                                padding: '2px 8px',
+                                margin: '2px',
+                                borderRadius: '4px',
+                                fontSize: '14px'
+                              }}>
+                                {member.name} ({member.id})
+                              </span>
+                            ) : null;
+                          })
+                        )}
+                      </div>
+                    </div>
+                    <div className="board_write_row">
+                      <label className="board_write_label">연차 종류</label>
+                      <input
+                          type="text"
+                          className="board_write_input"
+                          value="연차"
+                          disabled
+                          style={{backgroundColor: '#f5f5f5'}}
+                      />
+                    </div>
+                    <div className="board_write_row">
+                      <label className="board_write_label">부여할 일수</label>
+                      <input
+                          type="number"
+                          className="board_write_input"
+                          value={grantLeaveForm.amount}
+                          min={1}
+                          max={30}
+                          onChange={e => setGrantLeaveForm(f => ({ ...f, amount: Number(e.target.value) }))}
+                          required
+                      />
+                    </div>
+                    <div className="board_write_row">
+                      <label className="board_write_label">사유 (선택사항)</label>
+                      <textarea
+                          className="board_write_textarea"
+                          value={grantLeaveForm.reason}
+                          onChange={e => setGrantLeaveForm(f => ({ ...f, reason: e.target.value }))}
+                          placeholder="연차 부여 사유를 입력하세요"
+                          rows={3}
+                      />
+                    </div>
+                    <div className="modal_buttons">
+                      <button type="submit" className="board_btn">부여</button>
+                      <button type="button" className="board_btn board_btn_cancel" onClick={() => setGrantLeaveModal(false)}>취소</button>
                     </div>
                   </form>
                 </div>
