@@ -72,11 +72,9 @@ export default function AttendanceManagePage() {
       });
   }, []);
 
-  // 컴포넌트 마운트 시 전체 출퇴근 기록 불러오기
+  // 컴포넌트 마운트 시 전체 직원 출퇴근 기록 불러오기
   useEffect(() => {
-    const userId = sessionStorage.getItem('userId');
-    if (!userId) return;
-    fetch(`${apiUrl}/attendance/list?user_id=${userId}`)
+    fetch(`${apiUrl}/attendance/list/all`)
       .then(res => res.json())
       .then(result => {
         if (result.success && result.data) {
@@ -85,6 +83,9 @@ export default function AttendanceManagePage() {
         if (result.user_info) {
           setUserInfo(result.user_info);
         }
+      })
+      .catch(err => {
+        console.error('전체 근태 조회 실패:', err);
       });
   }, []);
 
@@ -133,12 +134,14 @@ export default function AttendanceManagePage() {
       if (result.success) {
         alert('근태 정보가 수정되었습니다.');
         setEditModal(false);
-        // 리스트 새로고침
-        const userId = sessionStorage.getItem('userId');
-        fetch(`${apiUrl}/attendance/list?user_id=${userId}`)
+        // 전체 리스트 새로고침
+        fetch(`${apiUrl}/attendance/list/all`)
           .then(res => res.json())
           .then(result => {
             if (result.success && result.data) setAttendance(result.data);
+          })
+          .catch(err => {
+            console.error('근태 데이터 새로고침 실패:', err);
           });
       } else {
         alert(result.msg || '수정에 실패했습니다.');
@@ -148,10 +151,10 @@ export default function AttendanceManagePage() {
     }
   };
 
-  // 출근/퇴근 설정 저장
+  // 출근/퇴근 기준 시간 설정 저장
   const handlePolicySave = async (e) => {
     e.preventDefault();
-    // 관리자 ID(적용대상) 예시: sessionStorage에서 가져옴
+    // 현재 로그인한 관리자 ID로 기준 시간 설정
     const userId = sessionStorage.getItem('userId');
     if (!userId) {
       alert('로그인 정보가 없습니다.');
@@ -195,6 +198,24 @@ export default function AttendanceManagePage() {
     (search.dept === "" || (a.dept_name|| "").includes(search.dept)) &&
     (search.date === "" || a.att_date === search.date)
   );
+
+  // 시간 포맷팅 함수 추가
+  const formatDateTime = (dateTimeStr) => {
+    if (!dateTimeStr) return '-';
+    
+    try {
+      const date = new Date(dateTimeStr);
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      const seconds = date.getSeconds();
+      
+      return `${month}월 ${day}일 ${hours.toString().padStart(2, '0')}시 ${minutes.toString().padStart(2, '0')}분 ${seconds.toString().padStart(2, '0')}초`;
+    } catch (error) {
+      return dateTimeStr; // 파싱 실패시 원본 반환
+    }
+  };
 
   // 렌더링
   return (
@@ -264,8 +285,8 @@ export default function AttendanceManagePage() {
                   <td>{row.user_id}</td>
                   <td>{row.dept_name || '-'}</td>
                   <td>{row.att_date}</td>
-                  <td>{row.in_time}</td>
-                  <td>{row.out_time}</td>
+                  <td>{formatDateTime(row.in_time)}</td>
+                  <td>{formatDateTime(row.out_time)}</td>
                   <td>{row.att_type}</td>
                   <td>
                     <button className="board_btn board_btn_small" onClick={() => openEditModal(row)}>수정</button>
