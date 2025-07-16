@@ -2,7 +2,7 @@
 
 import Footer from "@/app/Footer";
 import Header from "@/app/Header";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const teams = [
   { id: 1, name: "프론트엔드" },
@@ -32,8 +32,12 @@ function formatSize(bytes) {
 }
 
 export default function FileSystem() {
-  // 선택 폴더
-  const [selectedFolderId, setSelectedFolderId] = useState(folderPermissions[0].id);
+  // 사용자 정보 상태
+  const [userInfo, setUserInfo] = useState(null);
+  // 부서 목록 상태
+  const [departments, setDepartments] = useState([]);
+  // 선택된 부서
+  const [selectedDeptIdx, setSelectedDeptIdx] = useState(null);
   // 파일/링크 리스트
   const [files, setFiles] = useState([]);
   const [links, setLinks] = useState(initialLinks);
@@ -48,30 +52,84 @@ export default function FileSystem() {
   // 외부 링크 폼
   const [link, setLink] = useState({ title: "", url: "", expireDate: "" });
 
-  // 권한 파싱
-  const folder = folderPermissions.find(f => f.id === selectedFolderId);
-  const canWrite = folder.permission.includes("쓰기");
-  const canShare = folder.permission.includes("공유");
+  // 사용자 정보 가져오기
+  const fetchUserInfo = async () => {
+    try {
+      const token = sessionStorage.getItem('token');
+      if (!token) {
+        console.error('토큰이 없습니다.');
+        return;
+      }
 
-    // 파일 목록 가져오기
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
+      const response = await fetch(`${apiUrl}/mypage/info`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setUserInfo(result.data);
+          console.log('사용자 정보:', result.data);
+        } else {
+          console.error('사용자 정보 조회 실패:', result.message);
+        }
+      } else {
+        console.error('사용자 정보 조회 실패:', response.status);
+      }
+    } catch (error) {
+      console.error('사용자 정보 조회 오류:', error);
+    }
+  };
+
+  // 부서 목록 가져오기
+  const fetchDepartments = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
+      const response = await fetch(`${apiUrl}/cloud/departments`);
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setDepartments(result.data);
+        } else {
+          console.error('부서 목록 조회 실패:', result.message);
+        }
+      } else {
+        console.error('부서 목록 조회 실패:', response.status);
+      }
+    } catch (error) {
+      console.error('부서 목록 조회 오류:', error);
+    }
+  };
+
+  // 부서 탭 클릭 시 해당 부서 파일 조회
+  const onDeptTabClick = async (deptIdx) => {
+    setSelectedDeptIdx(deptIdx);
+    setCurrentPage(1); // 부서 변경 시 페이지를 1로 리셋
+  };
+
+  // 파일 목록 가져오기
   const fetchFiles = async (deptIdx) => {
+    if (!deptIdx) return;
+    
     setIsLoading(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
-      console.log('파일 목록 요청 URL:', `${apiUrl}/cloud/list?deptIdx=${deptIdx}`);
       const response = await fetch(`${apiUrl}/cloud/list?deptIdx=${deptIdx}`);
       
-      console.log('응답 상태:', response.status);
       if (response.ok) {
           const result = await response.json();
-                      console.log('백엔드 응답:', result);
-            console.log('파일 목록 데이터:', result.data);
-            if (result.success) {
+          if (result.success) {
             const fileList = result.data.map((file, index) => {
               console.log('개별 파일 데이터:', file);
               return {
                 id: file.file_idx || file.id || `temp-${Date.now()}-${index}`,
-                folder_id: file.dept_idx || file.deptIdx || selectedFolderId,
+                folder_id: file.dept_idx || file.deptIdx || selectedDeptIdx,
                 name: file.filename || file.name || '알 수 없는 파일',
                 originalName: file.original_filename || file.originalName || file.filename || file.name || '알 수 없는 파일',
                 uploader: file.uploader_name || file.user_id || file.uploader || '알 수 없음',
@@ -81,16 +139,17 @@ export default function FileSystem() {
                 uploadDate: file.created_at ? new Date(file.created_at).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
                 expireDate: file.expire_date || file.expireDate || '',
                 url: "#",
-                teamOnly: folder.team_id !== null
+                teamOnly: false,
+                uploader_lv_idx: file.lv_idx || file.uploader_lv_idx || file.uploaderLvIdx || null
               };
             });
-            console.log('변환된 파일 목록:', fileList);
+            
             setFiles(fileList);
           } else {
             console.error('파일 목록 조회 실패:', result.message);
             setFiles([]);
           }
-              } else {
+      } else {
           console.error('파일 목록 조회 실패:', response.status);
           const errorText = await response.text();
           console.error('에러 응답:', errorText);
@@ -104,11 +163,55 @@ export default function FileSystem() {
       }
   };
 
-  // 컴포넌트 마운트 시 파일 목록 가져오기
-  React.useEffect(() => {
-    fetchFiles(selectedFolderId);
-    setCurrentPage(1); // 폴더 변경 시 페이지를 1로 리셋
-  }, [selectedFolderId]);
+  // 컴포넌트 마운트 시 사용자 정보와 부서 목록 가져오기
+  useEffect(() => {
+    fetchUserInfo();
+    fetchDepartments();
+  }, []);
+
+  // 사용자 정보와 부서 목록이 로드되면 사용자의 부서를 기본 선택
+  useEffect(() => {
+    if (userInfo && departments.length > 0) {
+      const userDeptIdx = userInfo.dept_idx || userInfo.deptIdx;
+      const userLvIdx = userInfo.lv_idx || userInfo.lvIdx;
+      
+      // 사용자의 부서가 부서 목록에 있는지 확인
+      const userDept = departments.find(dept => dept.dept_idx === userDeptIdx);
+      if (userDept) {
+        setSelectedDeptIdx(userDeptIdx);
+      } else {
+        // 사용자 부서가 없으면 첫 번째 부서 선택
+        setSelectedDeptIdx(departments[0].dept_idx);
+      }
+    }
+  }, [userInfo, departments]);
+
+  // 사용자 레벨에 따른 부서 필터링
+  const getFilteredDepartments = () => {
+    if (!userInfo || !departments.length) return departments;
+    
+    const userLvIdx = userInfo.lv_idx || userInfo.lvIdx;
+    const userDeptIdx = userInfo.dept_idx || userInfo.deptIdx;
+    
+    // lv_idx가 1,2인 경우 모든 부서 표시
+    if (userLvIdx <= 2) {
+      return departments;
+    }
+    
+    // lv_idx가 3 이상인 경우 사용자 부서만 표시
+    const userDept = departments.find(dept => dept.dept_idx === userDeptIdx);
+    return userDept ? [userDept] : departments;
+  };
+
+  // 필터링된 부서 목록
+  const filteredDepartments = getFilteredDepartments();
+
+  // 선택된 부서가 변경될 때 파일 목록 가져오기
+  useEffect(() => {
+    if (selectedDeptIdx) {
+      fetchFiles(selectedDeptIdx);
+    }
+  }, [selectedDeptIdx]);
 
   // 파일 업로드
   const handleFileChange = e => {
@@ -116,10 +219,10 @@ export default function FileSystem() {
     const oversizedFiles = selectedFiles.filter(file => file.size > 10 * 1024 * 1024);
     const validFiles = selectedFiles.filter(file => file.size <= 10 * 1024 * 1024);
     
-    // 10MB 초과 파일이 있으면 한 번에 알림
+    // 10mMB 초과 파일이 있으면 한 번에 알림
     if (oversizedFiles.length > 0) {
       const fileNames = oversizedFiles.map(file => file.name).join(', ');
-      alert(`다음 파일들은 10MB를 초과하여 제외됩니다:\n${fileNames}`);
+      alert(`다음 파일들은 100MB를 초과하여 제외됩니다:\n${fileNames}`);
     }
     
     setUpload({ ...upload, files: [...upload.files, ...validFiles] });
@@ -133,7 +236,7 @@ export default function FileSystem() {
 
   const handleUpload = async e => {
     e.preventDefault();
-    if (upload.files.length === 0) return;
+    if (upload.files.length === 0 || !selectedDeptIdx) return;
 
     try {
       // 실제 사용자 정보 가져오기
@@ -151,7 +254,7 @@ export default function FileSystem() {
         try {
           const formData = new FormData();
           formData.append('file', file);
-          formData.append('deptIdx', selectedFolderId);
+          formData.append('deptIdx', selectedDeptIdx);
           formData.append('userId', userId);
           formData.append('expireDate', new Date().toISOString().slice(0, 10)); // 현재 날짜를 만료일로 설정
 
@@ -163,12 +266,11 @@ export default function FileSystem() {
 
           if (response.ok) {
             const result = await response.json();
-            console.log(`파일 업로드 성공: ${file.name}`, result);
             
             const savedFile = result.data;
             uploadResults.push({
               id: savedFile?.file_idx || savedFile?.id || Date.now(),
-              folder_id: Number(selectedFolderId),
+              folder_id: Number(selectedDeptIdx),
               name: savedFile?.filename || savedFile?.name || file.name,
               originalName: file.name,
               uploader: userId,
@@ -176,7 +278,7 @@ export default function FileSystem() {
               uploadDate: new Date().toISOString().slice(0, 10),
               expireDate: new Date().toISOString().slice(0, 10), // 현재 날짜로 설정
               url: "#",
-              teamOnly: folder.team_id !== null
+              teamOnly: false
             });
           } else {
             const errorData = await response.json();
@@ -212,11 +314,30 @@ export default function FileSystem() {
       alert(message || '업로드 완료');
       
       // 파일 목록 새로고침
-      fetchFiles(selectedFolderId);
+      fetchFiles(selectedDeptIdx);
     } catch (error) {
       console.error('업로드 오류:', error);
       alert('파일 업로드 중 오류가 발생했습니다: ' + error.message);
     }
+  };
+
+  // 삭제 권한 확인 함수
+  const canDeleteFile = (file) => {
+    if (!userInfo) return false;
+    
+    const currentUserId = sessionStorage.getItem('userId');
+    const currentUserLv = userInfo.lv_idx || userInfo.lvIdx;
+    const fileUploaderLv = file.uploader_lv_idx || file.uploaderLvIdx;
+    
+    // 파일 업로더가 본인인 경우 삭제 가능
+    if (file.user_id === currentUserId) return true;
+    
+    // 업로더 레벨 정보가 없는 경우 삭제 불가
+    if (!fileUploaderLv) return false;
+    
+    // 상위 레벨이 하위 레벨의 파일을 삭제할 수 있음
+    // lv_idx가 낮을수록 높은 권한 (1이 최고 권한)
+    return currentUserLv <= fileUploaderLv;
   };
 
   // 파일 삭제
@@ -259,7 +380,7 @@ export default function FileSystem() {
       ...links,
       {
         id: Date.now(),
-        folder_id: selectedFolderId,
+        folder_id: selectedDeptIdx,
         title: link.title,
         url: link.url,
         expireDate: link.expireDate
@@ -300,12 +421,10 @@ export default function FileSystem() {
     return diffDays;
   };
 
-  // 현재 폴더 파일/링크만 표시 (숫자 타입으로 일관되게 처리)
-  // 30일이 지난 파일은 제외
-  const folderFiles = files
-    .filter(f => Number(f.folder_id) === Number(selectedFolderId))
-    .filter(f => !isFileExpired(f.uploadDate));
-  const folderLinks = links.filter(l => Number(l.folder_id) === Number(selectedFolderId));
+  // 현재 부서 파일/링크만 표시 (숫자 타입으로 일관되게 처리)
+  const deptFiles = files
+    .filter(f => Number(f.folder_id) === Number(selectedDeptIdx));
+  const deptLinks = links.filter(l => Number(l.folder_id) === Number(selectedDeptIdx));
 
   // 페이징 관련 함수들
   const handlePageChange = (page) => {
@@ -316,52 +435,71 @@ export default function FileSystem() {
   const getCurrentPageFiles = () => {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    return folderFiles.slice(startIndex, endIndex);
+    return deptFiles.slice(startIndex, endIndex);
   };
 
   // 전체 페이지 수 계산
-  const totalPages = Math.ceil(folderFiles.length / pageSize);
+  const totalPages = Math.ceil(deptFiles.length / pageSize);
   
-  // 만료된 파일 수 계산
-  const expiredFilesCount = files
-    .filter(f => Number(f.folder_id) === Number(selectedFolderId))
-    .filter(f => isFileExpired(f.uploadDate)).length;
-  
-  // 디버깅용 로그
-  console.log('전체 파일 목록:', files);
-  console.log('선택된 폴더 ID:', selectedFolderId);
-  console.log('필터링된 파일 목록:', folderFiles);
+
 
   return (
     <div>
         <Header/>
         <div className="wrap" style={{ padding: "60px 0", maxWidth: 900, margin: "0 auto" }}>
         <h2 className="card_title font_700 mb_30">팀별 파일함</h2>
-        {expiredFilesCount > 0 && (
+        {userInfo && (
           <div style={{
             padding: '8px 12px',
-            backgroundColor: '#fff3cd',
-            border: '1px solid #ffeaa7',
+            backgroundColor: '#e3f2fd',
+            border: '1px solid #2196f3',
             borderRadius: '4px',
             marginBottom: '20px',
             fontSize: '14px',
-            color: '#856404'
+            color: '#1976d2'
           }}>
-            ⚠️ {expiredFilesCount}개의 파일이 30일이 지나 자동으로 숨겨졌습니다.
+            👤 현재 사용자: {userInfo.name} ({userInfo.dept_name || '부서 미지정'}) 
+            {userInfo.lv_idx <= 2 ? ' - 전체 부서 파일함 접근 가능' : ' - 팀별 파일함 접근 가능'}
           </div>
         )}
-        {/* 폴더/팀 선택 */}
-        <div className="fs_folder_select_row">
-            <label className="fs_label">폴더 선택</label>
-            <select className="fs_input flex_1" value={selectedFolderId} onChange={e => setSelectedFolderId(Number(e.target.value))}>
-            {folderPermissions.map(f => (
-                <option key={f.id} value={f.id}>
-                {f.name} ({f.permission}) {f.team_id ? `- ${teams.find(t => t.id === f.team_id)?.name}` : "(전체)"}
-                </option>
-            ))}
-            </select>
-            <span className="fs_permission_badge">{folder.permission}</span>
+        
+        {/* 부서 탭 */}
+        <div className="fs_dept_tabs" style={{
+          display: 'flex',
+          gap: '10px',
+          marginBottom: '30px',
+          borderBottom: '1px solid #ddd',
+          paddingBottom: '10px',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          whiteSpace: 'nowrap',
+          scrollbarWidth: 'thin',
+          scrollbarColor: '#ccc transparent'
+        }}>
+          {filteredDepartments.map(dept => (
+            <button
+              key={dept.dept_idx}
+              onClick={() => onDeptTabClick(dept.dept_idx)}
+                              style={{
+                  padding: '6px 12px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  background: selectedDeptIdx === dept.dept_idx ? '#007bff' : '#fff',
+                  color: selectedDeptIdx === dept.dept_idx ? '#fff' : '#333',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: selectedDeptIdx === dept.dept_idx ? 'bold' : 'normal',
+                  flex: filteredDepartments.length === 1 ? '0 1 auto' : '0 0 auto',
+                  whiteSpace: 'nowrap',
+                  textAlign: 'center',
+                  minWidth: filteredDepartments.length === 1 ? 'auto' : '80px'
+                }}
+            >
+              {dept.dept_name}
+            </button>
+          ))}
         </div>
+
         {/* 파일 업로드 */}
         <form className="fs_upload_form" onSubmit={handleUpload}>
             <div className="fs_upload_row">
@@ -380,11 +518,10 @@ export default function FileSystem() {
                 id="file-upload"
                 style={{ display: "none" }}
                 onChange={handleFileChange}
-                disabled={!canWrite}
                 accept="*"
                 multiple
             />
-            <button type="submit" className="fs_btn" disabled={!canWrite || upload.files.length === 0}>
+            <button type="submit" className="fs_btn" disabled={upload.files.length === 0 || !selectedDeptIdx}>
                 업로드
             </button>
             </div>
@@ -431,9 +568,8 @@ export default function FileSystem() {
                     ))}
                 </div>
             )}
-            
-            {!canWrite && <div className="fs_warn">쓰기 권한이 없습니다.</div>}
         </form>
+        
         {/* 파일 리스트 */}
         <div className="fs_filelist_box" style={{ 
             display: 'flex', 
@@ -465,13 +601,13 @@ export default function FileSystem() {
                 color: '#666',
                 fontSize: '16.32px'
             }}>파일 목록을 불러오는 중...</div>
-            ) : folderFiles.length === 0 ? (
+            ) : deptFiles.length === 0 ? (
             <div className="fs_filelist_empty" style={{
                 padding: '40px 16px',
                 textAlign: 'center',
                 color: '#666',
                 fontSize: '16.32px'
-            }}>등록된 파일이 없습니다.</div>
+            }}>해당 부서의 파일이 없습니다.</div>
             ) : (
             getCurrentPageFiles().map((file, index) => (
                 <div className="fs_filelist_row" key={`${file.id}-${index}`} style={{
@@ -583,24 +719,25 @@ export default function FileSystem() {
                     })()}
                 </span>
                 <span style={{ flex: 1, textAlign: 'center' }}>
-                    {canWrite ? (
-                    <button 
-                        className="fs_delete_btn" 
-                        onClick={() => handleDelete(file.id)}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#dc3545',
-                            cursor: 'pointer',
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            fontSize: '16.32px',
-                            textDecoration: 'underline'
-                        }}
-                        
-                    >삭제</button>
+                    {canDeleteFile(file) ? (
+                        <button 
+                            className="fs_delete_btn" 
+                            onClick={() => handleDelete(file.id)}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#dc3545',
+                                cursor: 'pointer',
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                fontSize: '16.32px',
+                                textDecoration: 'underline'
+                            }}
+                        >
+                            삭제
+                        </button>
                     ) : (
-                    <span style={{ color: "#bbb" }}>-</span>
+                        <span style={{ color: "#bbb", fontSize: '16.32px' }}>-</span>
                     )}
                 </span>
                 </div>
@@ -637,21 +774,17 @@ export default function FileSystem() {
         
         {/* 외부 링크 공유 */}
         <div className="fs_link_section">
-            <div className="fs_link_head">외부 링크 공유 {canShare ? "" : <span className="fs_warn">(공유권한 없음)</span>}</div>
+            <div className="fs_link_head">외부 링크 공유</div>
             <div className="fs_link_list">
-            {folderLinks.length === 0 ? (
+            {deptLinks.length === 0 ? (
                 <div className="fs_filelist_empty">등록된 외부 링크가 없습니다.</div>
             ) : (
-                folderLinks.map(link => (
+                deptLinks.map(link => (
                 <div className="fs_link_row" key={link.id}>
                     <span className="fs_link_title">{link.title}</span>
                     <a className="fs_link_url" href={link.url} target="_blank" rel="noopener noreferrer">바로가기</a>
                     <span className="fs_link_expire">{link.expireDate}</span>
-                    {canShare ? (
                     <button className="fs_delete_btn" onClick={() => handleLinkDelete(link.id)}>삭제</button>
-                    ) : (
-                    <span style={{ color: "#bbb" }}>-</span>
-                    )}
                 </div>
                 ))
             )}
@@ -664,7 +797,6 @@ export default function FileSystem() {
                 placeholder="링크명"
                 value={link.title}
                 onChange={e => setLink({ ...link, title: e.target.value })}
-                disabled={!canShare}
                 style={{ width: 120, marginRight: 8 }}
             />
             <input
@@ -673,7 +805,6 @@ export default function FileSystem() {
                 placeholder="https://"
                 value={link.url}
                 onChange={e => setLink({ ...link, url: e.target.value })}
-                disabled={!canShare}
                 style={{ width: 210, marginRight: 8 }}
             />
             <input
@@ -681,10 +812,9 @@ export default function FileSystem() {
                 type="date"
                 value={link.expireDate}
                 onChange={e => setLink({ ...link, expireDate: e.target.value })}
-                disabled={!canShare}
                 style={{ width: 140, marginRight: 8 }}
             />
-            <button type="submit" className="fs_btn" disabled={!canShare || !link.title || !link.url || !link.expireDate}>추가</button>
+            <button type="submit" className="fs_btn" disabled={!link.title || !link.url || !link.expireDate}>추가</button>
             </form>
         </div>
         </div>
