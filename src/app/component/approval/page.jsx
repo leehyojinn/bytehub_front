@@ -296,7 +296,7 @@ export default function ApprovalSystem() {
 
       const data = await response.json();
       if (data.success) {
-        alert(status === '승인' ? '승인 처리되었습니다.' : '반려 처리되었습니다.');
+        alert(status === '승인완료' ? '승인 처리되었습니다.' : '반려 처리되었습니다.');
         setSelectedDoc(null);
         fetchApprovals();
         fetchToApproveList();
@@ -1011,7 +1011,7 @@ export default function ApprovalSystem() {
                             <React.Fragment key={idx}>
                               <button
                                 className="approval_btn"
-                                onClick={() => handleApproval(myHistory.appr_his_idx, '승인')}
+                                onClick={() => handleApproval(myHistory.appr_his_idx, '승인완료')}
                               >
                                 결재 승인
                               </button>
