@@ -180,11 +180,11 @@ export default function CalendarPage() {
                         </div>
                         {/*일정등록버튼*/}
                         <div className="flex gap_10 align_center">
-                            <button className="caleandar_btn" onClick={() => {
+                            <button className="caleandar_btn" style={{backgroundColor:typeColors.company}} onClick={() => {
                                 type.current='회사'
                                 setShowModal(true);
                             }}>+ 회사 일정 등록</button>
-                            <button className="caleandar_btn" onClick={() => {
+                            <button className="caleandar_btn" style={{backgroundColor:typeColors.team}} onClick={() => {
                                 type.current='팀'
                                 setShowModal(true);
                             }}>+ 팀 일정 등록</button>
