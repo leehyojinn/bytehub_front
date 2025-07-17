@@ -97,7 +97,8 @@ export default function EmergencyContact() {
   // 전송
   const handleSend = async (e) => {
     e.preventDefault();
-    let{data}=await axios.post(`${apiUrl}/email/emergency`, {receiver:receivers, subject:mail.subject, content:mail.content});
+    let{data}=await axios.post(`${apiUrl}/email/emergency`,
+        {receiver:receivers.map(r=>r.email), subject:mail.subject, content:mail.content});
     alert(data.msg);
     // alert("이메일 발송 \n\n수신자:\n" + receivers.map(r => `${r.name} <${r.email}>`).join("\n"));
   };
