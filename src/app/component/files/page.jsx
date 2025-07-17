@@ -38,6 +38,8 @@ export default function FileSystem() {
   const [editingLink, setEditingLink] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
   // 사용자 정보 가져오기
   const fetchUserInfo = async () => {
     try {
@@ -47,7 +49,7 @@ export default function FileSystem() {
         return;
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
+      
       const response = await fetch(`${apiUrl}/mypage/info`, {
         method: 'GET',
         headers: {
@@ -74,7 +76,6 @@ export default function FileSystem() {
   // 부서 목록 가져오기
   const fetchDepartments = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
       const response = await fetch(`${apiUrl}/cloud/departments`);
       
       if (response.ok) {
@@ -104,7 +105,6 @@ export default function FileSystem() {
     
     setIsLoading(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
       const response = await fetch(`${apiUrl}/cloud/list?deptIdx=${deptIdx}`);
       
       if (response.ok) {
@@ -241,7 +241,6 @@ export default function FileSystem() {
           formData.append('userId', userId);
           formData.append('expireDate', new Date().toISOString().slice(0, 10)); // 현재 날짜를 만료일로 설정
 
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
           const response = await fetch(`${apiUrl}/cloud/upload`, {
             method: 'POST',
             body: formData,
@@ -331,7 +330,6 @@ export default function FileSystem() {
     }
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
       const response = await fetch(`${apiUrl}/cloud/delete/${id}`, {
         method: 'DELETE',
       });
@@ -373,7 +371,6 @@ export default function FileSystem() {
         finalUrl = 'https://' + finalUrl;
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
       const formData = new FormData();
       formData.append('linkName', link.title);
       formData.append('url', finalUrl);
@@ -413,7 +410,6 @@ export default function FileSystem() {
         return;
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
       // 백엔드 수정 전까지 임시로 userId 파라미터 유지
       const response = await fetch(`${apiUrl}/cloud/link/list?userId=${userId}`);
       
@@ -448,7 +444,6 @@ export default function FileSystem() {
     if (!editingLink.link_name || !editingLink.url) return;
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
       const formData = new FormData();
       formData.append('linkIdx', editingLink.link_idx);
       formData.append('linkName', editingLink.link_name);
@@ -516,7 +511,6 @@ export default function FileSystem() {
     if (!confirm('정말 삭제하시겠습니까?')) return;
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
       const response = await fetch(`${apiUrl}/cloud/link/delete/${id}`, {
         method: 'DELETE'
       });
@@ -869,7 +863,6 @@ export default function FileSystem() {
                                             return;
                                         }
 
-                                        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost';
                                         const response = await fetch(`${apiUrl}/cloud/download/${file.file_idx || file.id}?userId=${userId}`);
                                         
                                         if (response.ok) {

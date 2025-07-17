@@ -83,7 +83,7 @@ export default function MyPage() {
                 return;
             }
 
-            const response = await fetch('http://localhost/mypage/info', {
+            const response = await fetch(`${apiUrl}/mypage/info`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -226,7 +226,7 @@ export default function MyPage() {
                 return;
             }
 
-            const response = await fetch('http://localhost/mypage/verify-password', {
+            const response = await fetch(`${apiUrl}/mypage/verify-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -294,7 +294,7 @@ export default function MyPage() {
                 updateData.new_password = editInfo.password;
             }
 
-            const response = await fetch('http://localhost/mypage/update', {
+            const response = await fetch(`${apiUrl}/mypage/update`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

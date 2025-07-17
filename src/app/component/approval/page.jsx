@@ -6,7 +6,7 @@ import React, { useState, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 
 const ITEMS_PER_PAGE = 10; // 페이지당 표시할 항목 수
-
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 function Modal({ isOpen, onClose, children }) {
   useEffect(() => {
     if (!isOpen) return;
@@ -78,7 +78,7 @@ export default function ApprovalSystem() {
       const token = sessionStorage.getItem("token");
       if (!token) return;
 
-      const response = await fetch('http://localhost/mypage/info', {
+      const response = await fetch(`${apiUrl}/mypage/info`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -105,7 +105,7 @@ export default function ApprovalSystem() {
   // 사용자 목록 가져오기 (POST)
   const fetchUserList = async () => {
     try {
-      const response = await fetch('http://localhost/member/list', { method: 'POST' });
+      const response = await fetch(`${apiUrl}/member/list`, { method: 'POST' });
       const data = await response.json();
       if (data.list) {
         return data.list;
@@ -187,7 +187,7 @@ export default function ApprovalSystem() {
   const fetchApprovals = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost/appr/my?writer_id=${userId}`);
+      const response = await fetch(`${apiUrl}/appr/my?writer_id=${userId}`);
       const data = await response.json();
       if (data.success) {
         setApprovals(data.data);
@@ -202,7 +202,7 @@ export default function ApprovalSystem() {
   const fetchToApproveList = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost/appr/toapprove?user_id=${userId}`);
+      const response = await fetch(`${apiUrl}/appr/toapprove?user_id=${userId}`);
       const data = await response.json();
       if (data.success) {
         setToApproveList(data.data);
@@ -217,11 +217,11 @@ export default function ApprovalSystem() {
   // 결재 문서 상세 보기
   const fetchApprovalDetail = async (appr_idx) => {
     try {
-      const response = await fetch(`http://localhost/appr/detail/${appr_idx}`);
+      const response = await fetch(`${apiUrl}/appr/detail/${appr_idx}`);
       const data = await response.json();
       if (data.success) {
         let doc = data.data;
-        const historyResponse = await fetch(`http://localhost/appr/history/${appr_idx}`);
+        const historyResponse = await fetch(`${apiUrl}/appr/history/${appr_idx}`);
         const historyData = await historyResponse.json();
         if (historyData.success) {
           doc = { ...doc, history: historyData.data };
@@ -255,7 +255,7 @@ export default function ApprovalSystem() {
         formData.append("files", file);
       });
 
-      const response = await fetch('http://localhost/appr/create', {
+      const response = await fetch(`${apiUrl}/appr/create`, {
         method: 'POST',
         body: formData
       });
@@ -282,7 +282,7 @@ export default function ApprovalSystem() {
 
   const handleApproval = async (appr_his_idx, status, reason = "") => {
     try {
-      const response = await fetch('http://localhost/appr/status', {
+      const response = await fetch(`${apiUrl}/appr/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -314,7 +314,7 @@ export default function ApprovalSystem() {
   const fetchAllApprovals = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost/appr/all?user_id=${userId}`);
+      const response = await fetch(`${apiUrl}/appr/all?user_id=${userId}`);
       const data = await response.json();
       if (data.success) {
         setAllApprovals(data.data);
@@ -329,7 +329,7 @@ export default function ApprovalSystem() {
   // 파일 다운로드 함수 (모달 등에서 사용 가능하게 ApprovalSystem 내부에 정의)
   const handleFileDownload = async (fileIdx, fileName) => {
     try {
-      const response = await fetch(`http://localhost/appr/download/${fileIdx}`, {
+      const response = await fetch(`${apiUrl}/appr/download/${fileIdx}`, {
         method: 'GET'
       });
       if (response.ok) {
