@@ -2,7 +2,7 @@
 
 
 import React, { useState } from "react";
-
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const gender = [
   { id: 1, name: "남자" },
   { id: 2, name: "여자" },
@@ -23,12 +23,6 @@ export default function Signup() {
   const [pwFocus, setPwFocus] = useState(false);
   const [isIdAvailable, setIsIdAvailable] = useState(false); // 아이디 사용 가능 여부
   const [isIdChecked, setIsIdChecked] = useState(false); // 아이디 중복체크 완료 여부
-
-
-
-
-
-
 
   React.useEffect(() => {
     const len = form.user_id.length;
@@ -73,7 +67,7 @@ export default function Signup() {
     }
 
     try {
-      const response = await fetch(`http://localhost/member/overlay/${form.user_id}`, {
+      const response = await fetch(`${apiUrl}/member/overlay/${form.user_id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +106,7 @@ export default function Signup() {
     }
 
     try {
-      const response = await fetch('http://localhost/member/join', {
+      const response = await fetch(`${apiUrl}/member/join`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
