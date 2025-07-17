@@ -111,6 +111,11 @@ export default function CalendarPage() {
         }
     }, []);
 
+    // 수정
+    const editEvent=(subject)=>{
+
+    }
+
     // 입력버튼
     const handleAddPersonalEvent = (e) => {
         e.preventDefault();
@@ -148,23 +153,23 @@ export default function CalendarPage() {
         setEndDate(today);
 
         // axios
-        inputScd();
+        inputScd(type.current);
 
         setShowModal(false);
 
     };
 
 
-    const inputScd = async () => {
+    const inputScd = async (type) => {
         console.log('events: ', events);
         console.log('startDate: ', startDate);
         console.log('endDate: ', endDate);
+        console.log('type: ', type);
         // 하...효진님이두번하래요
         // let {data}= await axios.post(`${apiUrl}/scd/insert/여기에들어가야해`);
     }
 
     const type=useRef('');
-
 
     return (
         <div>
@@ -181,15 +186,15 @@ export default function CalendarPage() {
                         {/*일정등록버튼*/}
                         <div className="flex gap_10 align_center">
                             <button className="caleandar_btn" style={{backgroundColor:typeColors.company}} onClick={() => {
-                                type.current='회사'
+                                type.current='company'
                                 setShowModal(true);
                             }}>+ 회사 일정 등록</button>
                             <button className="caleandar_btn" style={{backgroundColor:typeColors.team}} onClick={() => {
-                                type.current='팀'
+                                type.current='team'
                                 setShowModal(true);
                             }}>+ 팀 일정 등록</button>
                             <button className="caleandar_btn" onClick={() => {
-                                type.current='개인'
+                                type.current='personal'
                                 setShowModal(true);
                             }}>+ 개인 일정 등록</button>
                         </div>
@@ -232,9 +237,10 @@ export default function CalendarPage() {
 
 
 
-//
+// insert 모달창
 function InsertModal({setShowModal, handleAddPersonalEvent, startDate, endDate,
                          modalTitle, setModalTitle, setEndDate, setStartDate, type}) {
+
 
     return(
         <div className="modal_overlay" onClick={() => setShowModal(false)}>
