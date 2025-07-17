@@ -26,9 +26,8 @@ const typeLabels = {
     attendance: "근태",
     project: "프로젝트",
 };
-
 // initial today
-const today = "2025-07-03";
+let today = new Date();
 
 // initial events
 const calendar_events = [
@@ -107,13 +106,14 @@ export default function CalendarPage() {
     useEffect(() => {
         if (sessionStorage) {
             userId.current = sessionStorage.getItem('userId');
-            // console.log(userId.current+' loaded.');
         }
+        callEvents();
     }, []);
 
-    // 수정
-    const editEvent=(subject)=>{
-
+    // 서버에서 일정을 불러오는 함수
+    const callEvents = async () => {
+        let {data} = await axios.get(`${apiUrl}/scd/total`);
+        console.log(data.scd_list);
     }
 
     // 입력버튼
@@ -153,14 +153,15 @@ export default function CalendarPage() {
         setEndDate(today);
 
         // axios
-        inputScd(type.current);
+        inputEvents(type.current);
 
         setShowModal(false);
 
     };
 
 
-    const inputScd = async (type) => {
+    const type=useRef('');
+    const inputEvents = async (type) => {
         console.log('events: ', events);
         console.log('startDate: ', startDate);
         console.log('endDate: ', endDate);
@@ -169,13 +170,11 @@ export default function CalendarPage() {
         // let {data}= await axios.post(`${apiUrl}/scd/insert/여기에들어가야해`);
     }
 
-    const type=useRef('');
 
     return (
         <div>
             <Header/>
             <div className="wrap padding_60_0">
-
                 <div className="main_box calendar_card flex_1">
                     <div className="card_title font_700 mb_10">일정관리</div>
                     <div className="flex gap_10 align_center mb_20 justify_between">
@@ -212,6 +211,12 @@ export default function CalendarPage() {
                             right: 'prev,next today'
                         }}
                         dayMaxEvents={2}
+                        // eventClick={(info) => {
+                        //     console.log("클릭됨:", info.event.title);  // 작동 확인
+                        //     console.log("전체 이벤트 객체:", info.event);
+                        //     alert(`이벤트: ${info.event.title}`);
+                        // }}
+                        //   clickEvents 어쩌구는 globals.css의 fc어쩌구 지워야하는데 어쩌지
                     />
 
                     {/* 일정 등록 모달 */}
@@ -240,7 +245,6 @@ export default function CalendarPage() {
 // insert 모달창
 function InsertModal({setShowModal, handleAddPersonalEvent, startDate, endDate,
                          modalTitle, setModalTitle, setEndDate, setStartDate, type}) {
-
 
     return(
         <div className="modal_overlay" onClick={() => setShowModal(false)}>
