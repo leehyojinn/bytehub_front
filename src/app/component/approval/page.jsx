@@ -245,7 +245,14 @@ export default function ApprovalSystem() {
       const formData = new FormData();
       formData.append("writer_id", userId);
       formData.append("subject", title);
-      formData.append("content", content);
+      
+      // 연차 결재인 경우 content에 날짜 정보 포함 (표시용으로만 사용)
+      let finalContent = content;
+      if (approvalType === "연차") {
+        finalContent = `${content}\n\n시작일: ${vacStart}\n종료일: ${vacEnd}`;
+      }
+      
+      formData.append("content", finalContent);
       formData.append("appr_type", approvalType);
       if (approvalType === "연차") {
         formData.append("vac_start", vacStart);
@@ -393,6 +400,32 @@ export default function ApprovalSystem() {
     }
   };
 
+  // 연차 결재에서 날짜 정보 추출하는 함수
+  const extractVacationDates = (content, vacStart, vacEnd) => {
+    // 1. content에서 날짜 정보 추출 시도
+    if (content) {
+      const startMatch = content.match(/시작일:\s*(\d{4}-\d{2}-\d{2})/);
+      const endMatch = content.match(/종료일:\s*(\d{4}-\d{2}-\d{2})/);
+      
+      if (startMatch && endMatch) {
+        return {
+          startDate: startMatch[1],
+          endDate: endMatch[1]
+        };
+      }
+    }
+    
+    // 2. 별도 필드에서 날짜 정보 추출 시도
+    if (vacStart && vacEnd) {
+      return {
+        startDate: vacStart,
+        endDate: vacEnd
+      };
+    }
+    
+    return null;
+  };
+
   const myApprovals = approvals.filter(doc => doc.writer_id === userId);
   
   // 페이지네이션을 위한 데이터 처리
@@ -511,7 +544,15 @@ export default function ApprovalSystem() {
                       type="date"
                       className="approval_input"
                       value={vacStart}
-                      onChange={e => setVacStart(e.target.value)}
+                      onChange={e => {
+                        const selectedDate = e.target.value;
+                        setVacStart(selectedDate);
+                        // 시작일이 변경되면 종료일이 시작일보다 이전이면 종료일을 시작일로 설정
+                        if (vacEnd && selectedDate > vacEnd) {
+                          setVacEnd(selectedDate);
+                        }
+                      }}
+                      min={new Date().toISOString().split('T')[0]} // 오늘 이전 날짜 선택 불가
                       required
                       style={{ flex: 1 }}
                       placeholder="시작일"
@@ -522,6 +563,7 @@ export default function ApprovalSystem() {
                       className="approval_input"
                       value={vacEnd}
                       onChange={e => setVacEnd(e.target.value)}
+                      min={vacStart || new Date().toISOString().split('T')[0]} // 시작일 이후 또는 오늘 이후만 선택 가능
                       required
                       style={{ flex: 1 }}
                       placeholder="종료일"
@@ -594,36 +636,49 @@ export default function ApprovalSystem() {
                       <th>상태</th>
                       <th>종류</th>
                       <th>기안일</th>
+                      <th>연차 기간</th>
                       <th>첨부파일</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {currentMyApprovals.map(doc => (
-                      <tr key={doc.appr_idx}>
-                        <td>{doc.appr_idx}</td>
-                        <td>
-                          <button
-                            className="approval_link"
-                            onClick={() => fetchApprovalDetail(doc.appr_idx)}
-                          >
-                            {doc.subject}
-                          </button>
-                        </td>
-                        <td>{doc.writer_id}</td>
-                        <td>
-                          <span className={`approval_status_badge ${getStatusBadgeClass(doc.final_status)}`}>
-                            {getStatusDisplay(doc.final_status)}
-                          </span>
-                        </td>
-                        <td>{doc.appr_type}</td>
-                        <td>{doc.appr_date ? new Date(doc.appr_date).toLocaleDateString() : '-'}</td>
-                        <td>
-                          <span style={{ textAlign: "center" }}>
-                            {doc.has_files === "있음" ? "O" : "-"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {currentMyApprovals.map(doc => {
+                      const vacationDates = doc.appr_type === "연차" ? extractVacationDates(doc.content, doc.vac_start, doc.vac_end) : null;
+                      return (
+                        <tr key={doc.appr_idx}>
+                          <td>{doc.appr_idx}</td>
+                          <td>
+                            <button
+                              className="approval_link"
+                              onClick={() => fetchApprovalDetail(doc.appr_idx)}
+                            >
+                              {doc.subject}
+                            </button>
+                          </td>
+                          <td>{doc.writer_id}</td>
+                          <td>
+                            <span className={`approval_status_badge ${getStatusBadgeClass(doc.final_status)}`}>
+                              {getStatusDisplay(doc.final_status)}
+                            </span>
+                          </td>
+                          <td>{doc.appr_type}</td>
+                          <td>{doc.appr_date ? new Date(doc.appr_date).toLocaleDateString() : '-'}</td>
+                          <td>
+                            {vacationDates ? (
+                              <span style={{ fontSize: '12px', color: '#433878' }}>
+                                {vacationDates.startDate} ~ {vacationDates.endDate}
+                              </span>
+                            ) : (
+                              <span style={{ color: '#999' }}>-</span>
+                            )}
+                          </td>
+                          <td>
+                            <span style={{ textAlign: "center" }}>
+                              {doc.has_files === "있음" ? "O" : "-"}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
 
@@ -680,48 +735,61 @@ export default function ApprovalSystem() {
                       <th>상태</th>
                       <th>종류</th>
                       <th>기안일</th>
+                      <th>연차 기간</th> 
                       <th>첨부파일</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {currentToApproveList.map(doc => (
-                      <tr key={doc.appr_idx}>
-                        <td>{doc.appr_idx}</td>
-                        <td>
-                          <button
-                            className="approval_link"
-                            onClick={() => fetchApprovalDetail(doc.appr_idx)}
-                          >
-                            {doc.subject}
-                          </button>
-                        </td>
-                        <td>{doc.writer_id}</td>
-                        <td>
-                          <span className={`approval_status_badge ${getStatusBadgeClass(doc.final_status)}`}>{getStatusDisplay(doc.final_status)}</span>
-                        </td>
-                        <td>{doc.appr_type}</td>
-                        <td>{doc.appr_date ? new Date(doc.appr_date).toLocaleDateString() : '-'}</td>
-                        <td>
-                          {doc.files && doc.files.length > 0 ? (
-                            <div className="file_list">
-                              {doc.files.map((file, idx) => (
-                                <span
-                                  key={idx}
-                                  onClick={() => handleFileDownload(file.file_idx, file.ori_filename)}
-                                  style={{ color: "#433878", cursor: "pointer", marginRight: 15 }}
-                                >
-                                  {file.ori_filename}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span style={{ textAlign: "center" }}>
-                              {doc.has_files === "있음" ? "O" : "-"}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {currentToApproveList.map(doc => {
+                      const vacationDates = doc.appr_type === "연차" ? extractVacationDates(doc.content, doc.vac_start, doc.vac_end) : null;
+                      return (
+                        <tr key={doc.appr_idx}>
+                          <td>{doc.appr_idx}</td>
+                          <td>
+                            <button
+                              className="approval_link"
+                              onClick={() => fetchApprovalDetail(doc.appr_idx)}
+                            >
+                              {doc.subject}
+                            </button>
+                          </td>
+                          <td>{doc.writer_id}</td>
+                          <td>
+                            <span className={`approval_status_badge ${getStatusBadgeClass(doc.final_status)}`}>{getStatusDisplay(doc.final_status)}</span>
+                          </td>
+                          <td>{doc.appr_type}</td>
+                          <td>{doc.appr_date ? new Date(doc.appr_date).toLocaleDateString() : '-'}</td>
+                          <td>
+                            {vacationDates ? (
+                              <span style={{ fontSize: '12px', color: '#433878' }}>
+                                {vacationDates.startDate} ~ {vacationDates.endDate}
+                              </span>
+                            ) : (
+                              <span style={{ color: '#999' }}>-</span>
+                            )}
+                          </td>
+                          <td>
+                            {doc.files && doc.files.length > 0 ? (
+                              <div className="file_list">
+                                {doc.files.map((file, idx) => (
+                                  <span
+                                    key={idx}
+                                    onClick={() => handleFileDownload(file.file_idx, file.ori_filename)}
+                                    style={{ color: "#433878", cursor: "pointer", marginRight: 15 }}
+                                  >
+                                    {file.ori_filename}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span style={{ textAlign: "center" }}>
+                                {doc.has_files === "있음" ? "O" : "-"}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
 
@@ -778,11 +846,14 @@ export default function ApprovalSystem() {
                         <th>상태</th>
                         <th>종류</th>
                         <th>기안일</th>
+                        <th>연차 기간</th>
                         <th>첨부파일</th>
                       </tr>
                       </thead>
                       <tbody>
-                      {currentAllApprovals.map(doc => (
+                      {currentAllApprovals.map(doc => {
+                        const vacationDates = doc.appr_type === "연차" ? extractVacationDates(doc.content, doc.vac_start, doc.vac_end) : null;
+                        return (
                           <tr key={doc.appr_idx}>
                             <td>{doc.appr_idx}</td>
                             <td>
@@ -799,6 +870,15 @@ export default function ApprovalSystem() {
                             </td>
                             <td>{doc.appr_type}</td>
                             <td>{doc.appr_date ? new Date(doc.appr_date).toLocaleDateString() : '-'}</td>
+                            <td>
+                              {vacationDates ? (
+                                <span style={{ fontSize: '12px', color: '#433878' }}>
+                                  {vacationDates.startDate} ~ {vacationDates.endDate}
+                                </span>
+                              ) : (
+                                <span style={{ color: '#999' }}>-</span>
+                              )}
+                            </td>
                             <td>
                               {doc.files && doc.files.length > 0 ? (
                                 <div className="file_list">
@@ -819,7 +899,8 @@ export default function ApprovalSystem() {
                               )}
                             </td>
                           </tr>
-                      ))}
+                        );
+                      })}
                       </tbody>
                     </table>
 
@@ -872,9 +953,31 @@ export default function ApprovalSystem() {
                   <div className="mb_10">
                     <b>결재 내용:</b>
                     <div className="approval_content_box">
-                      {selectedDoc.content}
+                      {selectedDoc.appr_type === "연차" ? 
+                        // 연차 결재인 경우 날짜 정보 제거하고 원본 내용만 표시
+                        selectedDoc.content.replace(/(?:\s*시작일:\s*\d{4}-\d{2}-\d{2}\s*종료일:\s*\d{4}-\d{2}-\d{2})?$/, '') :
+                        selectedDoc.content
+                      }
                     </div>
                   </div>
+                  {/* 연차 결재인 경우 날짜 정보 별도 표시 */}
+                  {selectedDoc.appr_type === "연차" && (
+                    <div className="mb_10">
+                      <b>연차 기간:</b>
+                      <div className="approval_content_box" style={{ backgroundColor: '#f8f9fa', border: '1px solid #e0e0e0' }}>
+                        {(() => {
+                          const vacationDates = extractVacationDates(selectedDoc.content, selectedDoc.vac_start, selectedDoc.vac_end);
+                          return vacationDates ? (
+                            <span style={{ fontSize: '14px', color: '#433878', fontWeight: 'bold' }}>
+                              {vacationDates.startDate} ~ {vacationDates.endDate}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#999' }}>날짜 정보를 찾을 수 없습니다.</span>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
                   {/* 첨부파일 표시 */}
                   {selectedDoc.files && selectedDoc.files.length > 0 && (
                     <div className="mb_10">
