@@ -238,7 +238,7 @@ export default function FileSystem() {
           const formData = new FormData();
           formData.append('file', file);
           formData.append('deptIdx', selectedDeptIdx);
-          formData.append('userId', userId);
+          formData.append('user_id', userId);
           formData.append('expireDate', new Date().toISOString().slice(0, 10)); // 현재 날짜를 만료일로 설정
 
           const response = await fetch(`${apiUrl}/cloud/upload`, {
@@ -374,7 +374,7 @@ export default function FileSystem() {
       const formData = new FormData();
       formData.append('linkName', link.title);
       formData.append('url', finalUrl);
-      formData.append('userId', userId);
+      formData.append('user_id', userId);
       formData.append('deptIdx', selectedDeptIdx);
 
       const response = await fetch(`${apiUrl}/cloud/link/save`, {
@@ -410,8 +410,8 @@ export default function FileSystem() {
         return;
       }
 
-      // 백엔드 수정 전까지 임시로 userId 파라미터 유지
-      const response = await fetch(`${apiUrl}/cloud/link/list?userId=${userId}`);
+      // 백엔드 수정 전까지 임시로 user_id 파라미터 유지
+      const response = await fetch(`${apiUrl}/cloud/link/list?user_id=${userId}`);
       
       if (response.ok) {
         const result = await response.json();
@@ -863,7 +863,7 @@ export default function FileSystem() {
                                             return;
                                         }
 
-                                        const response = await fetch(`${apiUrl}/cloud/download/${file.file_idx || file.id}?userId=${userId}`);
+                                        const response = await fetch(`${apiUrl}/cloud/download/${file.file_idx || file.id}?user_id=${userId}`);
                                         
                                         if (response.ok) {
                                             // 파일 다운로드 처리
