@@ -71,7 +71,7 @@ export default function BoardDetail() {
         const fetchPostDetail = async () => {
             try {
                 setLoading(true);
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token');
                 
                 if (!token) {
                     setError('로그인이 필요합니다.');

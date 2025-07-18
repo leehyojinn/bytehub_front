@@ -6,6 +6,7 @@ import React, {useState, useEffect} from "react";
 import {useAlertModalStore} from "@/app/zustand/store";
 import AlertModal from "../alertmodal/page";
 import CountUp from 'react-countup';
+import axios from "axios";
 
 // leaveedit에서 복사: 입사일 기준 총연차 계산 함수 (정책 기반)
 function calcTotalLeave(hireDateStr, currentPolicy = null) {
@@ -125,23 +126,36 @@ export default function MyPage() {
         return sessionStorage.getItem('token');
     };
 
-    // 컴포넌트 마운트 시 정책 먼저 불러오고, 사용자 정보/연차 정보 순차 로드
-    useEffect(() => {
-        const loadAll = async () => {
-            setRulesLoading(true);
-            const token = getToken();
-            if (!token) {
-                setRulesLoading(false);
-                setIsLoading(false);
-                setError('로그인이 필요합니다.');
-                return;
+    async function leaveDetail() {
+        const token = getToken();
+        let {data} = await axios.get(`${apiUrl}/leave/detail`,{
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token
             }
-            const rules = await fetchLeaveRules(apiUrl, token);
-            setLeaveRules(rules);
-            setRulesLoading(false);
-            await fetchUserInfo();
-        };
-        loadAll();
+        });
+        
+        console.log(data);
+    }
+
+    
+    async function leaveMy() {
+        const token = getToken();
+        let {data} = await axios.get(`${apiUrl}/leave/my`,{
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token
+            }
+        });
+        
+        console.log(data);
+    }
+
+    // 컴포넌트 마운트 시 사용자 정보 가져오기
+    useEffect(() => {
+        fetchUserInfo();
+        leaveDetail();
+        leaveMy();
     }, []);
 
     // 사용자 정보가 로드된 후 연차 정보 가져오기
@@ -485,7 +499,10 @@ export default function MyPage() {
                                 </div>
                             </div>
                             <div className="mypage_section_v2">
-                                <div className="mypage_title_v2">연차</div>
+                                <div className="mypage_title_v2 flex aling_center justify_between">
+                                    <p>연차</p>
+                                    <p>상세보기</p> 
+                                </div>
                                 <div className="mypage_leave_grid">
                                     <div className="mypage_leave_item total">
                                         <span className="leave_title">총 연차</span>

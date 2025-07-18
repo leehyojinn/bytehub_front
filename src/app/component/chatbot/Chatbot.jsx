@@ -18,6 +18,9 @@ export default function Chatbot() {
   const chatEndRef = useRef();
   const [keywords, setKeywords] = useState([]);
   const [faqList, setFaqList] = useState([]);
+  const [meetingList, setMeetingList] = useState([]);
+  const [myInfo, setMyInfo] = useState([]);
+  const [cloudInfo, setCloudInfo] = useState([]);
 
   // 키워드 목록 불러오기
   async function keyword_list() {
@@ -32,9 +35,34 @@ export default function Chatbot() {
     setFaqList(data.list || []);
   }
 
+  async function MeetingBoardList() {
+    let {data} = await axios.post(`${api_url}/board/allList`);
+    console.log(data);
+    setMeetingList(data.list || []);
+  }
+
+  async function myInfoList() {
+    const token = sessionStorage.getItem('token');
+    let {data} = await axios.get(`${api_url}/mypage/info`,{
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token
+      }});
+      setMyInfo(data.data);
+  }
+
+  async function cloudList() {
+    let {data} = await axios.post(`${api_url}/colud/allList`);
+    console.log(data);
+    setCloudInfo(data);
+  }
+
   useEffect(() => {
     keyword_list();
     fetchFAQList();
+    MeetingBoardList();
+    myInfoList();
+    cloudList();
   }, []);
 
   useEffect(() => {
@@ -63,6 +91,106 @@ export default function Chatbot() {
 
       [FAQ 목록]
       ${faqJson}
+
+      [사용자 요청]
+      ${userText}
+      `.trim();
+
+      const res = await axios.post(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + GEMINI_API_KEY,
+        {
+          contents: [
+            { parts: [{ text: prompt }] }
+          ]
+        },
+        { headers: { "Content-Type": "application/json" } }
+      );
+      const data = res.data;
+      const answer =
+        data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "FAQ 안내에 실패했습니다.";
+
+      setMessages(msgs => [
+        ...msgs,
+        { from: "bot", text: answer }
+      ]);
+
+      // FAQ insert (질문/답변 저장)
+      await axios.post(`${api_url}/keyword/faq/insert`, {
+        question: userText,
+        answer: answer
+      });
+    } catch (e) {
+      setMessages(msgs => [
+        ...msgs,
+        { from: "bot", text: "FAQ AI 안내 중 오류가 발생했습니다." }
+      ]);
+    }
+    setLoading(false);
+  }
+
+  async function fetchGeminiWithMeetingJson(userText) {
+    setLoading(true);
+    try {
+      const meetingJson = JSON.stringify(meetingList, null, 2);
+      const prompt = `
+      다음은 회의록 목록입니다.
+      내 ${myInfo} 정보 포함된 회의록에서
+      아래 JSON 데이터를 참고해서, 사용자의 요청에 가장 적합한 답변을 안내해줘.
+      목록을 전체 보여줘야해.
+
+      [MEETING 목록]
+      ${meetingJson}
+
+      [사용자 요청]
+      ${userText}
+      `.trim();
+
+      const res = await axios.post(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + GEMINI_API_KEY,
+        {
+          contents: [
+            { parts: [{ text: prompt }] }
+          ]
+        },
+        { headers: { "Content-Type": "application/json" } }
+      );
+      const data = res.data;
+      const answer =
+        data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "FAQ 안내에 실패했습니다.";
+
+      setMessages(msgs => [
+        ...msgs,
+        { from: "bot", text: answer }
+      ]);
+
+      // FAQ insert (질문/답변 저장)
+      await axios.post(`${api_url}/keyword/faq/insert`, {
+        question: userText,
+        answer: answer
+      });
+    } catch (e) {
+      setMessages(msgs => [
+        ...msgs,
+        { from: "bot", text: "FAQ AI 안내 중 오류가 발생했습니다." }
+      ]);
+    }
+    setLoading(false);
+  }
+
+  async function fetchGeminiWithCloudJson(userText) {
+    setLoading(true);
+    try {
+      const cloudJson = JSON.stringify(cloudInfo, null, 2);
+      const prompt = `
+      다음은 클라우드 및 링크 목록입니다.
+      내 ${myInfo} 정보 포함된 클라우드 및 링크에서
+      아래 JSON 데이터를 참고해서, 사용자의 요청에 가장 적합한 답변을 안내해줘.
+      목록을 전체 보여줘야해.
+
+      [클라우드 및 링크 목록]
+      ${cloudJson}
 
       [사용자 요청]
       ${userText}
@@ -149,6 +277,18 @@ export default function Chatbot() {
     // "자주묻는 질문" 입력 시 FAQ JSON 전체를 AI에 넘기고 insert
     if (normalized.includes("자주묻는질문")) {
       await fetchGeminiWithFAQJson(input);
+      setInput("");
+      return;
+    }
+
+    if(normalized.includes("클라우드") || normalized.includes("링크")){
+      await fetchGeminiWithCloudJson(input);
+      setInput("");
+      return;
+    }
+
+    if(normalized.includes("회의록")){
+      await fetchGeminiWithMeetingJson(input);
       setInput("");
       return;
     }

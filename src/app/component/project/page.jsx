@@ -396,11 +396,11 @@ export default function ProjectManagement() {
                 {detailData.files && detailData.files.length > 0 ?
                   detailData.files.map((f, idx) =>
                     <a key={f.file_idx || idx}
-                       href={fileDownloadUrl(f)}
-                       className="file_link"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       style={{ marginRight: 8 }}>
+                      href={fileDownloadUrl(f)}
+                      className="file_link"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ marginRight: 8 }}>
                       📎 {f.ori_filename || f.name}
                     </a>
                   ) : <span style={{ color: "#bbb" }}>없음</span>
