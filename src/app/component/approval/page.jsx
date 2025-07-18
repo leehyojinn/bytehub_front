@@ -102,7 +102,10 @@ export default function ApprovalSystem() {
       const token = sessionStorage.getItem("token");
       if (!token) return;
 
-      const response = await fetch(`${apiUrl}/leave/remain?user_id=${userId}`, {
+      console.log('잔여 연차 조회 시작 - userId:', userId);
+      console.log('API URL:', `${apiUrl}/leave/my`);
+
+      const response = await fetch(`${apiUrl}/leave/my`, {
         method: 'GET',
         headers: {
           'Authorization': token,
@@ -110,9 +113,17 @@ export default function ApprovalSystem() {
         }
       });
 
+      console.log('응답 상태:', response.status);
       const result = await response.json();
+      console.log('API 응답:', result);
+
       if (result.success) {
-        setRemainDays(result.data?.remain_days || 0);
+        // result.data가 배열이므로 첫 번째 요소의 remain_days 사용
+        const remainDaysValue = result.data?.[0]?.remain_days || 0;
+        console.log('설정할 잔여 연차:', remainDaysValue);
+        setRemainDays(remainDaysValue);
+      } else {
+        console.error('API 응답 실패:', result.msg);
       }
     } catch (error) {
       console.error('잔여 연차 조회 실패:', error);
