@@ -504,9 +504,9 @@ export default function VacationEditPage() {
 
   // 검색 필터
   const filtered = members.filter(m =>
-      m.id.includes(search) || 
+      (m.id.includes(search)) || 
       m.name.includes(search) || 
-      (m.dept_name && m.dept_name.includes(search)) ||
+      m.dept_name && m.dept_name.includes(search) ||
       (m.level_name && m.level_name.includes(search))
   );
 
@@ -595,7 +595,7 @@ export default function VacationEditPage() {
                 <input
                     className="board_write_input"
                     style={{width: 220}}
-                    placeholder="이름 검색"
+                    placeholder="이름 및 부서 검색"
                     value={search}
                     onChange={handleSearchChange}
                 />
