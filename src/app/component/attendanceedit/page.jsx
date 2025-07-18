@@ -26,6 +26,7 @@ const attendanceStates = [
 const initialPolicy = {
   workStart: "09:00",
   workEnd: "18:00",
+  term: 10, // 유효시간(분)
 };
 
 // 부서명 반환 함수
@@ -51,11 +52,11 @@ export default function AttendanceManagePage() {
   // 결석 처리 상태 (현재 미사용)
   // const [isProcessingAbsence, setIsProcessingAbsence] = useState(false);
 
-  // 정책 정보 불러오기 (최초 1회)
+  // 출근/퇴근 정책 정보 불러오기 (최초 1회)
   useEffect(() => {
     const userId = sessionStorage.getItem('userId');
     if (!userId) return;
-    const url = apiUrl ? `${apiUrl}/attendance/setting/current?user_id=${userId}` : `/attendance/setting/current?user_id=${userId}`;
+    const url = apiUrl ? `${apiUrl}/attendance/setting/current` : `/attendance/setting/current`;
     fetch(url)
       .then(res => res.json())
       .then(result => {
@@ -65,7 +66,8 @@ export default function AttendanceManagePage() {
           setPolicy({
             ...result.data,
             workStart: result.data.set_in_time?.split('T')[1]?.slice(0,5) || "09:00",
-            workEnd: result.data.set_out_time?.split('T')[1]?.slice(0,5) || "18:00"
+            workEnd: result.data.set_out_time?.split('T')[1]?.slice(0,5) || "18:00",
+            term: result.data.term || 10
           });
           setPolicyExists(true);
         } else {
@@ -178,7 +180,7 @@ export default function AttendanceManagePage() {
         user_id: userId,
         set_in_time: `2024-01-01T${policy.workStart}:00`,
         set_out_time: `2024-01-01T${policy.workEnd}:00`,
-        term: 10 // 유효시간(분) 이거는 ui에 없음
+        term: Number(policy.term) || 10 // 유효시간(분)
       };
       if (policy.time_set_idx) body.time_set_idx = policy.time_set_idx;
       const res = await fetch(url, {
@@ -397,6 +399,21 @@ export default function AttendanceManagePage() {
                     onChange={e => setPolicy(p => ({ ...p, workEnd: e.target.value }))}
                     required
                   />
+                </div>
+                <div className="board_write_row">
+                  <label className="board_write_label">유효시간(분)</label>
+                  <input
+                    type="number"
+                    className="board_write_input"
+                    min={1}
+                    max={120}
+                    value={policy.term}
+                    onChange={e => setPolicy(p => ({ ...p, term: e.target.value }))}
+                    required
+                  />
+                  <small style={{color: '#666', fontSize: '12px'}}>
+                    출근/퇴근 기준 시간 전후 허용 범위 (분 단위, 예: 10분이면 08:50~09:10 출근 인정)
+                  </small>
                 </div>
                 <div className="modal_buttons">
                   <button type="submit" className="board_btn">저장</button>
