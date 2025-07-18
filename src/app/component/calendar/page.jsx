@@ -140,6 +140,12 @@ export default function CalendarPage() {
         let {data} = await axios.get(`${apiUrl}/scd/total`);
         console.log('events state? : ',events);
         // console.log(data.scd_list);
+        const scd_list = data.scd_list.map((item) => {
+            // scd_type가 team일 경우, company일 경우, project일 경우, personal일 경우
+
+            // start_date === end_date 면 date
+            // start_date < end_date 면 기간 일정
+        })
     }
 
     // 일단 유저정보를 긁어오는 함수
