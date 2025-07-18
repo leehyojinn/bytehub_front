@@ -57,14 +57,13 @@ function PermissionModal({open, onClose, member, setUserPermissions, userPermiss
         if (open && member) {
             callAuth();
         }
-    }, [member]);
+    }, [member, open]);
 
     const callAuth = async () => {
 
         let {data}=await axios.get(`${apiUrl}/auth/grant/${member.user_id}`);
         let arr=['','','','',''];
 
-        // 수정중(auth 불러와서 매핑해야됨)
         data.auth_list.forEach(item => {
             if (item.access_idx === 0) {
                 switch (item.access_type) {     //access_type= 'leave', 'attendance', 'project', 'chat', 'board'
@@ -160,8 +159,6 @@ export default function GrantUser() {
             checked: editPerm.includes(item.access_type)
         }));
     }
-
-
 
     //  더 똑똑하게 할방법이 있을 것 같다...
     const toggleWithDraw = async (id) => {
