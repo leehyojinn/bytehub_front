@@ -71,6 +71,7 @@ export default function ApprovalSystem() {
   const [showRejectModal, setShowRejectModal] = useState(false); // 반려 사유 입력 모달
   const [currentRejectHistory, setCurrentRejectHistory] = useState(null); // 현재 반려할 결재 이력
   const [expandedReasons, setExpandedReasons] = useState(new Set()); // 확장된 반려 사유들
+  const [remainDays, setRemainDays] = useState(0); // 잔여 연차
 
   // 사용자 정보 가져오기
   const fetchUserInfo = async () => {
@@ -92,6 +93,29 @@ export default function ApprovalSystem() {
       }
     } catch (error) {
       console.error('사용자 정보 조회 실패:', error);
+    }
+  };
+
+  // 잔여 연차 가져오기
+  const fetchRemainDays = async () => {
+    try {
+      const token = sessionStorage.getItem("token");
+      if (!token) return;
+
+      const response = await fetch(`${apiUrl}/leave/remain?user_id=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setRemainDays(result.data?.remain_days || 0);
+      }
+    } catch (error) {
+      console.error('잔여 연차 조회 실패:', error);
     }
   };
 
@@ -241,18 +265,29 @@ export default function ApprovalSystem() {
   // 결재 문서 생성 (파일 업로드 포함)
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // 연차 결재인 경우 잔여 연차 확인
+    if (approvalType === "연차") {
+      // 이미 조회된 잔여 연차 정보 사용
+      const currentRemainDays = remainDays;
+      
+      // 연차 사용일수 계산
+      const startDate = new Date(vacStart);
+      const endDate = new Date(vacEnd);
+      const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+      
+      if (daysDiff > currentRemainDays) {
+        alert(`잔여 연차가 부족합니다.\n신청일수: ${daysDiff}일\n잔여연차: ${currentRemainDays}일`);
+        return;
+      }
+    }
+
     try {
       const formData = new FormData();
       formData.append("writer_id", userId);
       formData.append("subject", title);
       
-      // 연차 결재인 경우 content에 날짜 정보 포함 (표시용으로만 사용)
-      let finalContent = content;
-      if (approvalType === "연차") {
-        finalContent = `${content}\n\n시작일: ${vacStart}\n종료일: ${vacEnd}`;
-      }
-      
-      formData.append("content", finalContent);
+      formData.append("content", content);
       formData.append("appr_type", approvalType);
       if (approvalType === "연차") {
         formData.append("vac_start", vacStart);
@@ -362,6 +397,7 @@ export default function ApprovalSystem() {
     fetchToApproveList();
     fetchAllApprovals();
     fetchUserInfo(); // 사용자 정보 가져오기
+    fetchRemainDays(); // 잔여 연차 가져오기
   }, [userId]);
 
   // 사용자 정보가 로드되면 탭 권한 체크 및 결재권자 설정
@@ -402,7 +438,15 @@ export default function ApprovalSystem() {
 
   // 연차 결재에서 날짜 정보 추출하는 함수
   const extractVacationDates = (content, vacStart, vacEnd) => {
-    // 1. content에서 날짜 정보 추출 시도
+    // 백엔드에서 받은 별도 필드 우선 사용
+    if (vacStart && vacEnd) {
+      return {
+        startDate: vacStart,
+        endDate: vacEnd
+      };
+    }
+    
+    // 백엔드 필드가 없는 경우 content에서 추출 (기존 데이터 호환성)
     if (content) {
       const startMatch = content.match(/시작일:\s*(\d{4}-\d{2}-\d{2})/);
       const endMatch = content.match(/종료일:\s*(\d{4}-\d{2}-\d{2})/);
@@ -413,14 +457,6 @@ export default function ApprovalSystem() {
           endDate: endMatch[1]
         };
       }
-    }
-    
-    // 2. 별도 필드에서 날짜 정보 추출 시도
-    if (vacStart && vacEnd) {
-      return {
-        startDate: vacStart,
-        endDate: vacEnd
-      };
     }
     
     return null;
@@ -539,35 +575,50 @@ export default function ApprovalSystem() {
                   <option value="일반">일반</option>
                 </select>
                 {approvalType === "연차" && (
-                  <div className="flex gap_10">
-                    <input
-                      type="date"
-                      className="approval_input"
-                      value={vacStart}
-                      onChange={e => {
-                        const selectedDate = e.target.value;
-                        setVacStart(selectedDate);
-                        // 시작일이 변경되면 종료일이 시작일보다 이전이면 종료일을 시작일로 설정
-                        if (vacEnd && selectedDate > vacEnd) {
-                          setVacEnd(selectedDate);
-                        }
-                      }}
-                      min={new Date().toISOString().split('T')[0]} // 오늘 이전 날짜 선택 불가
-                      required
-                      style={{ flex: 1 }}
-                      placeholder="시작일"
-                    />
-                    <span style={{ alignSelf: "center" }}>~</span>
-                    <input
-                      type="date"
-                      className="approval_input"
-                      value={vacEnd}
-                      onChange={e => setVacEnd(e.target.value)}
-                      min={vacStart || new Date().toISOString().split('T')[0]} // 시작일 이후 또는 오늘 이후만 선택 가능
-                      required
-                      style={{ flex: 1 }}
-                      placeholder="종료일"
-                    />
+                  <div>
+                    <div className="mb_10" style={{ fontSize: '14px', color: '#433878', fontWeight: 'bold' }}>
+                      잔여 연차: {remainDays}일
+                    </div>
+                    <div className="flex gap_10">
+                      <input
+                        type="date"
+                        className="approval_input"
+                        value={vacStart}
+                        onChange={e => {
+                          const selectedDate = e.target.value;
+                          setVacStart(selectedDate);
+                          // 시작일이 변경되면 종료일이 시작일보다 이전이면 종료일을 시작일로 설정
+                          if (vacEnd && selectedDate > vacEnd) {
+                            setVacEnd(selectedDate);
+                          }
+                        }}
+                        min={new Date().toISOString().split('T')[0]} // 오늘 이전 날짜 선택 불가
+                        required
+                        style={{ flex: 1 }}
+                        placeholder="시작일"
+                      />
+                      <span style={{ alignSelf: "center" }}>~</span>
+                      <input
+                        type="date"
+                        className="approval_input"
+                        value={vacEnd}
+                        onChange={e => setVacEnd(e.target.value)}
+                        min={vacStart || new Date().toISOString().split('T')[0]} // 시작일 이후 또는 오늘 이후만 선택 가능
+                        required
+                        style={{ flex: 1 }}
+                        placeholder="종료일"
+                      />
+                    </div>
+                    {vacStart && vacEnd && (
+                      <div className="mt_5" style={{ fontSize: '12px', color: '#666' }}>
+                        신청일수: {Math.ceil((new Date(vacEnd) - new Date(vacStart)) / (1000 * 60 * 60 * 24)) + 1}일
+                        {Math.ceil((new Date(vacEnd) - new Date(vacStart)) / (1000 * 60 * 60 * 24)) + 1 > remainDays && (
+                          <span style={{ color: '#f44336', marginLeft: '10px' }}>
+                            ⚠️ 잔여 연차 부족
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
                 <textarea
@@ -953,11 +1004,7 @@ export default function ApprovalSystem() {
                   <div className="mb_10">
                     <b>결재 내용:</b>
                     <div className="approval_content_box">
-                      {selectedDoc.appr_type === "연차" ? 
-                        // 연차 결재인 경우 날짜 정보 제거하고 원본 내용만 표시
-                        selectedDoc.content.replace(/(?:\s*시작일:\s*\d{4}-\d{2}-\d{2}\s*종료일:\s*\d{4}-\d{2}-\d{2})?$/, '') :
-                        selectedDoc.content
-                      }
+                      {selectedDoc.content}
                     </div>
                   </div>
                   {/* 연차 결재인 경우 날짜 정보 별도 표시 */}
