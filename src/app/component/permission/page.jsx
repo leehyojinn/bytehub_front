@@ -50,9 +50,6 @@ const PERMISSIONS = [
 ];
 
 function PermissionModal({open, onClose, member, setUserPermissions, userPermissions, onChange, onSave}) {
-
-    // member을 먼저 불러와야 하는데 안불러와줘요 왜일까요..................
-
     useEffect(() => {
         if (open && member) {
             callAuth();

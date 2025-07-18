@@ -31,7 +31,15 @@ let today = new Date();
 
 // initial events
 const calendar_events = [
-    {id: "c1", title: "회사 전체 회의", date: "2025-07-03", type: "company", allowed_grades: ["A"], visible_to_all: true},
+    {
+        // 1일 일정 예시
+        id: "c1",
+        title: "회사 전체 회의",
+        date: "2025-07-03",
+        type: "company",
+        allowed_grades: ["A"],
+        visible_to_all: true
+    },
     {
         id: "c2",
         title: "개발팀 스프린트 미팅",
@@ -41,9 +49,22 @@ const calendar_events = [
         allowed_grades: ["A", "B"],
         visible_to_team: true
     },
-    {id: "c3", title: "개인 업무 마감", date: "2025-07-05", type: "personal", user_id: 1},
+    {
+        id: "c3",
+        title: "개인 업무 마감",
+        date: "2025-07-05",
+        type: "personal",
+        user_id: 1
+    },
     // 기간 일정 예시
-    {id: "c4", title: "휴가", start: "2025-07-10", end: "2025-07-13", type: "personal", user_id: 1},
+    {
+        id: "c4",
+        title: "휴가",
+        start: "2025-07-10",
+        end: "2025-07-13",
+        type: "personal",
+        user_id: 1
+    },
 ];
 
 function getVisibleEvents(events, user) {
@@ -57,7 +78,7 @@ function getVisibleEvents(events, user) {
 
 function flattenEventsForCalendar(events) {
     return events.map(ev => {
-        if (ev.start && ev.end) {   //둘다있을경우
+        if (ev.start && ev.end) {
             // 기간 일정
             return {
                 id: ev.id,
@@ -69,7 +90,7 @@ function flattenEventsForCalendar(events) {
                 extendedProps: {...ev}
             };
         }
-        return {
+        return {    // 1일일정
             id: ev.id,
             title: `[${typeLabels[ev.type]}] ${ev.title}`,
             date: ev.date,
@@ -102,6 +123,9 @@ export default function CalendarPage() {
     const calendarData = flattenEventsForCalendar(visibleEvents);
     const todayCount = countTodayEvents(visibleEvents, today);
 
+
+
+
     const userId = useRef('');
     useEffect(() => {
         if (sessionStorage) {
@@ -114,6 +138,7 @@ export default function CalendarPage() {
     // 서버에서 일정을 불러오는 함수
     const callEvents = async () => {
         let {data} = await axios.get(`${apiUrl}/scd/total`);
+        console.log('events state? : ',events);
         // console.log(data.scd_list);
     }
 
