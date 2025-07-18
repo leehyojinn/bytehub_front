@@ -96,6 +96,7 @@ export default function MyPage() {
     // 모달 상태
     const [pwModalOpen, setPwModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
+    const [leaveDetailModalOpen, setLeaveDetailModalOpen] = useState(false);
 
     // 비밀번호 입력 상태
     const [passwordInput, setPasswordInput] = useState("");
@@ -113,6 +114,8 @@ export default function MyPage() {
         remainLeave: 0,
         isLoading: true
     });
+    
+    const [leaveDetails, setLeaveDetails] = useState([]);
 
     // leaveedit처럼 정책 상태 추가
     const [leaveRules, setLeaveRules] = useState([]);
@@ -128,14 +131,22 @@ export default function MyPage() {
 
     async function leaveDetail() {
         const token = getToken();
-        let {data} = await axios.get(`${apiUrl}/leave/detail`,{
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': token
+        try {
+            let {data} = await axios.get(`${apiUrl}/leave/detail`,{
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                }
+            });
+            if (data.success && Array.isArray(data.data)) {
+                setLeaveDetails(data.data);
+            } else {
+                setLeaveDetails([]);
             }
-        });
-        
-        console.log(data);
+        } catch (err) {
+            console.error("연차 상세 내역 조회 실패:", err);
+            setLeaveDetails([]);
+        }
     }
 
     
@@ -501,7 +512,7 @@ export default function MyPage() {
                             <div className="mypage_section_v2">
                                 <div className="mypage_title_v2 flex aling_center justify_between">
                                     <p>연차</p>
-                                    <p>상세보기</p> 
+                                    <p style={{cursor: 'pointer', textDecoration: 'underline'}} onClick={() => setLeaveDetailModalOpen(true)}>상세보기</p> 
                                 </div>
                                 <div className="mypage_leave_grid">
                                     <div className="mypage_leave_item total">
@@ -612,6 +623,53 @@ export default function MyPage() {
                                         onClick={() => setEditModalOpen(false)}>취소</button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* 연차 상세내역 모달 */}
+            {
+                leaveDetailModalOpen && (
+                    <div className="modal_overlay" onClick={() => setLeaveDetailModalOpen(false)}>
+                        <div className="modal_content" style={{width: "800px"}} onClick={e => e.stopPropagation()}>
+                            <h3 className="card_title font_700 mb_20">연차 상세 내역</h3>
+                            <div style={{maxHeight: '400px', overflowY: 'auto'}}>
+                                <table className="board_table">
+                                    <thead>
+                                        <tr>
+                                            <th>신청일</th>
+                                            <th>연차 종류</th>
+                                            <th>시작일</th>
+                                            <th>종료일</th>
+                                            <th>사용일수</th>
+                                            <th>상태</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {leaveDetails.length > 0 ? leaveDetails.map((leave, index) => (
+                                            <tr key={index}>
+                                                <td>{leave.req_date ? new Date(leave.req_date).toLocaleDateString() : '-'}</td>
+                                                <td>{leave.leave_type === 'ANNUAL' ? '연차' : leave.leave_type === 'SICK' ? '병가' : '기타'}</td>
+                                                <td>{leave.start_date ? new Date(leave.start_date).toLocaleDateString() : '-'}</td>
+                                                <td>{leave.end_date ? new Date(leave.end_date).toLocaleDateString() : '-'}</td>
+                                                <td>{leave.days}일</td>
+                                                <td>{leave.status === 'PENDING' ? '대기' : leave.status === 'APPROVED' ? '승인' : '반려'}</td>
+                                            </tr>
+                                        )) : (
+                                            <tr>
+                                                <td colSpan="6" style={{textAlign: 'center'}}>연차 사용 내역이 없습니다.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="modal_buttons" style={{marginTop: '20px'}}>
+                                <button
+                                    type="button"
+                                    className="board_btn"
+                                    onClick={() => setLeaveDetailModalOpen(false)}>닫기</button>
+                            </div>
                         </div>
                     </div>
                 )
