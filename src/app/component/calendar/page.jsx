@@ -160,13 +160,13 @@ export default function CalendarPage() {
                 user_id: currentUser.id
             };
         }
+        // axios input
+        inputEvents(type.current);
+
         setEvents(prev => [...prev, eventObj]);
         setModalTitle('');
         setStartDate(today);
         setEndDate(today);
-
-        // axios
-        inputEvents(type.current);
 
         setShowModal(false);
 
@@ -174,6 +174,7 @@ export default function CalendarPage() {
 
 
     const type=useRef('');
+
     const inputEvents = async (type) => {
         console.log('events: ', events);
         console.log('startDate: ', startDate);
