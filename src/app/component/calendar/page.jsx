@@ -9,7 +9,7 @@ import axios from "axios";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-const currentUser = {id: 1, name: "홍길동", team_id: 1, grade: "A", position: "팀장"};
+let currentUser = {id: 1, name: "홍길동", team_id: 1, grade: "A", position: "팀장"};
 const typeColors = {
     company: "#7c6ee6",
     team: "#43b8c6",
@@ -57,7 +57,7 @@ function getVisibleEvents(events, user) {
 
 function flattenEventsForCalendar(events) {
     return events.map(ev => {
-        if (ev.start && ev.end) {
+        if (ev.start && ev.end) {   //둘다있을경우
             // 기간 일정
             return {
                 id: ev.id,
@@ -106,6 +106,7 @@ export default function CalendarPage() {
     useEffect(() => {
         if (sessionStorage) {
             userId.current = sessionStorage.getItem('userId');
+            callUserInfo();
         }
         callEvents();
     }, []);
@@ -113,7 +114,19 @@ export default function CalendarPage() {
     // 서버에서 일정을 불러오는 함수
     const callEvents = async () => {
         let {data} = await axios.get(`${apiUrl}/scd/total`);
-        console.log(data.scd_list);
+        // console.log(data.scd_list);
+    }
+
+    // 일단 유저정보를 긁어오는 함수
+    const callUserInfo = async () => {
+        let {data} = await axios.get(`${apiUrl}/mypage/info`, {headers: {Authorization: sessionStorage.getItem('token')}});
+        // console.log('user info?: ', data.data);
+        currentUser = {
+            id: data.data.user_id,
+            name: data.data.name,
+            team_id: data.data.dept_idx,
+            grade: data.data.lv_idx,
+            position: data.data.lv_name};
     }
 
     // 입력버튼
