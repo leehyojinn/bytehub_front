@@ -7,6 +7,71 @@ import {useAlertModalStore} from "@/app/zustand/store";
 import AlertModal from "../alertmodal/page";
 import CountUp from 'react-countup';
 
+// leaveedit에서 복사: 입사일 기준 총연차 계산 함수 (정책 기반)
+function calcTotalLeave(hireDateStr, currentPolicy = null) {
+  if (!hireDateStr) return 0;
+  const hireDate = new Date(hireDateStr);
+  const now = new Date();
+  const policy = currentPolicy || {
+    newEmpBase: 1,
+    existingEmpBase: 15,
+    annualIncrement: 1,
+    maxAnnual: 25
+  };
+  const yearsWorked = now.getFullYear() - hireDate.getFullYear();
+  const hasPassedAnniversary = now.getMonth() > hireDate.getMonth() ||
+    (now.getMonth() === hireDate.getMonth() && now.getDate() >= hireDate.getDate());
+  const actualYearsWorked = hasPassedAnniversary ? yearsWorked : yearsWorked - 1;
+  if (actualYearsWorked < 1) {
+    if (hireDate.getFullYear() !== now.getFullYear()) {
+      const yearsSinceHire = now.getFullYear() - hireDate.getFullYear() - 1;
+      return Math.min(
+        policy.existingEmpBase + (yearsSinceHire * policy.annualIncrement),
+        policy.maxAnnual
+      );
+    }
+    const yearEnd = new Date(now.getFullYear(), 11, 31);
+    let monthsDiff = (yearEnd.getFullYear() - hireDate.getFullYear()) * 12 + (yearEnd.getMonth() - hireDate.getMonth());
+    if (hireDate.getDate() > yearEnd.getDate()) {
+      monthsDiff--;
+    }
+    return Math.max(0, policy.newEmpBase * monthsDiff);
+  }
+  return Math.min(
+    policy.existingEmpBase + ((actualYearsWorked - 1) * policy.annualIncrement),
+    policy.maxAnnual
+  );
+}
+
+// leaveedit에서 복사: 연차 정책(leave rules) fetch 함수
+async function fetchLeaveRules(apiUrl, token) {
+  try {
+    const response = await fetch(`${apiUrl}/leave/setting/all`, {
+      method: 'GET',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) throw new Error(`서버 오류: ${response.status}`);
+    const result = await response.json();
+    if (!result.success) throw new Error(result.msg || '연차 규칙 조회에 실패했습니다.');
+    return result.data.map(rule => ({
+      id: rule.leaveSetIdx,
+      year: rule.year,
+      annual: rule.existingEmpBase,
+      monthly: rule.newEmpBase,
+      annualIncrement: rule.annualIncrement,
+      maxAnnual: rule.maxAnnual,
+      createdAt: new Date(rule.createdDate || Date.now()),
+      originalData: rule
+    }));
+  } catch (err) {
+    console.error('연차 규칙 조회 실패:', err);
+    return [];
+  }
+}
+
 // 연차 데이터는 state로 관리
 
 export default function MyPage() {
@@ -48,6 +113,10 @@ export default function MyPage() {
         isLoading: true
     });
 
+    // leaveedit처럼 정책 상태 추가
+    const [leaveRules, setLeaveRules] = useState([]);
+    const [rulesLoading, setRulesLoading] = useState(true);
+
     // zustand alert modal
     const alertModal = useAlertModalStore();
 
@@ -56,9 +125,23 @@ export default function MyPage() {
         return sessionStorage.getItem('token');
     };
 
-    // 컴포넌트 마운트 시 사용자 정보 가져오기
+    // 컴포넌트 마운트 시 정책 먼저 불러오고, 사용자 정보/연차 정보 순차 로드
     useEffect(() => {
-        fetchUserInfo();
+        const loadAll = async () => {
+            setRulesLoading(true);
+            const token = getToken();
+            if (!token) {
+                setRulesLoading(false);
+                setIsLoading(false);
+                setError('로그인이 필요합니다.');
+                return;
+            }
+            const rules = await fetchLeaveRules(apiUrl, token);
+            setLeaveRules(rules);
+            setRulesLoading(false);
+            await fetchUserInfo();
+        };
+        loadAll();
     }, []);
 
     // 사용자 정보가 로드된 후 연차 정보 가져오기
@@ -131,16 +214,14 @@ export default function MyPage() {
         }
     };
 
-    // 연차 정보 가져오기
+    // 연차 정보 가져오기 (정책 기반으로만 동작, 불필요한 옛날 코드/주석 삭제)
     const fetchLeaveInfo = async () => {
         try {
             const token = getToken();
             if (!token) {
-                console.log('토큰이 없어서 연차 정보를 가져올 수 없습니다.');
                 setLeaveInfo(prev => ({ ...prev, isLoading: false }));
                 return;
             }
-
             const response = await fetch(`${apiUrl}/leave/my`, {
                 method: 'GET',
                 headers: {
@@ -148,59 +229,33 @@ export default function MyPage() {
                     'Authorization': token
                 }
             });
-
             const data = await response.json();
-            console.log('연차 API 응답:', data);
-
+            let remainDays = 0;
             if (data.success && data.data) {
                 const leaveData = Array.isArray(data.data) ? data.data[0] : data.data;
-                const remainDays = leaveData?.remain_days || 0;
-                
-                // 총 연차를 입사일 기준으로 계산
-                let totalDays = 15; // 기본값
-                
-                if (memberData.hire_date) {
-                    const hireDate = new Date(memberData.hire_date);
-                    const currentDate = new Date();
-                    const yearsWorked = currentDate.getFullYear() - hireDate.getFullYear();
-                    
-                    // 입사일이 지났는지 확인 (생일이 안 지났으면 -1)
-                    const hasAnniversaryPassed = 
-                        currentDate.getMonth() > hireDate.getMonth() || 
-                        (currentDate.getMonth() === hireDate.getMonth() && currentDate.getDate() >= hireDate.getDate());
-                    
-                    const actualYearsWorked = hasAnniversaryPassed ? yearsWorked : yearsWorked - 1;
-                    
-                    if (actualYearsWorked >= 1) {
-                        // 1년 이상 근무: 15 + (근속년수 - 1)
-                        totalDays = 15 + Math.max(0, actualYearsWorked - 1);
-                    } else {
-                        // 1년 미만 근무: 월차 (입사월부터 12월까지)
-                        const monthsWorked = Math.max(1, 12 - hireDate.getMonth());
-                        totalDays = monthsWorked;
-                    }
-                }
-                
-                const usedDays = Math.max(0, totalDays - remainDays);
-
-                setLeaveInfo({
-                    totalLeave: totalDays,
-                    usedLeave: usedDays,
-                    remainLeave: remainDays,
-                    isLoading: false
-                });
-            } else {
-                console.log('연차 데이터가 없거나 오류:', data.msg);
-                // 데이터가 없을 때 기본값 설정
-                setLeaveInfo({
-                    totalLeave: 15,
-                    usedLeave: 0,
-                    remainLeave: 15,
-                    isLoading: false
-                });
+                remainDays = leaveData?.remain_days || 0;
             }
+            // 정책 기반 총연차 계산
+            let totalDays = 15; // 정책이 없을 때 fallback
+            if (memberData.hire_date && leaveRules.length > 0) {
+                const currentYear = new Date().getFullYear();
+                const currentRule = leaveRules.find(rule => rule.year === currentYear);
+                const currentPolicy = currentRule ? {
+                    newEmpBase: currentRule.originalData?.newEmpBase || 1,
+                    existingEmpBase: currentRule.originalData?.existingEmpBase || 15,
+                    annualIncrement: currentRule.originalData?.annualIncrement || 1,
+                    maxAnnual: currentRule.originalData?.maxAnnual || 25
+                } : null;
+                totalDays = calcTotalLeave(memberData.hire_date, currentPolicy);
+            }
+            const usedDays = Math.max(0, totalDays - remainDays);
+            setLeaveInfo({
+                totalLeave: totalDays,
+                usedLeave: usedDays,
+                remainLeave: remainDays,
+                isLoading: false
+            });
         } catch (error) {
-            console.error('연차 정보 조회 오류:', error);
             setLeaveInfo({
                 totalLeave: 15,
                 usedLeave: 0,
