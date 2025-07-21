@@ -52,51 +52,36 @@ export default function StatisticsPage() {
       h.date.includes(downloadSearch)
   );
 
-  // 근태 통계 + 사용자 정보 한번에 가져오기
+  // 전체 직원 근태 통계 가져오기
   useEffect(() => {
     const token = sessionStorage.getItem('token');
-    let userId = '';
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        userId = payload.id || payload.user_id || '';
-        console.log('토큰에서 추출한 userId:', userId);
-      } catch (e) {
-        console.error('토큰 파싱 실패:', e);
-      }
+    if (!token) {
+      setStatError("로그인이 필요합니다.");
+      return;
     }
-    if (!userId) return;
+
     setStatLoading(true);
     setStatError("");
-    fetch(`${apiUrl}/attendance/stat?user_id=${userId}`)
+    
+    fetch(`${apiUrl}/attendance/stat/all`, {
+      method: 'GET',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      }
+    })
       .then(res => res.json())
       .then(result => {
-        console.log('근태 통계 API 응답:', result);
+        console.log('전체 직원 근태 통계 API 응답:', result);
         if (result.success) {
-          // API 데이터 가공 (출근/지각/조퇴/결석/연차)
-          const statMap = {};
-          result.data.forEach(row => {
-            statMap[row.att_type] = row.cnt;
-          });
-          // user_info에서 이름/부서명 추출
-          const userInfo = result.user_info || {};
-          const updated = {
-            id: userId,
-            name: userInfo.name || userId,
-            dept: userInfo.dept_name || '-',
-            days_present: statMap["출근"] || 0,
-            late: statMap["지각"] || 0,
-            earlyLeave: statMap["조퇴"] || 0,
-            absent: statMap["결석"] || 0,
-            leave: statMap["연차"] || 0,
-          };
-          setAttendanceStats([updated]);
+          // 백엔드에서 이미 가공된 데이터를 그대로 사용
+          setAttendanceStats(result.data);
         } else {
           setStatError(result.msg || "통계 조회 실패");
         }
       })
       .catch((err) => {
-        console.error('근태 통계 조회 실패:', err);
+        console.error('전체 직원 근태 통계 조회 실패:', err);
         setStatError("서버 오류");
       })
       .finally(() => setStatLoading(false));
@@ -107,7 +92,7 @@ export default function StatisticsPage() {
     labels: filteredAttendance.map(s => s.name),
     datasets: [
       {
-        label: "출근",
+        label: "정상출근",
         data: filteredAttendance.map(s => s.days_present),
         backgroundColor: "#7c6ee6",
       },
@@ -128,7 +113,7 @@ export default function StatisticsPage() {
       },
       {
         label: "연차",
-        data: filteredAttendance.map(s => s.leave),
+        data: filteredAttendance.map(s => s.annual_leave),
         backgroundColor: "#43b8c6",
       },
     ],
@@ -161,7 +146,7 @@ export default function StatisticsPage() {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
-                <span className="su_small_text">한 달간 직원별 근태 통계 (출근/지각/결석/연차)</span>
+                <span className="su_small_text">최근 30일간 전체 직원 근태 통계 (정상출근/지각/조퇴/결석/연차)</span>
               </div>
               <div style={{ maxWidth: 760, margin: "0 auto 30px" }}>
                 <Bar
@@ -204,7 +189,7 @@ export default function StatisticsPage() {
                       <td>{s.late}</td>
                       <td>{s.earlyLeave || 0}</td>
                       <td>{s.absent}</td>
-                      <td>{s.leave}</td>
+                      <td>{s.annual_leave}</td>
                     </tr>
                   ))}
                 </tbody>
