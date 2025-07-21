@@ -634,8 +634,8 @@ export default function MyPage() {
                     <div className="modal_overlay" onClick={() => setLeaveDetailModalOpen(false)}>
                         <div className="modal_content" style={{width: "800px"}} onClick={e => e.stopPropagation()}>
                             <h3 className="card_title font_700 mb_20">연차 상세 내역</h3>
-                            <div style={{maxHeight: '400px', overflowY: 'auto'}}>
-                                <table className="board_table">
+                            <div style={{maxHeight: '500px', overflowY: 'auto', border: '1px solid #e0e0e0', borderRadius: '8px'}}>
+                                <table className="board_table" style={{margin: 0}}>
                                     <thead>
                                         <tr>
                                             <th>신청일</th>
@@ -647,16 +647,26 @@ export default function MyPage() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {leaveDetails.length > 0 ? leaveDetails.map((leave, index) => (
-                                            <tr key={index}>
-                                                <td>{leave.req_date ? new Date(leave.req_date).toLocaleDateString() : '-'}</td>
-                                                <td>{leave.leave_type === 'ANNUAL' ? '연차' : leave.leave_type === 'SICK' ? '병가' : '기타'}</td>
-                                                <td>{leave.start_date ? new Date(leave.start_date).toLocaleDateString() : '-'}</td>
-                                                <td>{leave.end_date ? new Date(leave.end_date).toLocaleDateString() : '-'}</td>
-                                                <td>{leave.days}일</td>
-                                                <td>{leave.status === 'PENDING' ? '대기' : leave.status === 'APPROVED' ? '승인' : '반려'}</td>
-                                            </tr>
-                                        )) : (
+                                        {leaveDetails.length > 0 ? leaveDetails.map((leave, index) => {
+                                            // 사용일수 계산
+                                            let usedDays = 0;
+                                            if (leave.vac_start && leave.vac_end) {
+                                                const startDate = new Date(leave.vac_start);
+                                                const endDate = new Date(leave.vac_end);
+                                                usedDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+                                            }
+                                            
+                                            return (
+                                                <tr key={index}>
+                                                    <td>{leave.appr_date ? new Date(leave.appr_date).toLocaleDateString() : '-'}</td>
+                                                    <td>{leave.appr_type || '-'}</td>
+                                                    <td>{leave.vac_start ? new Date(leave.vac_start).toLocaleDateString() : '-'}</td>
+                                                    <td>{leave.vac_end ? new Date(leave.vac_end).toLocaleDateString() : '-'}</td>
+                                                    <td>{usedDays > 0 ? `${usedDays}일` : '-'}</td>
+                                                    <td>{leave.appr_status === '승인' ? '승인' : leave.appr_status === '반려' ? '반려' : '대기'}</td>
+                                                </tr>
+                                            );
+                                        }) : (
                                             <tr>
                                                 <td colSpan="6" style={{textAlign: 'center'}}>연차 사용 내역이 없습니다.</td>
                                             </tr>
