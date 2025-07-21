@@ -74,6 +74,16 @@ async function verifyOtp(userId, inputCode, expectedCode, mode) {
   return await res.json();
 }
 
+/**
+ * 백엔드에서 인증 잠금 상태를 확인하는 함수
+ * @param {string} userId - 사용자 ID
+ * @returns {Promise<Object>} 잠금 상태 정보
+ */
+async function checkAuthStatus(userId) {
+  const res = await fetch(`${apiUrl}/attendance/auth-status?user_id=${userId}`);
+  return await res.json();
+}
+
 // ===== 메인 컴포넌트 =====
 export default function Attendance() {
   // ===== 상태 관리 =====
@@ -97,6 +107,11 @@ export default function Attendance() {
   // 인증번호 사용 여부 상태
   const [usedOtpIn, setUsedOtpIn] = useState(false);   // 출근 인증번호 사용 여부
   const [usedOtpOut, setUsedOtpOut] = useState(false); // 퇴근 인증번호 사용 여부
+
+  // 인증 잠금 관련 상태
+  const [isLocked, setIsLocked] = useState(false);     // 잠금 상태
+  const [lockMessage, setLockMessage] = useState("");  // 잠금 메시지
+  const [remainingMinutes, setRemainingMinutes] = useState(0); // 잠금 남은 시간
 
   // 페이징 관련 상태
   const [page, setPage] = useState(1);                 // 현재 페이지 번호
@@ -157,6 +172,47 @@ export default function Attendance() {
   }, [expireIn, expireOut, mode]);
 
   // ===== 이벤트 핸들러 함수들 =====
+
+  /**
+   * 인증 잠금 상태를 확인하는 함수
+   * - 모달 열기 전에 잠금 상태 체크
+   * - 잠금 상태면 모달 열지 않고 메시지 표시
+   */
+  async function checkAndOpenModal(mode) {
+    let userId = sessionStorage.getItem('userId');
+    
+    if (!userId) {
+      alert('로그인 정보가 없습니다. 다시 로그인 해주세요.');
+      return;
+    }
+
+    try {
+      // 백엔드에서 잠금 상태 확인
+      const lockStatus = await checkAuthStatus(userId);
+      
+      if (lockStatus.success && lockStatus.locked) {
+        // 잠금 상태인 경우
+        setIsLocked(true);
+        setLockMessage(lockStatus.message);
+        setRemainingMinutes(lockStatus.remainingMinutes || 0);
+        alert(`🔒 인증이 잠금되었습니다.\n${lockStatus.message}`);
+        return;
+      } else {
+        // 잠금 상태가 아닌 경우 정상적으로 모달 열기
+        setIsLocked(false);
+        setLockMessage("");
+        setRemainingMinutes(0);
+        setMode(mode);
+        setModalOpen(true);
+      }
+    } catch (error) {
+      console.error('잠금 상태 확인 오류:', error);
+      // 오류 시에도 모달은 열되, 잠금 상태는 false로 설정
+      setIsLocked(false);
+      setMode(mode);
+      setModalOpen(true);
+    }
+  }
 
   /**
    * 백엔드에서 출퇴근 기록을 가져오는 함수
@@ -222,8 +278,8 @@ export default function Attendance() {
     setIsSending(true); // 발송 중 상태 설정
     
     try {
-      // 세션스토리지 또는 로컬스토리지에서 사용자 ID 가져오기
-      let userId = sessionStorage.getItem('userId') || localStorage.getItem('userId');
+      // 세션스토리지에서 사용자 ID 가져오기
+      let userId = sessionStorage.getItem('userId');
       console.log('최종 전송할 user_id:', userId);
 
       if (!userId) {
@@ -299,7 +355,7 @@ export default function Attendance() {
     const expectedCode = mode === "in" ? otpIn : otpOut;
     const usedOtp = mode === "in" ? usedOtpIn : usedOtpOut;
     const expire = mode === "in" ? expireIn : expireOut;
-    let userId = sessionStorage.getItem('userId') || localStorage.getItem('userId');
+    let userId = sessionStorage.getItem('userId');
 
     // 유효성 검사
     if (usedOtp) return alert(mode === "in" ? "이미 출근 처리됨" : "이미 퇴근 처리됨");
@@ -308,12 +364,26 @@ export default function Attendance() {
 
     // 백엔드에 인증번호 검증 및 기록 요청
     const result = await verifyOtp(userId, input, expectedCode, mode);
+    
     if (!result.success) {
-      alert(result.msg || "인증번호가 일치하지 않습니다.");
+      // 인증 실패 시 처리
+      if (result.locked) {
+        // 잠금 상태인 경우
+        setIsLocked(true);
+        setLockMessage(result.msg);
+        setRemainingMinutes(result.remainingMinutes || 0);
+        alert(`🔒 ${result.msg}`);
+        setModalOpen(false); // 모달 닫기
+      } else {
+        // 일반적인 실패
+        alert(result.msg || "인증번호가 일치하지 않습니다.");
+        setInput(""); // 입력 필드만 초기화
+      }
       return;
     }
 
     // 성공 시 처리
+    setIsLocked(false); // 잠금 상태 해제
     if (mode === "in") {
       setUsedOtpIn(true);
     } else {
@@ -361,14 +431,14 @@ export default function Attendance() {
           <div className="flex gap_20" style={{ marginBottom: 10 }}>
             <button
               className="att_btn"
-              onClick={() => { setMode("in"); setModalOpen(true); }}
+              onClick={() => checkAndOpenModal("in")}
               disabled={usedOtpIn}
             >
               출근
             </button>
             <button
               className="att_btn"
-              onClick={() => { setMode("out"); setModalOpen(true); }}
+              onClick={() => checkAndOpenModal("out")}
               disabled={usedOtpOut}
             >
               퇴근
@@ -455,18 +525,41 @@ export default function Attendance() {
             {mode === "in" ? "출근 인증번호" : "퇴근 인증번호"}
           </div>
 
+          {/* 잠금 상태 표시 */}
+          {isLocked && (
+            <div style={{
+              backgroundColor: "#ffebee",
+              border: "1px solid #f44336",
+              borderRadius: "8px",
+              padding: "15px",
+              textAlign: "center",
+              color: "#d32f2f",
+              marginBottom: "10px",
+              width: "100%"
+            }}>
+              <div style={{ fontSize: "24px", marginBottom: "8px" }}>🔒</div>
+              <div style={{ fontWeight: "600", marginBottom: "5px" }}>인증이 잠금되었습니다</div>
+              <div style={{ fontSize: "14px" }}>{lockMessage}</div>
+              {remainingMinutes > 0 && (
+                <div style={{ fontSize: "12px", marginTop: "5px", opacity: 0.8 }}>
+                  약 {remainingMinutes}분 후 다시 시도 가능
+                </div>
+              )}
+            </div>
+          )}
+
           {/* 인증번호 발송 버튼 */}
           <div className="flex align_center">
             <button
               type="button"
               className="att_btn"
               onClick={sendEmailOtp}
-              disabled={isSending}
+              disabled={isSending || isLocked}
               style={{
                 width: "120px",
                 height: "120px",
                 borderRadius: "50%",
-                background: isSending 
+                background: (isSending || isLocked)
                   ? "linear-gradient(135deg, #ccc 0%, #999 100%)"
                   : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                 color: "white",
@@ -479,13 +572,13 @@ export default function Attendance() {
                 gap: "8px",
                 boxShadow: "0 8px 25px rgba(102, 126, 234, 0.3)",
                 border: "none",
-                cursor: isSending ? "not-allowed" : "pointer",
+                cursor: (isSending || isLocked) ? "not-allowed" : "pointer",
                 transition: "all 0.3s ease",
                 textAlign: "center",
                 lineHeight: "1.2"
               }}
               onMouseOver={e => {
-                if (!isSending) {
+                if (!isSending && !isLocked) {
                   e.currentTarget.style.transform = "translateY(-3px)";
                   e.currentTarget.style.boxShadow = "0 12px 35px rgba(102, 126, 234, 0.4)";
                 }
@@ -496,34 +589,44 @@ export default function Attendance() {
               }}
             >
               <span style={{fontSize: "24px"}}>📱</span>
-              <span>{isSending ? "발송중..." : "인증\n번호 발송"}</span>
+              <span>{isLocked ? "잠금됨" : (isSending ? "발송중..." : "인증\n번호 발송")}</span>
             </button>
           </div>
 
           {/* 유효시간 표시 */}
-          <div className="su_small_text" style={{ color: "#ff6f61" }}>
-            유효시간 : {formatRemain(remain)} (분:초)
-          </div>
+          {!isLocked && (
+            <div className="su_small_text" style={{ color: "#ff6f61" }}>
+              유효시간 : {formatRemain(remain)} (분:초)
+            </div>
+          )}
 
           {/* 인증번호 입력 폼 */}
           <form onSubmit={handleSubmit} className="flex gap_10 align_center">
             <input
               className="otp_input"
               type="text"
-              placeholder="인증번호 입력"
+              placeholder={isLocked ? "인증이 잠금되었습니다" : "인증번호 입력"}
               value={input}
               onChange={e => setInput(e.target.value.replace(/[^0-9]/g, ""))} // 숫자만 입력 가능
               maxLength={6}
-              disabled={mode === "in" ? usedOtpIn : usedOtpOut}
+              disabled={isLocked || (mode === "in" ? usedOtpIn : usedOtpOut)}
               autoComplete="off"
-              required
+              required={!isLocked}
+              style={{
+                backgroundColor: isLocked ? "#f5f5f5" : "white",
+                color: isLocked ? "#999" : "black"
+              }}
             />
             <button
               type="submit"
               className="att_btn"
-              disabled={mode === "in" ? usedOtpIn : usedOtpOut}
+              disabled={isLocked || (mode === "in" ? usedOtpIn : usedOtpOut)}
+              style={{
+                backgroundColor: isLocked ? "#ccc" : "",
+                cursor: isLocked ? "not-allowed" : "pointer"
+              }}
             >
-              {mode === "in" ? (usedOtpIn ? "출근 완료" : "출근 처리") : (usedOtpOut ? "퇴근 완료" : "퇴근 처리")}
+              {isLocked ? "잠금됨" : (mode === "in" ? (usedOtpIn ? "출근 완료" : "출근 처리") : (usedOtpOut ? "퇴근 완료" : "퇴근 처리"))}
             </button>
           </form>
         </div>
