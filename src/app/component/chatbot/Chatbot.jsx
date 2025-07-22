@@ -139,7 +139,7 @@ export default function Chatbot() {
       아래 JSON 데이터를 참고해서, 사용자의 요청에 가장 적합한 답변을 안내해줘.
       목록을 전체 보여줘야해.
 
-      [MEETING 목록]
+      [게시판 목록]
       ${meetingJson}
 
       [사용자 요청]
@@ -158,7 +158,7 @@ export default function Chatbot() {
       const data = res.data;
       const answer =
         data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "FAQ 안내에 실패했습니다.";
+        "게시판 안내에 실패했습니다.";
 
       setMessages(msgs => [
         ...msgs,
@@ -173,7 +173,7 @@ export default function Chatbot() {
     } catch (e) {
       setMessages(msgs => [
         ...msgs,
-        { from: "bot", text: "FAQ AI 안내 중 오류가 발생했습니다." }
+        { from: "bot", text: "게시판 AI 안내 중 오류가 발생했습니다." }
       ]);
     }
     setLoading(false);
@@ -208,7 +208,7 @@ export default function Chatbot() {
       const data = res.data;
       const answer =
         data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "FAQ 안내에 실패했습니다.";
+        "클라우드 안내에 실패했습니다.";
 
       setMessages(msgs => [
         ...msgs,
@@ -223,7 +223,7 @@ export default function Chatbot() {
     } catch (e) {
       setMessages(msgs => [
         ...msgs,
-        { from: "bot", text: "FAQ AI 안내 중 오류가 발생했습니다." }
+        { from: "bot", text: "클라우드 AI 안내 중 오류가 발생했습니다." }
       ]);
     }
     setLoading(false);
