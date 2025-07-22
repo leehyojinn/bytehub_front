@@ -39,7 +39,7 @@ export const checkAuthStore = create((set, get) => ({
     access_type: 'paeneol',
     access_idx: 0,
     auth: 'r',
-    isBlockId: ({session, userId}) => {
+    isBlockId: ({session}) => {
         set({user_id: session.getItem("userId")});
         for (let i = 0; i < session.length; i++) {
             if (session.key(i) === 'token' || session.key(i) === 'userId') continue;

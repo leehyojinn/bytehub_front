@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
+import {checkAuthStore} from "@/app/zustand/store";
 
 // 모달 컴포넌트
 function Modal({ isOpen, onClose, children }) {
@@ -23,6 +24,7 @@ export default function DepartmentManagePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState({ id: null, name: "" });
+  const blockId = checkAuthStore();
 
   const api_url = process.env.NEXT_PUBLIC_API_URL;
 
@@ -113,6 +115,7 @@ export default function DepartmentManagePage() {
   };
 
   useEffect(() => {
+    blockId.redirect({session:sessionStorage});
     deptList();
   }, []);
 

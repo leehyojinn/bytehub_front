@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
+import {checkAuthStore} from "@/app/zustand/store";
 
 // API 서버 주소
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -83,6 +84,7 @@ export default function VacationEditPage() {
   const [search, setSearch] = useState("");
   const [editModal, setEditModal] = useState(false);
   const [editMember, setEditMember] = useState(null);
+  const blockId = checkAuthStore();
  
   // 연차 부여
   const [grantLeaveModal, setGrantLeaveModal] = useState(false);
@@ -269,6 +271,9 @@ export default function VacationEditPage() {
 
   // 컴포넌트 마운트 시 데이터 로드 (순차 실행)
   useEffect(() => {
+
+    blockId.redirect({session:sessionStorage});
+
     const loadData = async () => {
       const rulesData = await fetchLeaveRules(); // 먼저 정책을 로드
       await fetchMembersLeaveData(rulesData); // 정책 데이터를 전달하여 사원 데이터 로드

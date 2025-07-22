@@ -5,8 +5,10 @@ import Header from "@/app/Header";
 import Footer from "@/app/Footer";
 import {useEffect, useRef, useState} from "react";
 import axios from "axios";
+import {checkAuthStore} from "@/app/zustand/store";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
 
 const initialMembers = [
     {
@@ -116,10 +118,11 @@ export default function GrantUser() {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedMember, setSelectedMember] = useState(null);
     const [editPerm, setEditPerm] = useState([]);
-
+    const blockId = checkAuthStore();
 
     //초기
     useEffect(() => {
+        blockId.redirect({session:sessionStorage});
         callMember();
     }, [])
 
@@ -230,7 +233,6 @@ export default function GrantUser() {
                             <th>직급</th>
                             <th>이메일</th>
                             <th>입사일</th>
-                            <th>퇴사</th>
                             <th>권한 관리</th>
                         </tr>
                         </thead>
@@ -249,7 +251,6 @@ export default function GrantUser() {
                                 <td>{item.lv_name}</td>
                                 <td>{item.email}</td>
                                 <td>{item.hire_date}</td>
-                                <td>{item.withdraw}</td>
                                 <td>
                                     <button
                                         className="board_btn board_btn_small"

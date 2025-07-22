@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
+import {checkAuthStore} from "@/app/zustand/store";
 
 function Modal({ isOpen, onClose, children }) {
   if (!isOpen) return null;
@@ -24,6 +25,7 @@ export default function LevelManagePage() {
   const [form, setForm] = useState({ id: null, name: "", description: "" });
 
   const api_url = process.env.NEXT_PUBLIC_API_URL;
+  const blockId = checkAuthStore();
 
   // 목록 불러오기
   async function lvList() {
@@ -118,6 +120,7 @@ export default function LevelManagePage() {
   };
 
   useEffect(() => {
+    blockId.redirect({session:sessionStorage});
     lvList();
   }, []);
 

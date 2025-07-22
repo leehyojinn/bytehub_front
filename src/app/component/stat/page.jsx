@@ -12,6 +12,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import {checkAuthStore} from "@/app/zustand/store";
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
@@ -38,6 +39,8 @@ export default function StatisticsPage() {
   const [statError, setStatError] = useState("");
   const [attendanceStats, setAttendanceStats] = useState([]);
 
+  const blockId = checkAuthStore();
+
   // 직원 근태 통계 검색 필터
   const filteredAttendance = attendanceStats.filter(
     s => s.name.includes(search) || s.id.includes(search) || s.dept.includes(search)
@@ -54,6 +57,8 @@ export default function StatisticsPage() {
 
   // 전체 직원 근태 통계 가져오기
   useEffect(() => {
+    blockId.redirect({session:sessionStorage});
+
     const token = sessionStorage.getItem('token');
     if (!token) {
       setStatError("로그인이 필요합니다.");

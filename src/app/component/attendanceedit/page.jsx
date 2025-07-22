@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
+import {checkAuthStore} from "@/app/zustand/store";
 
 // API 서버 주소 (환경변수에서 가져오거나 기본값 사용)
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -51,10 +52,14 @@ export default function AttendanceManagePage() {
   const [editRow, setEditRow] = useState(null);
   // 결석 처리 상태 (현재 미사용)
   // const [isProcessingAbsence, setIsProcessingAbsence] = useState(false);
+  const blockId = checkAuthStore();
 
   // 출근/퇴근 정책 정보 불러오기 (최초 1회)
   useEffect(() => {
+
     const userId = sessionStorage.getItem('userId');
+    blockId.redirect({session:sessionStorage});
+
     if (!userId) return;
     const url = apiUrl ? `${apiUrl}/attendance/setting/current` : `/attendance/setting/current`;
     fetch(url)
