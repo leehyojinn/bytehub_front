@@ -17,6 +17,8 @@ const menuItems = [
   { name: '공지사항', href: '/component/board' },
 ];
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
 export default function Header() {
 
     // 로그아웃 핸들러
@@ -24,7 +26,7 @@ export default function Header() {
         e.preventDefault();
         try {
             // 백엔드 로그아웃 API 호출
-            await fetch('http://localhost/member/logout', {
+            await fetch(`${apiUrl}/member/logout`, {
                 method: 'POST',
                 credentials: 'include', // 세션 기반이면 필요
             });
