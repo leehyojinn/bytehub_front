@@ -39,6 +39,9 @@ export default function StatisticsPage() {
   const [statLoading, setStatLoading] = useState(false);
   const [statError, setStatError] = useState("");
   const [attendanceStats, setAttendanceStats] = useState([]);
+  const [downloadStats, setDownloadStats] = useState([]);
+  const [downloadStatsLoading, setDownloadStatsLoading] = useState(false);
+  const [downloadStatsError, setDownloadStatsError] = useState("");
 
   const blockId = checkAuthStore();
   const alertModal = useAlertModalStore();
@@ -57,9 +60,14 @@ export default function StatisticsPage() {
       h.date.includes(downloadSearch)
   );
 
+  // 파일별 다운로드 횟수 검색 필터
+  const filteredDownloadStats = downloadStats.filter(
+    s => s.filename.includes(downloadSearch) || s.dept_name.includes(downloadSearch)
+  );
+
   // 전체 직원 근태 통계 가져오기
   useEffect(() => {
-    blockId.redirect({session:sessionStorage, alert:alertModal});
+      blockId.redirect({session:sessionStorage, alert:alertModal});
 
     const token = sessionStorage.getItem('token');
     if (!token) {
@@ -94,6 +102,40 @@ export default function StatisticsPage() {
       .finally(() => setStatLoading(false));
   }, []);
 
+  // 파일별 다운로드 횟수 통계 가져오기
+  useEffect(() => {
+    const token = sessionStorage.getItem('token');
+    if (!token) {
+      setDownloadStatsError("로그인이 필요합니다.");
+      return;
+    }
+
+    setDownloadStatsLoading(true);
+    setDownloadStatsError("");
+    
+    fetch(`${apiUrl}/cloud/download/count`, {
+      method: 'GET',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      }
+    })
+      .then(res => res.json())
+      .then(result => {
+        console.log('파일별 다운로드 횟수 통계 API 응답:', result);
+        if (result.success) {
+          setDownloadStats(result.data);
+        } else {
+          setDownloadStatsError(result.message || "다운로드 통계 조회 실패");
+        }
+      })
+      .catch((err) => {
+        console.error('파일별 다운로드 횟수 통계 조회 실패:', err);
+        setDownloadStatsError("서버 오류");
+      })
+      .finally(() => setDownloadStatsLoading(false));
+  }, []);
+
   // 그래프 데이터 (API 데이터 반영됨)
   const attendanceBarData = {
     labels: filteredAttendance.map(s => s.name),
@@ -124,6 +166,48 @@ export default function StatisticsPage() {
         backgroundColor: "#43b8c6",
       },
     ],
+  };
+
+  // 파일별 다운로드 횟수 그래프 데이터
+  const downloadBarData = {
+    labels: filteredDownloadStats.map(s => {
+      // 파일명이 15자 이상이면 축약
+      const filename = s.filename;
+      return filename.length > 15 ? filename.substring(0, 15) + '...' : filename;
+    }),
+    datasets: [
+      {
+        label: "다운로드 횟수",
+        data: filteredDownloadStats.map(s => s.download_count),
+        backgroundColor: "#4CAF50",
+      },
+    ],
+  };
+
+  // 그래프 옵션에 툴팁 커스터마이징 추가
+  const downloadChartOptions = {
+    responsive: true,
+    plugins: { 
+      legend: { position: 'top' },
+      tooltip: {
+        callbacks: {
+          title: function(context) {
+            // 툴팁에서 전체 파일명 표시
+            const index = context[0].dataIndex;
+            return filteredDownloadStats[index]?.filename || context[0].label;
+          }
+        }
+      }
+    },
+    scales: { 
+      y: { beginAtZero: true, stepSize: 1 },
+      x: {
+        ticks: {
+          maxRotation: 45, // 라벨 회전
+          minRotation: 0
+        }
+      }
+    },
   };
 
   return (
@@ -210,33 +294,44 @@ export default function StatisticsPage() {
                 <input
                   className="board_write_input"
                   style={{ width: 220 }}
-                  placeholder="파일명/이름/아이디/날짜 검색"
+                  placeholder="파일명/부서 검색"
                   value={downloadSearch}
                   onChange={e => setDownloadSearch(e.target.value)}
                 />
-                <span className="su_small_text">파일별 다운로드 기록</span>
+                <span className="su_small_text" style={{ display: 'block', textAlign: 'center', width: '100%' }}>파일별 다운로드 횟수 통계</span>
               </div>
+              <div style={{ maxWidth: 760, margin: "0 auto 30px" }}>
+                <Bar
+                  data={downloadBarData}
+                  options={downloadChartOptions}
+                  height={320}
+                />
+              </div>
+              {downloadStatsLoading && <div style={{marginBottom:10}}>로딩 중...</div>}
+              {downloadStatsError && <div style={{color:'red',marginBottom:10}}>{downloadStatsError}</div>}
               <table className="stat_table">
                 <thead>
                   <tr>
                     <th>파일명</th>
-                    <th>다운로드자</th>
-                    <th>아이디</th>
-                    <th>다운로드 일시</th>
+                    <th>부서</th>
+                    <th>다운로드 횟수</th>
+                    <th>다운로드한 사용자</th>
+                    <th>다운로드 시간</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredDownloadHistory.length === 0 && (
+                  {filteredDownloadStats.length === 0 && (
                     <tr>
-                      <td colSpan={4} style={{ textAlign: 'center', color: '#aaa' }}>다운로드 기록이 없습니다.</td>
+                      <td colSpan={5} style={{ textAlign: 'center', color: '#aaa' }}>다운로드 통계가 없습니다.</td>
                     </tr>
                   )}
-                  {filteredDownloadHistory.map((h, idx) => (
+                  {filteredDownloadStats.map((s, idx) => (
                     <tr key={idx}>
-                      <td>{h.file}</td>
-                      <td>{h.user}</td>
-                      <td>{h.userId}</td>
-                      <td>{h.date}</td>
+                      <td>{s.filename}</td>
+                      <td>{s.dept_name || '미지정'}</td>
+                      <td>{s.download_count}</td>
+                      <td>{s.user_ids || '-'}</td>
+                      <td>{s.download_times || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
