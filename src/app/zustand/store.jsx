@@ -55,7 +55,6 @@ export const checkAuthStore = create((set, get) => ({
             const value = session.getItem(key);
             const parsed = JSON.parse(value);
 
-
             const isMatch =
                 parsed.user_id === get().user_id &&
                 parsed.access_type === get().access_type &&

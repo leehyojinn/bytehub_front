@@ -5,6 +5,7 @@ import Header from "@/app/Header";
 import Link from "next/link";
 import React, {use, useEffect, useState} from "react";
 import axios from "axios";
+import {checkAuthStore, useAlertModalStore} from "@/app/zustand/store";
 
 const POSTS_PER_PAGE = 15;
 
@@ -38,9 +39,23 @@ export default function MeetingList() {
   const [search, setSearch] = useState("");
   const [posts, setPosts] = useState([]);
   // const [totalPages, setTotalPages] = useState(1);
+  const blockPage= checkAuthStore();
+
+  const [visibleButton, setVisibleButton] = useState(false);
+
+  // 회의록작성 버튼 보여주는 여부
+  const showAdminPaeneol=()=>{
+    setVisibleButton(blockPage.isBlockId({
+      session:sessionStorage,
+      type:'board',
+      idx:0,
+      auth:'w',
+    }));
+  }
 
   // 게시글 리스트 불러오기
   useEffect(() => {
+    showAdminPaeneol();
     const fetchPosts = async () => {
       try {
         const token = sessionStorage.getItem("token");
@@ -182,9 +197,12 @@ export default function MeetingList() {
             </button>
           </div>
           <div className="board_footer">
-            <Link href="/component/meeting/meeting_write">
-              <button className="board_btn">회의록 작성</button>
-            </Link>
+            {
+              visibleButton ?
+                  <Link href="/component/meeting/meeting_write">
+                    <button className="board_btn">회의록 작성</button>
+                  </Link> : null
+            }
           </div>
         </div>
       </div>

@@ -50,7 +50,12 @@ export default function AdminPaeneol() {
 
     // 관리패널 보여주는 여부
     const showAdminPaeneol=()=>{
-        setVisible(blockPage.isBlockId({session:sessionStorage}));
+        setVisible(blockPage.isBlockId({
+            session:sessionStorage,
+            type:'paeneol',
+            idx:0,
+            auth:'r',
+        }));
     }
 
     useEffect(() => {

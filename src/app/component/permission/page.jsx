@@ -47,7 +47,7 @@ function PermissionModal({open, onClose, member, setUserPermissions, userPermiss
 
         data.auth_list.forEach(item => {
             if (item.access_idx === 0) {
-                switch (item.access_type) {     //access_type= 'leave', 'attendance', 'project', 'chat', 'board', 'pannel'
+                switch (item.access_type) {     //access_type= 'board', 'chat' 'project', 'leave', 'attendance', 'paeneol' ,
                     case 'leave':
                         arr[3]=PERMISSIONS[3].code;
                         break;
@@ -156,11 +156,11 @@ export default function GrantUser() {
     // 각 member 별 perm 기본값
     const arr = useRef([]);
     const authList = (id) => [
-        {user_id: id, access_type: PERMISSIONS[0].code, access_idx: 0, auth: "r", checked: false},
+        {user_id: id, access_type: PERMISSIONS[0].code, access_idx: 0, auth: "w", checked: false},
         {user_id: id, access_type: PERMISSIONS[1].code, access_idx: 0, auth: "w", checked: false},
         {user_id: id, access_type: PERMISSIONS[2].code, access_idx: 0, auth: "w", checked: false},
         {user_id: id, access_type: PERMISSIONS[3].code, access_idx: 0, auth: "r", checked: false},
-        {user_id: id, access_type: PERMISSIONS[4].code, access_idx: 0, auth: "r", checked: false},
+        {user_id: id, access_type: PERMISSIONS[4].code, access_idx: 0, auth: "w", checked: false},
         {user_id: id, access_type: PERMISSIONS[5].code, access_idx: 0, auth: "r", checked: false},
     ];
 
