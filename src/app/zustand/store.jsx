@@ -62,7 +62,7 @@ export const checkAuthStore = create((set, get) => ({
         return get().isAuth;
     },
     redirect: ({session, alert}) => {
-        if (!get().isBlockId({session})) {   // 관리자권한이 없다면?
+        if (!get().isBlockId({session})) {   // 권한이 없다면?
             alert.openModal({
                 svg: "❌",
                 msg1: "접근 오류",
