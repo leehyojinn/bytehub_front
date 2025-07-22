@@ -176,9 +176,6 @@ export default function GrantUser() {
                 withdraw: <input
                     type="checkbox"
                     checked={item.withdraw}
-                    onChange={(e) => {
-                        toggleWithDraw(item.user_id)
-                    }}
                     className="custom-checkbox"
                 />,
             };
