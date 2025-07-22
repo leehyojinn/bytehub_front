@@ -1,6 +1,7 @@
 'use client'
 import React, {useRef, useEffect, useState} from 'react';
 import {useRouter} from 'next/navigation';
+import { checkAuthStore } from "@/app/zustand/store";
 
 const links = [
     {
@@ -45,35 +46,11 @@ export default function AdminPaeneol() {
     const panelRef = useRef();
     const [visible, setVisible] = useState(false);
 
+    const blockPage= checkAuthStore();
+
     // 관리패널 보여주는 여부
     const showAdminPaeneol=()=>{
-        const targetValue = {
-            user_id: sessionStorage.getItem('userId'),
-            access_type: "paeneol",
-            access_idx: 0,
-            auth: "r"
-        };
-
-        let found = false;
-
-        for (let i = 0; i < sessionStorage.length; i++) {
-            if(sessionStorage.key(i)==='token' || sessionStorage.key(i)==='userId' || sessionStorage.key(i)==='auths') continue;
-
-                const key = sessionStorage.key(i);
-                const value = sessionStorage.getItem(key);
-                const parsed = JSON.parse(value);
-
-                const isMatch =
-                    parsed.user_id === targetValue.user_id &&
-                    parsed.access_type === targetValue.access_type &&
-                    parsed.auth === targetValue.auth;
-
-                if (isMatch) {
-                    found = true;
-                    break;
-                }
-        }
-        setVisible(found);
+        setVisible(blockPage.isBlockId({session:sessionStorage}));
     }
 
     useEffect(() => {

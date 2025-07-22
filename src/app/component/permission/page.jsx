@@ -71,7 +71,6 @@ function PermissionModal({open, onClose, member, setUserPermissions, userPermiss
         setUserPermissions(arr);
     }
 
-
     if (!open || !member) return null;
 
     return (
@@ -142,12 +141,12 @@ export default function GrantUser() {
     }
 
     //  더 똑똑하게 할방법이 있을 것 같다...
-    const toggleWithDraw = async (id) => {
-        let {data} = await axios.get(`${apiUrl}/admin/withdraw/${id}`);
-        if (data.success) {
-            callMember();
-        }
-    }
+    // const toggleWithDraw = async (id) => {
+    //     let {data} = await axios.get(`${apiUrl}/admin/withdraw/${id}`);
+    //     if (data.success) {
+    //         callMember();
+    //     }
+    // }
 
     // 각 member 별 perm 기본값
     const arr = useRef([]);

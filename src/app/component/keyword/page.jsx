@@ -5,6 +5,7 @@ import Header from "@/app/Header";
 import Footer from "@/app/Footer";
 import axios from "axios";
 import { useAlertModalStore } from "@/app/zustand/store";
+import {checkAuthStore} from "@/app/zustand/store";
 import AlertModal from "../alertmodal/page";
 
 const isActiveStatus = (status) =>
@@ -16,10 +17,12 @@ export default function KeywordManagePage() {
   const [editMode, setEditMode] = useState(false);
 
   const getUserId = () => (typeof window !== "undefined" ? sessionStorage.getItem("userId") || "" : "");
+  const getSession=()=>(typeof window !== "undefined" ? sessionStorage || "" : ""); //해본다
   const [form, setForm] = useState({ user_id: getUserId(), keyword: "", response: "" });
 
   const api_url = process.env.NEXT_PUBLIC_API_URL;
   const alertModal = useAlertModalStore();
+  const blockId = checkAuthStore();
 
   // 키워드 목록 불러오기
   async function list() {
@@ -175,6 +178,7 @@ export default function KeywordManagePage() {
   };
 
   useEffect(() => {
+    blockId.redirect({session:getSession()});
     list();
   }, []);
 
