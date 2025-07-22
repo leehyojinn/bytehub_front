@@ -39,13 +39,13 @@ export default function MeetingList() {
   const [search, setSearch] = useState("");
   const [posts, setPosts] = useState([]);
   // const [totalPages, setTotalPages] = useState(1);
-  const blockPage= checkAuthStore();
+  const block= checkAuthStore();
 
   const [visibleButton, setVisibleButton] = useState(false);
 
   // 회의록작성 버튼 보여주는 여부
   const showWriteButton=()=>{
-    setVisibleButton(blockPage.isBlockId({
+    setVisibleButton(block.isBlockId({
       session:sessionStorage,
       type:'board',
       idx:0,
@@ -70,8 +70,8 @@ export default function MeetingList() {
         console.log("전체 응답:", data);
         console.log("게시글 리스트:", data.list);
         if (data.list && data.list.length > 0) {
-          console.log("첫 번째 게시글:", data.list[0]);
-          console.log("첫 번째 게시글 attendees:", data.list[0].attendees);
+          console.log("n 번째 게시글:", data.list[7]);
+          console.log("n 번째 게시글 attendees:", data.list[7].attendees);
         }
         setPosts(data.list || []);
         // 페이지네이션 정보가 필요하면 data.page 등 활용
@@ -155,17 +155,7 @@ export default function MeetingList() {
                 </tr>
               ) : (
                 currentPosts.map((post) => (
-                  <tr key={post.post_idx}>
-                    <td>{post.post_idx}</td>
-                    <td className="board_title">
-                      <Link href={`/component/meeting/meeting_detail/${post.post_idx}`}>
-                        {post.subject}
-                      </Link>
-                    </td>
-                    <td>{post.user_id}</td>
-                    <td>{formatAttendees(post.attendees)}</td>
-                    <td>{formatDate(post.reg_date)}</td>
-                  </tr>
+                  <Item key={post.post_idx} post={post}/>
                 ))
               )}
             </tbody>
@@ -208,5 +198,35 @@ export default function MeetingList() {
       </div>
       <Footer />
     </div>
+  );
+}
+
+// list 분리
+function Item({post}){
+
+  const block= checkAuthStore();
+  const [visible, setVisible] = useState(true);
+
+  // block.isBlockId({
+  //   session:sessionStorage,
+  //   type:'board',
+  //   idx: post.post_idx,
+  //   auth: 'r'
+  // })
+
+  return(
+      visible ?
+          <tr key={post.post_idx}>
+          <td>{post.post_idx}</td>
+          <td className="board_title">
+            <Link href={`/component/meeting/meeting_detail/${post.post_idx}`}>
+              {post.subject}
+            </Link>
+          </td>
+          <td>{post.user_id}</td>
+          <td>{formatAttendees(post.attendees)}</td>
+          <td>{formatDate(post.reg_date)}</td>
+        </tr>
+          : null
   );
 }
