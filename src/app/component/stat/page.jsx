@@ -146,7 +146,7 @@ export default function StatisticsPage() {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
-                <span className="su_small_text">최근 30일간 전체 직원 근태 통계 (정상출근/지각/조퇴/결석/연차)</span>
+                <span className="su_small_text" style={{ display: 'block', textAlign: 'center', width: '100%' }}>전체 직원 근태 통계 (정상출근/지각/조퇴/결석/연차)</span>
               </div>
               <div style={{ maxWidth: 760, margin: "0 auto 30px" }}>
                 <Bar

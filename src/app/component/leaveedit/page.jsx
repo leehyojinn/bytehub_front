@@ -250,8 +250,6 @@ export default function VacationEditPage() {
         year: rule.year,
         annual: rule.existingEmpBase,      // 기존직원 기본연차를 연차로 표시
         monthly: rule.newEmpBase,          // 신규직원 월당연차를 월차로 표시
-        annualStartDate: '1월 1일',        // 기본값
-        monthlyStartDate: '매월 만근시 1일', // 기본값
         note: `기본 ${rule.existingEmpBase}일 + 근속년수당 ${rule.annualIncrement}일 (최대 ${rule.maxAnnual}일)`,
         createdAt: new Date(rule.createdDate || Date.now()),
         // 원본 데이터도 보관
@@ -554,25 +552,23 @@ export default function VacationEditPage() {
                 <th>년도</th>
                 <th>연차(개)</th>
                 <th>월차(개)</th>
-                <th>연차 부여 기준일</th>
-                <th>월차 부여 기준일</th>
                 <th>비고</th>
               </tr>
               </thead>
               <tbody>
               {rulesLoading && (
                 <tr>
-                  <td colSpan={6} style={{textAlign: 'center', color: '#aaa'}}>연차 규칙을 불러오는 중입니다...</td>
+                  <td colSpan={4} style={{textAlign: 'center', color: '#aaa'}}>연차 규칙을 불러오는 중입니다...</td>
                 </tr>
               )}
               {rulesError && (
                 <tr>
-                  <td colSpan={6} style={{textAlign: 'center', color: 'red'}}>{rulesError}</td>
+                  <td colSpan={4} style={{textAlign: 'center', color: 'red'}}>{rulesError}</td>
                 </tr>
               )}
               {!rulesLoading && !rulesError && displayRules.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{textAlign: 'center', color: '#aaa'}}>등록된 규칙이 없습니다.</td>
+                  <td colSpan={4} style={{textAlign: 'center', color: '#aaa'}}>등록된 규칙이 없습니다.</td>
                 </tr>
               )}
               {!rulesLoading && !rulesError && displayRules.length > 0 && (
@@ -581,8 +577,6 @@ export default function VacationEditPage() {
                     <td>{rule.year}</td>
                     <td>{rule.annual}</td>
                     <td>{rule.monthly}</td>
-                    <td>{rule.annualStartDate}</td>
-                    <td>{rule.monthlyStartDate}</td>
                     <td>{rule.note}</td>
                   </tr>
                 ))
