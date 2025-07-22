@@ -3,9 +3,10 @@
 import AdminPaeneol from "@/app/component/adminpaeneol/AdminPaeneol";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
-import {useEffect, useRef, useState} from "react";
+import React, {useEffect, useRef, useState} from "react";
 import axios from "axios";
-import {checkAuthStore} from "@/app/zustand/store";
+import {checkAuthStore, useAlertModalStore} from "@/app/zustand/store";
+import AlertModal from "@/app/component/alertmodal/page";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -119,10 +120,11 @@ export default function GrantUser() {
     const [selectedMember, setSelectedMember] = useState(null);
     const [editPerm, setEditPerm] = useState([]);
     const blockId = checkAuthStore();
+    const alertModal = useAlertModalStore();
 
     //초기
     useEffect(() => {
-        blockId.redirect({session:sessionStorage});
+        blockId.redirect({session:sessionStorage, alert:alertModal});
         callMember();
     }, [])
 
@@ -274,6 +276,7 @@ export default function GrantUser() {
                     onSave={handleSave}
                 />
             </div>
+            <AlertModal/>
             <Footer/>
 
         </div>

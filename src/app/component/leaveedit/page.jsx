@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
-import {checkAuthStore} from "@/app/zustand/store";
+import {checkAuthStore, useAlertModalStore} from "@/app/zustand/store";
+import AlertModal from "@/app/component/alertmodal/page";
 
 // API 서버 주소
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -85,6 +86,7 @@ export default function VacationEditPage() {
   const [editModal, setEditModal] = useState(false);
   const [editMember, setEditMember] = useState(null);
   const blockId = checkAuthStore();
+  const alertModal = useAlertModalStore();
  
   // 연차 부여
   const [grantLeaveModal, setGrantLeaveModal] = useState(false);
@@ -272,7 +274,7 @@ export default function VacationEditPage() {
   // 컴포넌트 마운트 시 데이터 로드 (순차 실행)
   useEffect(() => {
 
-    blockId.redirect({session:sessionStorage});
+    blockId.redirect({session:sessionStorage, alert:alertModal});
 
     const loadData = async () => {
       const rulesData = await fetchLeaveRules(); // 먼저 정책을 로드
@@ -939,6 +941,7 @@ export default function VacationEditPage() {
           )}
 
         </div>
+        <AlertModal/>
         <Footer />
       </div>
   );

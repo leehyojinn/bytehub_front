@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
 import axios from "axios";
-import {checkAuthStore} from "@/app/zustand/store";
+import {checkAuthStore, useAlertModalStore} from "@/app/zustand/store";
+import AlertModal from "@/app/component/alertmodal/page";
 
 
 function getWorkPeriod(join, leave) {
@@ -31,6 +32,7 @@ export default function MemberManagePage() {
   const [departments, setDepartments] = useState([]);
   const [levels, setLevels] = useState([]);
   const blockId = checkAuthStore();
+  const alertModal = useAlertModalStore();
 
   async function memberList() {
     let {data} = await axios.post(`${apiUrl}/member/list`);
@@ -71,7 +73,7 @@ export default function MemberManagePage() {
   }
 
   useEffect(()=>{
-    blockId.redirect({session:sessionStorage});
+    blockId.redirect({session:sessionStorage, alert:alertModal});
     memberList();
     deptList();
     lvList();
@@ -256,6 +258,7 @@ export default function MemberManagePage() {
         )}
 
       </div>
+      <AlertModal/>
       <Footer />
     </div>
   );

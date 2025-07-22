@@ -178,7 +178,7 @@ export default function KeywordManagePage() {
   };
 
   useEffect(() => {
-    blockId.redirect({session:getSession()});
+    blockId.redirect({session:sessionStorage, alert:alertModal});
     list();
   }, []);
 

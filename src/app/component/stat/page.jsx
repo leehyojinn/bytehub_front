@@ -12,7 +12,8 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import {checkAuthStore} from "@/app/zustand/store";
+import {checkAuthStore, useAlertModalStore} from "@/app/zustand/store";
+import AlertModal from "@/app/component/alertmodal/page";
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
@@ -40,6 +41,7 @@ export default function StatisticsPage() {
   const [attendanceStats, setAttendanceStats] = useState([]);
 
   const blockId = checkAuthStore();
+  const alertModal = useAlertModalStore();
 
   // 직원 근태 통계 검색 필터
   const filteredAttendance = attendanceStats.filter(
@@ -57,7 +59,7 @@ export default function StatisticsPage() {
 
   // 전체 직원 근태 통계 가져오기
   useEffect(() => {
-    blockId.redirect({session:sessionStorage});
+    blockId.redirect({session:sessionStorage, alert:alertModal});
 
     const token = sessionStorage.getItem('token');
     if (!token) {
@@ -243,6 +245,7 @@ export default function StatisticsPage() {
           )}
         </div>
       </div>
+      <AlertModal/>
       <Footer />
     </div>
   );

@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
-import {checkAuthStore} from "@/app/zustand/store";
+import {checkAuthStore, useAlertModalStore} from "@/app/zustand/store";
+import AlertModal from "@/app/component/alertmodal/page";
 
 function Modal({ isOpen, onClose, children }) {
   if (!isOpen) return null;
@@ -26,6 +27,7 @@ export default function LevelManagePage() {
 
   const api_url = process.env.NEXT_PUBLIC_API_URL;
   const blockId = checkAuthStore();
+  const alertModal = useAlertModalStore();
 
   // 목록 불러오기
   async function lvList() {
@@ -120,7 +122,7 @@ export default function LevelManagePage() {
   };
 
   useEffect(() => {
-    blockId.redirect({session:sessionStorage});
+    blockId.redirect({session:sessionStorage, alert:alertModal});
     lvList();
   }, []);
 
@@ -200,6 +202,7 @@ export default function LevelManagePage() {
           </Modal>
         )}
       </div>
+      <AlertModal/>
       <Footer />
     </div>
   );

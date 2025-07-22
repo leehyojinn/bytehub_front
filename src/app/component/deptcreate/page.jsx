@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
-import {checkAuthStore} from "@/app/zustand/store";
+import {checkAuthStore, useAlertModalStore} from "@/app/zustand/store";
+import AlertModal from "@/app/component/alertmodal/page";
 
 // 모달 컴포넌트
 function Modal({ isOpen, onClose, children }) {
@@ -27,6 +28,7 @@ export default function DepartmentManagePage() {
   const blockId = checkAuthStore();
 
   const api_url = process.env.NEXT_PUBLIC_API_URL;
+  const alertModal = useAlertModalStore();
 
   // 부서 목록 불러오기
   async function deptList() {
@@ -115,7 +117,7 @@ export default function DepartmentManagePage() {
   };
 
   useEffect(() => {
-    blockId.redirect({session:sessionStorage});
+    blockId.redirect({session:sessionStorage, alert:alertModal});
     deptList();
   }, []);
 
@@ -185,6 +187,7 @@ export default function DepartmentManagePage() {
           </Modal>
         )}
       </div>
+      <AlertModal/>
       <Footer />
     </div>
   );
