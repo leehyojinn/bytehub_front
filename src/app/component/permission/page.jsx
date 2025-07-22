@@ -19,34 +19,15 @@ const initialMembers = [
         hire_date: "2022-01-01",
         withdraw: "X",
     },
-    {
-        user_id: "kim456",
-        name: "김철수",
-        gender: "남",
-        dept_name: "경영지원팀",
-        lv_name: "대리",
-        email: "kim@bytehub.com",
-        hire_date: "2021-03-15",
-        withdraw: "X",
-    },
-    {
-        user_id: "lee789",
-        name: "이영희",
-        gender: "여",
-        dept_name: "디자인팀",
-        lv_name: "사원",
-        email: "lee@bytehub.com",
-        hire_date: "2023-02-10",
-        withdraw: "X",
-    },
 ];
 
 const PERMISSIONS = [
-    {code: "board", label: "게시글 확인"},
+    {code: "board", label: "회의록 확인"},
     {code: "chat", label: "채팅 채널 개설"},
     {code: "project", label: "프로젝트 생성"},
     {code: "leave", label: "연차 정보 확인"},
     {code: "attendance", label: "근태 정보 확인"},
+    {code: "paeneol", label:"관리 패널 접근"}
 ];
 
 function PermissionModal({open, onClose, member, setUserPermissions, userPermissions, onChange, onSave}) {
@@ -59,11 +40,11 @@ function PermissionModal({open, onClose, member, setUserPermissions, userPermiss
     const callAuth = async () => {
 
         let {data}=await axios.get(`${apiUrl}/auth/grant/${member.user_id}`);
-        let arr=['','','','',''];
+        let arr=['','','','','',''];
 
         data.auth_list.forEach(item => {
             if (item.access_idx === 0) {
-                switch (item.access_type) {     //access_type= 'leave', 'attendance', 'project', 'chat', 'board'
+                switch (item.access_type) {     //access_type= 'leave', 'attendance', 'project', 'chat', 'board', 'pannel'
                     case 'leave':
                         arr[3]=PERMISSIONS[3].code;
                         break;
@@ -78,6 +59,9 @@ function PermissionModal({open, onClose, member, setUserPermissions, userPermiss
                         break;
                     case 'board':
                         arr[0]=PERMISSIONS[0].code;
+                        break;
+                    case 'paeneol':
+                        arr[5]=PERMISSIONS[5].code;
                         break;
                     default:
                         break;
@@ -173,6 +157,7 @@ export default function GrantUser() {
         {user_id: id, access_type: PERMISSIONS[2].code, access_idx: 0, auth: "w", checked: false},
         {user_id: id, access_type: PERMISSIONS[3].code, access_idx: 0, auth: "r", checked: false},
         {user_id: id, access_type: PERMISSIONS[4].code, access_idx: 0, auth: "r", checked: false},
+        {user_id: id, access_type: PERMISSIONS[5].code, access_idx: 0, auth: "r", checked: false},
     ];
 
     // members 불러오기

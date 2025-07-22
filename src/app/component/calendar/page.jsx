@@ -157,7 +157,8 @@ export default function CalendarPage() {
             name: data.data.name,
             team_id: data.data.dept_idx,
             grade: data.data.lv_idx,
-            position: data.data.lv_name};
+            position: data.data.lv_name
+        };
     }
 
     // 입력버튼

@@ -1,7 +1,10 @@
 'use client';
 
 import Link from "next/link";
-import React, { useState } from "react";
+import React, {useState} from "react";
+import axios from "axios";
+
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 function Modal({ open, onClose, title, children }) {
   if (!open) return null;
@@ -54,11 +57,13 @@ export default function Login() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://localhost/member/login', {
+      const response = await fetch(`${apiUrl}/member/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -71,12 +76,32 @@ export default function Login() {
 
       const data = await response.json();
 
+
       if (data.success) {
-        // JWT 토큰을 로컬 스토리지에 저장
+        // JWT 토큰을 세션 스토리지에 저장
+
         if (data.token) {
           sessionStorage.setItem('token', data.token);
         }
         sessionStorage.setItem('userId', form.id);
+        let myAuth=[];
+
+        // 권한정보추가
+        axios.get(`${apiUrl}/auth/paeneol/${form.id}`,
+            {headers: {Authorization: data.token}}).then(({data}) => {
+              console.log('paeneol?: ', data);
+              myAuth = data.my_auth.map((item) => {
+                return item;
+              });
+
+              myAuth.forEach((auth, i) => {
+                sessionStorage.setItem(`auth${i}`, JSON.stringify(auth));
+              });
+
+            }
+        )
+
+
         // 로그인 성공 후 리다이렉트 (예: 메인 페이지)
         window.location.href = '/component/main';
       } else {
@@ -87,6 +112,7 @@ export default function Login() {
       alert('로그인 중 오류가 발생했습니다.');
     }
   };
+
 
   // 아이디 찾기 폼 상태
   const [findIdForm, setFindIdForm] = useState({ name: "", email: "" });
@@ -102,7 +128,7 @@ export default function Login() {
     setIsFindingId(true);
 
     try {
-      const response = await fetch('http://localhost/member/find-id', {
+      const response = await fetch(`${apiUrl}/member/find-id`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,7 +168,7 @@ export default function Login() {
     setIsFindingPw(true);
 
     try {
-      const response = await fetch('http://localhost/email/find-password', {
+      const response = await fetch(`${apiUrl}/email/find-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

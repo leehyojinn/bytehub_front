@@ -6,15 +6,15 @@ import AdminPaeneol from './component/adminpaeneol/AdminPaeneol';
 
 const menuItems = [
   { name: '근태 관리', href: '/component/attendance' },
-  { name: '프로젝트 관리', href: '/component/project' },
-  { name: '결재 시스템', href: '/component/approval' },
+  { name: '프로젝트', href: '/component/project' },
+  { name: '결재', href: '/component/approval' },
   { name: '채팅', href: '/component/chating' },
-  { name: '일정관리', href: '/component/calendar' },
+  { name: '일정', href: '/component/calendar' },
   { name: '조직도', href: '/component/organization' },
   { name: '비상연락망', href: '/component/emergency' },
-  { name: '파일 시스템', href: '/component/files' },
+  { name: '파일', href: '/component/files' },
   { name: '회의록', href: '/component/meeting' },
-  { name: '게시판', href: '/component/board' },
+  { name: '공지사항', href: '/component/board' },
 ];
 
 export default function Header() {
@@ -29,8 +29,12 @@ export default function Header() {
                 credentials: 'include', // 세션 기반이면 필요
             });
             // 로컬스토리지/세션스토리지 토큰 삭제
-            sessionStorage.removeItem('token');
-            sessionStorage.removeItem('userId');
+            // sessionStorage.removeItem('token');
+            // sessionStorage.removeItem('userId');
+
+            sessionStorage.clear();
+
+
             // 메인 또는 로그인 페이지로 이동
             window.location.href = '/';
             alert('로그아웃 되었습니다.')
