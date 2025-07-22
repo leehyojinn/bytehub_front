@@ -314,7 +314,7 @@ export default function Home() {
                             </div>
                             <div className="attendance_info">
                                 {att.filter(j=> j.att_date == getCurrentDate()).length == 0 ? 
-                                <div>
+                                <div className="flex gap_20">
                                     <p>출근 : -</p>
                                     <p>퇴근 : -</p>
                                 </div> : 
