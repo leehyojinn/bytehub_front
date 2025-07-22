@@ -63,14 +63,13 @@ export const checkAuthStore = create((set, get) => ({
     },
     redirect: ({session, alert}) => {
         if (!get().isBlockId({session})) {   // 관리자권한이 없다면?
-            // alert('권한이 없습니다.');
             alert.openModal({
-                svg:"❌",
-                msg1:"접근 오류",
-                msg2:"권한이 없습니다.",
-                showCancel:false,
+                svg: "❌",
+                msg1: "접근 오류",
+                msg2: "권한이 없습니다.",
+                showCancel: false,
                 onConfirm: () => {
-                    location.href='/component/main';
+                    location.href = '/component/main';
                 }
             });
         }
