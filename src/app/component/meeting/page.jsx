@@ -44,7 +44,7 @@ export default function MeetingList() {
   const [visibleButton, setVisibleButton] = useState(false);
 
   // 회의록작성 버튼 보여주는 여부
-  const showAdminPaeneol=()=>{
+  const showWriteButton=()=>{
     setVisibleButton(blockPage.isBlockId({
       session:sessionStorage,
       type:'board',
@@ -55,7 +55,7 @@ export default function MeetingList() {
 
   // 게시글 리스트 불러오기
   useEffect(() => {
-    showAdminPaeneol();
+    showWriteButton();
     const fetchPosts = async () => {
       try {
         const token = sessionStorage.getItem("token");
