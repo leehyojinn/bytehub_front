@@ -29,3 +29,24 @@ export const useAlertModalStore = create((set) => ({
         showCancel: false, // 항상 false로 리셋
       }),
   }));
+
+export const useAppStore = create((set) => ({
+    myInfo: {},
+    cloud: [],
+    noticeList: [],
+    meetingList: [],
+    loading: false,
+    error: null,
+    approvals: [],
+    att : [],
+
+    setAtt : (att) => set({att}),
+    setApprovals: (approvals) => set({ approvals }),
+    setMyInfo: (info) => set({ myInfo: info }),
+    setCloud: (cloud) => set({ cloud }),
+    setNoticeList: (list) => set({ noticeList: list }),
+    setMeetingList: (list) => set({ meetingList: list }),
+    setLoading: (loading) => set({ loading }),
+    setError: (err) => set({ error: err }),
+  }));
+  
