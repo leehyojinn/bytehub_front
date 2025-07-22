@@ -91,16 +91,20 @@ export default function Home() {
     async function cloudList() {
         if (!myInfo.dept_idx) 
             return;
-        setLoading(true);
-        let {data} = await axios.get(`${apiUrl}/cloud/list`, {
-            params: {
-                deptIdx: myInfo.dept_idx
+        try {
+            setLoading(true);
+            let {data} = await axios.get(`${apiUrl}/cloud/list`, {
+                params: {
+                    deptIdx: myInfo.dept_idx
+                }
+            });
+            if (data.success) {
+                setCloud(data.data);
             }
-        });
-        if (data.success) {
-            setCloud(data.data);
+            setLoading(false);
+        } catch (error) {
+            alert("오류발생")            
         }
-        setLoading(false);
     }
 
     // 데이터 마운트 후 fetch
