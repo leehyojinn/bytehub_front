@@ -39,19 +39,27 @@ export const checkAuthStore = create((set, get) => ({
     access_type: 'paeneol',
     access_idx: 0,
     auth: 'r',
-    isBlockId: ({session}) => {
-        set({user_id: session.getItem("userId")});
+    // isBlockId, type, idx, auth에 따라 달라짐
+    isBlockId: ({session, type, idx, auth}) => {
+        set({
+            user_id: session.getItem("userId"),
+            access_type: type,
+            idx:idx,
+            auth: auth,
+        });
+        console.log('authInfo:', type, idx, auth);
         for (let i = 0; i < session.length; i++) {
             if (session.key(i) === 'token' || session.key(i) === 'userId') continue;
 
             const key = session.key(i);
             const value = session.getItem(key);
             const parsed = JSON.parse(value);
-            // console.log('userId?: ', get().user_id);
+
 
             const isMatch =
                 parsed.user_id === get().user_id &&
                 parsed.access_type === get().access_type &&
+                parsed.access_idx===get().access_idx &&
                 parsed.auth === get().auth;
 
             if (isMatch) {
@@ -61,8 +69,9 @@ export const checkAuthStore = create((set, get) => ({
         }
         return get().isAuth;
     },
+    // redirect: idx: 0, auth: r << 권한패널
     redirect: ({session, alert}) => {
-        if (!get().isBlockId({session})) {   // 권한이 없다면?
+        if (!get().isBlockId({session, type:'paeneol', idx:0, auth:'r'})) {   // 권한이 없다면?
             alert.openModal({
                 svg: "❌",
                 msg1: "접근 오류",

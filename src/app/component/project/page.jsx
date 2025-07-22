@@ -269,7 +269,7 @@ export default function ProjectManagement() {
     }
   };
 
-  console.log(pagedProjects);
+  // console.log(pagedProjects);
 
   const getDeptName = (dept_idx) => {
     const dept = deptList.find(d => d.dept_idx === dept_idx);
