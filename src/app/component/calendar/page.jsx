@@ -9,7 +9,7 @@ import axios from "axios";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-let currentUser = {id: 1, name: "홍길동", team_id: 1, grade: "A", position: "팀장"};
+let initialUser = {id: 1, name: "홍길동", team_id: 1, grade: "1"};
 const typeColors = {
     company: "#7c6ee6",
     team: "#43b8c6",
@@ -72,11 +72,16 @@ function getVisibleEvents(events, user) {
         if (ev.type === "company") return ev.visible_to_all;
         if (ev.type === "team") return ev.team_id === user.team_id && ev.allowed_grades.includes(user.grade);
         if (ev.type === "personal") return ev.user_id === user.id;
+        if (ev.type ==="project") {
+            console.log(ev.user_id + '/' + user.id);
+            return ev.user_id === user.id;
+        }
         return false;
     });
 }
 
 function flattenEventsForCalendar(events) {
+    console.log('flattenEvents?: ', events);
     return events.map(ev => {
         if (ev.start && ev.end) {
             // 기간 일정
@@ -119,46 +124,85 @@ export default function CalendarPage() {
     const [endDate, setEndDate] = useState(today);
     const [events, setEvents] = useState(calendar_events);
 
-    const visibleEvents = getVisibleEvents(events, currentUser);
+    const [currentUser, setCurrentUser] = useState('');
+
+    const visibleEvents=getVisibleEvents(events, currentUser);
     const calendarData = flattenEventsForCalendar(visibleEvents);
     const todayCount = countTodayEvents(visibleEvents, today);
-
-
 
 
     const userId = useRef('');
     useEffect(() => {
         if (sessionStorage) {
             userId.current = sessionStorage.getItem('userId');
-            callUserInfo();
+            callUserInfo(); // 유저정보 긁어오기
+            callEvents();
         }
-        callEvents();
     }, []);
+
+
+    const mappingScd=({scd})=>{
+        let eventObj={
+            id: scd.type_idx,
+            title: scd.subject,
+            type: scd.scd_type,
+        }
+
+        if(scd.start_date===scd.end_date){
+            eventObj.date=scd.start_date;
+        }else{
+            eventObj.start=scd.start_date;
+            eventObj.end=scd.end_date;
+        }
+        switch (scd.scd_type) {
+            case "company":
+                eventObj.allowed_grades=[1, 2];
+                eventObj.visible_to_all=true;
+                break;
+            case "team":
+                eventObj.allowed_grades = [1, 2, 3];
+                eventObj.team_id = scd.dept_idx;
+                eventObj.visible_to_team = true;
+                break;
+            case "personal":
+                eventObj.user_id=scd.user_id;
+                break;
+            case "leave":
+                eventObj.team_id=scd.dept_idx;  //팀원이 볼수있게?
+                break;
+            case "attendance":
+                // 개인만 볼수있음
+                break;
+            case "project":
+                eventObj.user_id=scd.user_id;
+                break;
+            default:
+                console.log("알 수 없는 일정 유형입니다.");
+        }
+        return eventObj;
+    }
 
     // 서버에서 일정을 불러오는 함수
     const callEvents = async () => {
         let {data} = await axios.get(`${apiUrl}/scd/total`);
-        console.log('events state? : ',events);
-        // console.log(data.scd_list);
         const scd_list = data.scd_list.map((item) => {
-            // scd_type가 team일 경우, company일 경우, project일 경우, personal일 경우
-
-            // start_date === end_date 면 date
-            // start_date < end_date 면 기간 일정
-        })
+            return mappingScd({scd: item});
+        });
+        console.log('events?:', scd_list);
+        setEvents(scd_list);
     }
 
     // 일단 유저정보를 긁어오는 함수
     const callUserInfo = async () => {
         let {data} = await axios.get(`${apiUrl}/mypage/info`, {headers: {Authorization: sessionStorage.getItem('token')}});
-        // console.log('user info?: ', data.data);
-        currentUser = {
+        setCurrentUser({
             id: data.data.user_id,
             name: data.data.name,
             team_id: data.data.dept_idx,
             grade: data.data.lv_idx,
             position: data.data.lv_name
-        };
+        });
+        console.log(currentUser);
     }
 
     // 입력버튼
@@ -193,7 +237,7 @@ export default function CalendarPage() {
             };
         }
         // axios input
-        inputEvents(type.current);
+        // inputEvents(type.current);
 
         setEvents(prev => [...prev, eventObj]);
         setModalTitle('');
@@ -263,12 +307,14 @@ export default function CalendarPage() {
                         //     alert(`이벤트: ${info.event.title}`);
                         // }}
                         //   clickEvents 어쩌구는 globals.css의 fc어쩌구 지워야하는데 어쩌지
+                        // 수정어캐해흑흑...
                     />
 
                     {/* 일정 등록 모달 */}
                     {showModal && (
                         <InsertModal
-                            type={type.current}
+                            types={type.current}
+                            labels={typeLabels}
                             setShowModal={setShowModal}
                             handleAddPersonalEvent={handleAddPersonalEvent}
                             startDate={startDate}
@@ -290,12 +336,13 @@ export default function CalendarPage() {
 
 // insert 모달창
 function InsertModal({setShowModal, handleAddPersonalEvent, startDate, endDate,
-                         modalTitle, setModalTitle, setEndDate, setStartDate, type}) {
+                         modalTitle, setModalTitle, setEndDate, setStartDate, types, labels}) {
+
 
     return(
         <div className="modal_overlay" onClick={() => setShowModal(false)}>
             <div className="modal_content" onClick={e => e.stopPropagation()}>
-                <h3 className="card_title font_700 mb_20">{type} 일정 등록</h3>
+                <h3 className="card_title font_700 mb_20">{labels[types]} 일정 등록</h3>
                 <form onSubmit={handleAddPersonalEvent} className="flex flex_column gap_10">
                     <div className="board_write_row">
                         <label htmlFor="event_start" className="board_write_label">시작날짜</label>

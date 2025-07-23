@@ -5,7 +5,7 @@ import Chatbot from './component/chatbot/Chatbot';
 import AdminPaeneol from './component/adminpaeneol/AdminPaeneol';
 
 const menuItems = [
-  { name: '근태 관리', href: '/component/attendance' },
+  { name: '출결 확인', href: '/component/attendance' },
   { name: '프로젝트', href: '/component/project' },
   { name: '결재', href: '/component/approval' },
   { name: '채팅', href: '/component/chating' },
