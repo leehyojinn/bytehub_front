@@ -193,6 +193,7 @@ export default function FileSystem() {
   useEffect(() => {
     if (selectedDeptIdx) {
       fetchFiles(selectedDeptIdx);
+      fetchLinks(); // 부서 변경 시 링크도 새로 가져오기
     }
   }, [selectedDeptIdx]);
 
@@ -410,8 +411,8 @@ export default function FileSystem() {
         return;
       }
 
-      // 백엔드 수정 전까지 임시로 user_id 파라미터 유지
-      const response = await fetch(`${apiUrl}/cloud/link/list?user_id=${userId}`);
+      // 현재 선택된 부서의 링크만 가져오기
+      const response = await fetch(`${apiUrl}/cloud/link/list?user_id=${userId}&deptIdx=${selectedDeptIdx}`);
       
       if (response.ok) {
         const result = await response.json();
@@ -556,16 +557,20 @@ export default function FileSystem() {
   // 현재 부서 파일만 표시 (숫자 타입으로 일관되게 처리)
   const deptFiles = files
     .filter(f => Number(f.folder_id) === Number(selectedDeptIdx));
-  // 링크 필터링 로직: lv_idx 1,2가 올린 링크는 모든 인원에게 보임
+  // 링크 필터링 로직: 현재 선택된 부서의 링크만 표시
   const getFilteredLinks = () => {
     if (!userInfo || !links.length) return [];
     
     const userLvIdx = userInfo.lv_idx || userInfo.lvIdx;
-    const userDeptIdx = userInfo.dept_idx || userInfo.deptIdx;
     
     return links.filter(link => {
       const linkUploaderLv = link.lv_idx || link.uploaderLvIdx || link.uploader_lv_idx;
       const linkDeptIdx = link.dept_idx;
+      
+      // 현재 선택된 부서의 링크만 표시
+      if (Number(linkDeptIdx) !== Number(selectedDeptIdx)) {
+        return false;
+      }
       
       // lv_idx 1,2가 올린 링크는 모든 인원에게 보임
       if (linkUploaderLv <= 2) {
@@ -578,8 +583,8 @@ export default function FileSystem() {
         if (userLvIdx <= 2) {
           return true;
         }
-        // 다른 사용자는 같은 부서의 링크만 볼 수 있음
-        return Number(linkDeptIdx) === Number(userDeptIdx);
+        // 다른 사용자는 같은 부서의 링크만 볼 수 있음 (이미 부서 필터링됨)
+        return true;
       }
       
       return false;
