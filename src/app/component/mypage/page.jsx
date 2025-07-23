@@ -663,7 +663,7 @@ export default function MyPage() {
                                                     <td>{leave.vac_start ? new Date(leave.vac_start).toLocaleDateString() : '-'}</td>
                                                     <td>{leave.vac_end ? new Date(leave.vac_end).toLocaleDateString() : '-'}</td>
                                                     <td>{usedDays > 0 ? `${usedDays}일` : '-'}</td>
-                                                    <td>{leave.appr_status === '승인' ? '승인' : leave.appr_status === '반려' ? '반려' : '대기'}</td>
+                                                    <td>{leave.appr_status === '승인완료' ? '승인' : leave.appr_status === '반려' ? '반려' : '대기'}</td>
                                                 </tr>
                                             );
                                         }) : (
