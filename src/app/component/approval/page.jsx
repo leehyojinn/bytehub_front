@@ -282,13 +282,11 @@ export default function ApprovalSystem() {
       // 이미 조회된 잔여 연차 정보 사용
       const currentRemainDays = remainDays;
       
-      // 연차 사용일수 계산
-      const startDate = new Date(vacStart);
-      const endDate = new Date(vacEnd);
-      const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+      // 실제 근무일 수 계산 (주말, 공휴일 제외)
+      const workdays = calculateWorkdays(vacStart, vacEnd);
       
-      if (daysDiff > currentRemainDays) {
-        alert(`잔여 연차가 부족합니다.\n신청일수: ${daysDiff}일\n잔여연차: ${currentRemainDays}일`);
+      if (workdays > currentRemainDays) {
+        alert(`잔여 연차가 부족합니다.\n신청일수: ${workdays}일 (실제 근무일)\n잔여연차: ${currentRemainDays}일`);
         return;
       }
     }
@@ -513,6 +511,65 @@ export default function ApprovalSystem() {
   const currentAllApprovals = filteredAllApprovals.slice(startAllIdx, endAllIdx);
   const calcTotalAllPages = Math.ceil(filteredAllApprovals.length / ITEMS_PER_PAGE);
 
+  // 주말인지 확인하는 함수
+  const isWeekend = (date) => {
+    const day = date.getDay();
+    return day === 0 || day === 6; // 0: 일요일, 6: 토요일
+  };
+
+  // 공휴일 목록 (2024-2025년 주요 공휴일)
+  const holidays = [
+    '2024-01-01', // 신정
+    '2024-02-09', '2024-02-10', '2024-02-11', '2024-02-12', // 설날
+    '2024-03-01', // 삼일절
+    '2024-05-05', // 어린이날
+    '2024-05-15', // 부처님 오신 날
+    '2024-06-06', // 현충일
+    '2024-08-15', // 광복절
+    '2024-09-16', '2024-09-17', '2024-09-18', // 추석
+    '2024-10-03', // 개천절
+    '2024-10-09', // 한글날
+    '2024-12-25', // 크리스마스
+    '2025-01-01', // 신정
+    '2025-01-28', '2025-01-29', '2025-01-30', // 설날
+    '2025-03-01', // 삼일절
+    '2025-05-05', // 어린이날
+    '2025-05-03', // 부처님 오신 날
+    '2025-06-06', // 현충일
+    '2025-08-15', // 광복절
+    '2025-10-05', '2025-10-06', '2025-10-07', // 추석
+    '2025-10-03', // 개천절
+    '2025-10-09', // 한글날
+    '2025-12-25', // 크리스마스
+  ];
+
+  // 공휴일인지 확인하는 함수
+  const isHoliday = (date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return holidays.includes(dateStr);
+  };
+
+  // 실제 근무일인지 확인하는 함수
+  const isWorkday = (date) => {
+    return !isWeekend(date) && !isHoliday(date);
+  };
+
+  // 두 날짜 사이의 실제 근무일 수를 계산하는 함수
+  const calculateWorkdays = (startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    let workdays = 0;
+    
+    // 시작일부터 종료일까지 하루씩 확인
+    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+      if (isWorkday(date)) {
+        workdays++;
+      }
+    }
+    
+    return workdays;
+  };
+
   return (
     <div>
       <Header />
@@ -622,8 +679,8 @@ export default function ApprovalSystem() {
                     </div>
                     {vacStart && vacEnd && (
                       <div className="mt_5" style={{ fontSize: '12px', color: '#666' }}>
-                        신청일수: {Math.ceil((new Date(vacEnd) - new Date(vacStart)) / (1000 * 60 * 60 * 24)) + 1}일
-                        {Math.ceil((new Date(vacEnd) - new Date(vacStart)) / (1000 * 60 * 60 * 24)) + 1 > remainDays && (
+                        신청일수: {calculateWorkdays(vacStart, vacEnd)}일 (실제 근무일)
+                        {calculateWorkdays(vacStart, vacEnd) > remainDays && (
                           <span style={{ color: '#f44336', marginLeft: '10px' }}>
                             ⚠️ 잔여 연차 부족
                           </span>
@@ -682,7 +739,6 @@ export default function ApprovalSystem() {
               <h3 className="card_title font_600 mb_10">내가 올린 결재</h3>
               <div className="approval_status_legend mb_16 flex gap_10">
                 <span className="approval_status_badge status_rejected">반려</span>
-                <span className="approval_status_badge status_draft">기안</span>
                 <span className="approval_status_badge status_progress">결재중</span>
                 <span className="approval_status_badge status_approved">승인</span>
               </div>
@@ -780,7 +836,6 @@ export default function ApprovalSystem() {
               <h3 className="card_title font_600 mb_10">결재 처리 리스트</h3>
               <div className="approval_status_legend mb_16 flex gap_10">
                 <span className="approval_status_badge status_rejected">반려</span>
-                <span className="approval_status_badge status_draft">기안</span>
                 <span className="approval_status_badge status_progress">결재중</span>
                 <span className="approval_status_badge status_approved">승인</span>
               </div>
@@ -891,7 +946,6 @@ export default function ApprovalSystem() {
                 <h3 className="card_title font_600 mb_10">결재 목록 리스트</h3>
                 <div className="approval_status_legend mb_16 flex gap_10">
                   <span className="approval_status_badge status_rejected">반려</span>
-                  <span className="approval_status_badge status_draft">기안</span>
                   <span className="approval_status_badge status_progress">결재중</span>
                   <span className="approval_status_badge status_approved">승인</span>
                 </div>
