@@ -9,7 +9,7 @@ import axios from "axios";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-let initialUser = {id: 1, name: "홍길동", team_id: 1, grade: "1"};
+
 const typeColors = {
     company: "#7c6ee6",
     team: "#43b8c6",
@@ -72,10 +72,7 @@ function getVisibleEvents(events, user) {
         if (ev.type === "company") return ev.visible_to_all;
         if (ev.type === "team") return ev.team_id === user.team_id && ev.allowed_grades.includes(user.grade);
         if (ev.type === "personal") return ev.user_id === user.id;
-        if (ev.type ==="project") {
-            console.log(ev.user_id + '/' + user.id);
-            return ev.user_id === user.id;
-        }
+        if (ev.type ==="project") return ev.user_id === user.id;
         return false;
     });
 }
@@ -146,13 +143,18 @@ export default function CalendarPage() {
             id: scd.type_idx,
             title: scd.subject,
             type: scd.scd_type,
-        }
+        };
+
+        // end date + 1을 해야 끝까지 출력됨
+        const endPlusOne = new Date(scd.end_date);
+        endPlusOne.setDate(endPlusOne.getDate() + 1);
+        const endStr = endPlusOne.toISOString().slice(0, 10);
 
         if(scd.start_date===scd.end_date){
             eventObj.date=scd.start_date;
         }else{
             eventObj.start=scd.start_date;
-            eventObj.end=scd.end_date;
+            eventObj.end=endStr;
         }
         switch (scd.scd_type) {
             case "company":
@@ -161,23 +163,25 @@ export default function CalendarPage() {
                 break;
             case "team":
                 eventObj.allowed_grades = [1, 2, 3];
-                eventObj.team_id = scd.dept_idx;
+                eventObj.team_id = scd.type_idx;
                 eventObj.visible_to_team = true;
                 break;
             case "personal":
                 eventObj.user_id=scd.user_id;
                 break;
             case "leave":
-                eventObj.team_id=scd.dept_idx;  //팀원이 볼수있게?
+                eventObj.team_id=scd.type_idx;  //팀원이 볼수있게?
+                eventObj.visible_to_team = true;
                 break;
             case "attendance":
-                // 개인만 볼수있음
+                eventObj.user_id=scd.user_id;
                 break;
             case "project":
                 eventObj.user_id=scd.user_id;
                 break;
             default:
                 console.log("알 수 없는 일정 유형입니다.");
+                break;
         }
         return eventObj;
     }
@@ -188,7 +192,7 @@ export default function CalendarPage() {
         const scd_list = data.scd_list.map((item) => {
             return mappingScd({scd: item});
         });
-        console.log('events?:', scd_list);
+        // console.log('events?:', scd_list);
         setEvents(scd_list);
     }
 
@@ -202,62 +206,71 @@ export default function CalendarPage() {
             grade: data.data.lv_idx,
             position: data.data.lv_name
         });
-        console.log(currentUser);
+        // console.log('currentUser?: ', currentUser);
     }
 
     // 입력버튼
     const handleAddPersonalEvent = (e) => {
         e.preventDefault();
+
         if (!modalTitle.trim() || !startDate) {
             alert('시작날짜와 제목을 입력하세요.');
             return;
         }
         // 단일 일정이면 start==end, 기간 일정이면 다르게
-        let eventObj;
-        if (startDate === endDate) {
-            eventObj = {
-                id: `p${Date.now()}`,
-                title: modalTitle.trim(),
-                date: startDate,
-                type: "personal",
-                user_id: currentUser.id
-            };
-        } else {
-            // end는 반드시 "마지막날+1"로 넣어야 마지막날까지 표시됨
-            const endPlusOne = new Date(endDate);
-            endPlusOne.setDate(endPlusOne.getDate() + 1);
-            const endStr = endPlusOne.toISOString().slice(0, 10);
-            eventObj = {
-                id: `p${Date.now()}`,
-                title: modalTitle.trim(),
-                start: startDate,
-                end: endStr,
-                type: "personal",
-                user_id: currentUser.id
-            };
+        let eventObj={
+            user_id: currentUser.id,
+            scd_type: type.current,
+            type_idx: 0,    // 0은 임시, subject로 구분
+            subject: modalTitle.trim(),
+            start_date: startDate,
+            end_date: endDate,
         }
-        // axios input
-        // inputEvents(type.current);
 
-        setEvents(prev => [...prev, eventObj]);
-        setModalTitle('');
-        setStartDate(today);
-        setEndDate(today);
+        // if (startDate === endDate) {
+        //     eventObj = {
+        //         id: `p${Date.now()}`,
+        //         title: modalTitle.trim(),
+        //         date: startDate,
+        //         type: "personal",
+        //         user_id: currentUser.id
+        //     };
+        // } else {
+        //     // end는 반드시 "마지막날+1"로 넣어야 마지막날까지 표시됨
+        //     const endPlusOne = new Date(endDate);
+        //     endPlusOne.setDate(endPlusOne.getDate() + 1);
+        //     const endStr = endPlusOne.toISOString().slice(0, 10);
+        //     eventObj = {
+        //         id: `p${Date.now()}`,
+        //         title: modalTitle.trim(),
+        //         start: startDate,
+        //         end: endStr,
+        //         type: "personal",
+        //         user_id: currentUser.id
+        //     };
+        // }
+        // setEvents(prev => [...prev, eventObj]);  //< 프론트에서 임시로 처리하던 코드
+        //insertEvents(eventObj);
 
-        setShowModal(false);
+        const success = insertEvents(eventObj);
+        if (success) {
+            // initialize
+            setModalTitle('');
+            setStartDate(today);
+            setEndDate(today);
 
+            setShowModal(false);
+        }else{
+            alert('오류가 발생했습니다.');
+        }
     };
 
 
     const type=useRef('');
 
-    const inputEvents = async (type) => {
-        console.log('events: ', events);
-        console.log('startDate: ', startDate);
-        console.log('endDate: ', endDate);
-        console.log('type: ', type);
-        // 하...효진님이두번하래요
-        // let {data}= await axios.post(`${apiUrl}/scd/insert/여기에들어가야해`);
+    const insertEvents = async (event) => {
+        let {data}= await axios.post(`${apiUrl}/scd/insert`, event);
+        return data.success;
     }
 
 
@@ -274,14 +287,15 @@ export default function CalendarPage() {
                         </div>
                         {/*일정등록버튼*/}
                         <div className="flex gap_10 align_center">
-                            <button className="caleandar_btn" style={{backgroundColor:typeColors.company}} onClick={() => {
+                            {currentUser.grade < 3 ? <button className="caleandar_btn" style={{backgroundColor:typeColors.company}} onClick={() => {
                                 type.current='company'
                                 setShowModal(true);
-                            }}>+ 회사 일정 등록</button>
-                            <button className="caleandar_btn" style={{backgroundColor:typeColors.team}} onClick={() => {
+                            }}>+ 회사 일정 등록</button>: null}
+
+                            {currentUser.grade < 4 ? <button className="caleandar_btn" style={{backgroundColor:typeColors.team}} onClick={() => {
                                 type.current='team'
                                 setShowModal(true);
-                            }}>+ 팀 일정 등록</button>
+                            }}>+ 팀 일정 등록</button> : null}
                             <button className="caleandar_btn" onClick={() => {
                                 type.current='personal'
                                 setShowModal(true);
