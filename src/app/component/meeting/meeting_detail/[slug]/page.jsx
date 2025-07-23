@@ -38,6 +38,8 @@ export default function MeetingDetail() {
     return `${month}월 ${day}일`;
   };
 
+
+
   // JWT 토큰에서 사용자 ID를 추출하는 함수
   const getUserIdFromToken = () => {
     const token = sessionStorage.getItem("token");
@@ -72,6 +74,12 @@ export default function MeetingDetail() {
 
     fetchAllPosts();
   }, [apiUrl]);
+
+  // 참석자 배열을 포맷팅하는 함수
+  const formatAttendees = (attendees) => {
+    if (!attendees || attendees.length === 0) return "-";
+    return attendees.join(", ");
+  };
 
   // 게시글 상세 정보 가져오기
   useEffect(() => {
@@ -141,7 +149,7 @@ export default function MeetingDetail() {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const currentUserId = getUserIdFromToken();
       const response = await axios.delete(`${apiUrl}/post/delete`, {
         headers: {
@@ -330,15 +338,36 @@ ${contentText}
 
           <div className="flex gap_20 align_center mt_10 small_text detail_meta">
             <span>작성자: <b>{post.user_id}</b></span>
-            <span>등록일: {formatDate(post.reg_date)}</span>
+            <span>등록일: <b>{formatDate(post.reg_date)}</b></span>
+          </div>
+
+          <div className="flex gap_20 align_center mt_10 small_text detail_meta" style={{ fontSize: '20px' }}>
+            <span>참가자: <b>{formatAttendees(post.attendees)}</b></span>
           </div>
 
           {/* 본문 */}
-          <div className="su_small_text mt_30 text_left">
-            <p>
-              {post.content ||
-                "이곳에 게시글 본문 내용이 들어갑니다. 실제 서비스에서는 줄바꿈, 이미지, 첨부파일 등 다양한 요소가 들어갈 수 있습니다."}
-            </p>
+          <div className="su_small_text mt_30 text_center">
+            <div style={{ 
+              backgroundColor: '#f8f9fa', 
+              padding: '20px', 
+              borderRadius: '8px', 
+              border: '1px solid #e9ecef',
+              marginBottom: '20px'
+            }}>
+              <div style={{ 
+                fontSize: '14px', 
+                fontWeight: '600', 
+                color: '#495057', 
+                marginBottom: '15px',
+                textAlign: 'center'
+              }}>
+                📋 회의 내용
+              </div>
+              <p style={{ lineHeight: '1.6', margin: 0 }}>
+                {post.content ||
+                  "이곳에 게시글 본문 내용이 들어갑니다. 실제 서비스에서는 줄바꿈, 이미지, 첨부파일 등 다양한 요소가 들어갈 수 있습니다."}
+              </p>
+            </div>
             {/* 첨부파일 */}
             {post.files && post.files.length > 0 && (
               <div className="mt_20">
