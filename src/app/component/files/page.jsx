@@ -952,14 +952,19 @@ export default function FileSystem() {
         {/* 링크 추가 폼 */}
         <div className="fs_link_section" style={{ marginBottom: '20px' }}>
             <div className="fs_link_head">링크 추가</div>
-            <form className="fs_link_add_form" onSubmit={handleLinkAdd} style={{ marginTop: 10 }}>
+            <form className="fs_link_add_form" onSubmit={handleLinkAdd} style={{ 
+                marginTop: 10,
+                display: 'flex',
+                gap: '8px',
+                alignItems: 'center'
+            }}>
                 <input
                     className="fs_input"
                     type="text"
                     placeholder="링크명"
                     value={link.title}
                     onChange={e => setLink({ ...link, title: e.target.value })}
-                    style={{ width: 200, marginRight: 8 }}
+                    style={{ width: 200, flexShrink: 0 }}
                 />
                 <input
                     className="fs_input"
@@ -978,9 +983,11 @@ export default function FileSystem() {
                         
                         setLink({ ...link, url: filteredValue });
                     }}
-                    style={{ width: 300, marginRight: 8 }}
+                    style={{ flex: 1, minWidth: 0 }}
                 />
-                <button type="submit" className="fs_btn" disabled={!link.title || !link.url}>추가</button>
+                <button type="submit" className="fs_btn" disabled={!link.title || !link.url} style={{ flexShrink: 0 }}>
+                    추가
+                </button>
             </form>
         </div>
 
