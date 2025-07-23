@@ -5,7 +5,6 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 
 const calendarEvents = [
   { id: '1', title: '회의실 예약', date: '24-07-15' },
-  { id: '2', title: '고객사 미팅', date: '24-07-18' },
 ];
 
 export default function CalendarCard() {

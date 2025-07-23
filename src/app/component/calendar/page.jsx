@@ -72,13 +72,13 @@ function getVisibleEvents(events, user) {
         if (ev.type === "company") return ev.visible_to_all;
         if (ev.type === "team") return ev.team_id === user.team_id && ev.allowed_grades.includes(user.grade);
         if (ev.type === "personal") return ev.user_id === user.id;
-        if (ev.type ==="project") return ev.user_id === user.id;
+        if (ev.type === "project") return ev.user_id === user.id;
         return false;
     });
 }
 
 function flattenEventsForCalendar(events) {
-    console.log('flattenEvents?: ', events);
+    // console.log('flattenEvents?: ', events);
     return events.map(ev => {
         if (ev.start && ev.end) {
             // 기간 일정
@@ -121,10 +121,10 @@ export default function CalendarPage() {
     const [endDate, setEndDate] = useState(today);
     const [events, setEvents] = useState(calendar_events);
 
-    const [currentUser, setCurrentUser] = useState('');
+    const [currentUser, setCurrentUser] = useState({});
 
     const visibleEvents=getVisibleEvents(events, currentUser);
-    const calendarData = flattenEventsForCalendar(visibleEvents);
+    let calendarData = flattenEventsForCalendar(visibleEvents);
     const todayCount = countTodayEvents(visibleEvents, today);
 
 
@@ -132,8 +132,12 @@ export default function CalendarPage() {
     useEffect(() => {
         if (sessionStorage) {
             userId.current = sessionStorage.getItem('userId');
-            callUserInfo(); // 유저정보 긁어오기
-            callEvents();
+
+            callUserInfo().then(() => {
+                return callEvents();
+            }).then(() => {
+                calendarData = flattenEventsForCalendar(visibleEvents);
+            });
         }
     }, []);
 
@@ -192,7 +196,7 @@ export default function CalendarPage() {
         const scd_list = data.scd_list.map((item) => {
             return mappingScd({scd: item});
         });
-        // console.log('events?:', scd_list);
+        console.log('events?:', scd_list);
         setEvents(scd_list);
     }
 
@@ -206,7 +210,6 @@ export default function CalendarPage() {
             grade: data.data.lv_idx,
             position: data.data.lv_name
         });
-        // console.log('currentUser?: ', currentUser);
     }
 
     // 입력버튼
@@ -251,7 +254,6 @@ export default function CalendarPage() {
         // }
         // setEvents(prev => [...prev, eventObj]);  //< 프론트에서 임시로 처리하던 코드
         //insertEvents(eventObj);
-
         const success = insertEvents(eventObj);
         if (success) {
             // initialize
@@ -260,14 +262,12 @@ export default function CalendarPage() {
             setEndDate(today);
 
             setShowModal(false);
+            callEvents();
         }else{
             alert('오류가 발생했습니다.');
         }
     };
-
-
     const type=useRef('');
-
     const insertEvents = async (event) => {
         let {data}= await axios.post(`${apiUrl}/scd/insert`, event);
         return data.success;
