@@ -4,6 +4,7 @@ import Header from "@/app/Header";
 import Footer from "@/app/Footer";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import {checkAuthStore} from "@/app/zustand/store";
 
 // JWT 토큰에서 사용자 ID 추출
 function getUserIdFromToken() {
@@ -46,8 +47,25 @@ export default function ProjectManagement() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const token = typeof window !== "undefined" ? sessionStorage.getItem("token") : "";
 
+  const block= checkAuthStore();
+  const [visibleButton, setVisibleButton] = useState(false);
+
+  // 작성버튼 보여주는 여부
+  const showWriteButton=()=>{
+    setVisibleButton(block.isBlockId({
+      session:sessionStorage,
+      type:'project',
+      idx:0,
+      auth:'w',
+    }));
+  }
+
+
+
   // 부서 리스트
   useEffect(() => {
+    showWriteButton();
+
     axios.post(`${apiUrl}/dept/list`)
       .then(res => setDeptList(res.data.list || []))
       .catch(() => {});
@@ -303,7 +321,7 @@ export default function ProjectManagement() {
               <span className="my_checkbox_box"></span>
               <span className="my_checkbox_text">내 프로젝트</span>
             </label>
-            {(currentUser.lv_name === "사장" || currentUser.lv_idx <= 2) && (
+            {(currentUser.lv_name === "사장" || currentUser.lv_idx <= 2 || visibleButton) && (
               <button className="board_btn" style={{ marginLeft: 20 }} onClick={() => openModal()}>
                 프로젝트 생성
               </button>
