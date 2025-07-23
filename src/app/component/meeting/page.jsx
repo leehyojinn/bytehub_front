@@ -45,6 +45,7 @@ export default function MeetingList() {
   const block= checkAuthStore();
   const [currentUserId, setCurrentUserId] = useState(null);
   const [currentUserName, setCurrentUserName] = useState(null);
+  const [currentUserLevel, setCurrentUserLevel] = useState(null);
 
   const [visibleButton, setVisibleButton] = useState(false);
 
@@ -76,10 +77,16 @@ export default function MeetingList() {
       if (response.data.success) {
         const userInfo = response.data.data;
         setCurrentUserName(userInfo.name);
+        setCurrentUserLevel(userInfo.lv_idx);
       }
     } catch (error) {
       console.error('사용자 정보 조회 실패:', error);
     }
+  };
+
+  // 권한 체크 함수
+  const hasFullAccess = () => {
+    return currentUserLevel === 1 || currentUserLevel === 2;
   };
 
   // 회의록작성 버튼 보여주는 여부
@@ -112,7 +119,6 @@ export default function MeetingList() {
           },
         });
         const data = response.data;
-        // data.list가 실제 게시글 배열
         setPosts(data.list || []);
         // 페이지네이션 정보가 필요하면 data.page 등 활용
         // setTotalPages(data.totalPages || 1); // totalPages가 있으면 사용
@@ -123,9 +129,12 @@ export default function MeetingList() {
     fetchPosts();
   }, [page]);
 
-  // category가 'MEETING'이고 본인이 작성자이거나 참가자인 글만 필터링
+  // category가 'MEETING'이고 권한에 따라 필터링
   const meetingPosts = posts.filter(post => {
     if (post.category !== 'MEETING') return false;
+    
+    // lv_idx 1,2인 사용자는 모든 회의록 볼 수 있음
+    if (hasFullAccess()) return true;
     
     // 본인이 작성자인지 확인
     if (post.user_id === currentUserId) return true;
@@ -209,7 +218,8 @@ export default function MeetingList() {
               ) : currentPosts.length === 0 ? (
                 <tr>
                   <td colSpan={6} style={{ color: "#aaa", padding: "32px 0" }}>
-                    {search ? "검색 결과가 없습니다." : "작성하거나 참가자로 등록된 회의록이 없습니다."}
+                    {search ? "검색 결과가 없습니다." : 
+                     hasFullAccess() ? "회의록이 없습니다." : "작성하거나 참가자로 등록된 회의록이 없습니다."}
                   </td>
                 </tr>
               ) : (
