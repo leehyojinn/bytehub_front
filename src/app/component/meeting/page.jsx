@@ -155,7 +155,17 @@ export default function MeetingList() {
                 </tr>
               ) : (
                 currentPosts.map((post) => (
-                  <Item key={post.post_idx} post={post}/>
+                    <tr key={post.post_idx}>
+                      <td>{post.post_idx}</td>
+                      <td className="board_title">
+                        <Link href={`/component/meeting/meeting_detail/${post.post_idx}`}>
+                          {post.subject}
+                        </Link>
+                      </td>
+                      <td>{post.user_id}</td>
+                      <td>{formatAttendees(post.attendees)}</td>
+                      <td>{formatDate(post.reg_date)}</td>
+                    </tr>
                 ))
               )}
             </tbody>
@@ -198,35 +208,5 @@ export default function MeetingList() {
       </div>
       <Footer />
     </div>
-  );
-}
-
-// list 분리
-function Item({post}){
-
-  const block= checkAuthStore();
-  const [visible, setVisible] = useState(true);
-
-  // block.isBlockId({
-  //   session:sessionStorage,
-  //   type:'board',
-  //   idx: post.post_idx,
-  //   auth: 'r'
-  // })
-
-  return(
-      visible ?
-          <tr key={post.post_idx}>
-          <td>{post.post_idx}</td>
-          <td className="board_title">
-            <Link href={`/component/meeting/meeting_detail/${post.post_idx}`}>
-              {post.subject}
-            </Link>
-          </td>
-          <td>{post.user_id}</td>
-          <td>{formatAttendees(post.attendees)}</td>
-          <td>{formatDate(post.reg_date)}</td>
-        </tr>
-          : null
   );
 }
