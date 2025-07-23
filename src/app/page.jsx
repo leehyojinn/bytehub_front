@@ -54,7 +54,19 @@ export default function Login() {
   }, [form.password, pwFocus]);
 
   const handleChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // 아이디와 비밀번호에만 영어와 숫자만 허용
+    if (name === 'id' || name === 'password') {
+      // 한글이나 특수문자가 포함되어 있는지 확인
+      if (/[^a-zA-Z0-9]/.test(value)) {
+        alert('아이디와 비밀번호는 영어와 숫자만 입력 가능합니다.');
+        return; // 입력 차단
+      }
+      setForm({ ...form, [name]: value });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
 
 
@@ -120,7 +132,19 @@ export default function Login() {
   const [isFindingId, setIsFindingId] = useState(false);
 
   const handleFindIdChange = e => {
-    setFindIdForm({ ...findIdForm, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // 이메일 입력 시 한글이나 특수문자 차단
+    if (name === 'email') {
+      // 이메일은 @._- 허용
+      if (/[^a-zA-Z0-9@._-]/.test(value)) {
+        alert('이메일은 영어, 숫자, @, ., _, - 만 입력 가능합니다.');
+        return; // 입력 차단
+      }
+      setFindIdForm({ ...findIdForm, [name]: value });
+    } else {
+      setFindIdForm({ ...findIdForm, [name]: value });
+    }
   };
 
   const handleFindId = async (e) => {
@@ -160,7 +184,26 @@ export default function Login() {
   const [isFindingPw, setIsFindingPw] = useState(false);
 
   const handleFindPwChange = e => {
-    setFindPwForm({ ...findPwForm, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    
+    // 아이디 입력 시 영어와 숫자만 허용
+    if (name === 'userId') {
+      // 한글이나 특수문자가 포함되어 있는지 확인
+      if (/[^a-zA-Z0-9]/.test(value)) {
+        alert('아이디는 영어와 숫자만 입력 가능합니다.');
+        return; // 입력 차단
+      }
+      setFindPwForm({ ...findPwForm, [name]: value });
+    } else if (name === 'email') {
+      // 이메일은 @._- 허용
+      if (/[^a-zA-Z0-9@._-]/.test(value)) {
+        alert('이메일은 영어, 숫자, @, ., _, - 만 입력 가능합니다.');
+        return; // 입력 차단
+      }
+      setFindPwForm({ ...findPwForm, [name]: value });
+    } else {
+      setFindPwForm({ ...findPwForm, [name]: value });
+    }
   };
 
   const handleFindPw = async (e) => {

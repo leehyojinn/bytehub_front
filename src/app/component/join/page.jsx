@@ -51,7 +51,33 @@ export default function Signup() {
 
   const handleChange = e => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
+    
+    // 아이디, 비밀번호, 이메일에만 영어와 숫자만 허용 (이름은 제외)
+    if (name === 'user_id' || name === 'password' || name === 'email') {
+      // 한글이나 특수문자가 포함되어 있는지 확인
+      if (name === 'email') {
+        // 이메일은 @._- 허용
+        if (/[^a-zA-Z0-9@._-]/.test(value)) {
+          alert('이메일은 영어, 숫자, @, ., _, - 만 입력 가능합니다.');
+          return; // 입력 차단
+        }
+      } else if (name === 'password') {
+        // 비밀번호는 영어와 숫자만 허용
+        if (/[^a-zA-Z0-9]/.test(value)) {
+          alert('비밀번호는 영어와 숫자만 입력 가능합니다.');
+          return; // 입력 차단
+        }
+      } else if (name === 'user_id') {
+        // 아이디는 영어와 숫자만 허용
+        if (/[^a-zA-Z0-9]/.test(value)) {
+          alert('아이디는 영어와 숫자만 입력 가능합니다.');
+          return; // 입력 차단
+        }
+      }
+      setForm({ ...form, [name]: value });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
 
     // 아이디가 변경되면 중복체크 상태 초기화
     if (name === 'user_id') {
