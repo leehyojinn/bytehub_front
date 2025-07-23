@@ -25,7 +25,7 @@ const initialMembers = [
 ];
 
 const PERMISSIONS = [
-    {code: "board", label: "회의록 확인"},
+    {code: "board", label: "회의록 작성"},
     {code: "chat", label: "채팅 채널 개설"},
     {code: "project", label: "프로젝트 생성"},
     {code: "leave", label: "연차 정보 확인"},

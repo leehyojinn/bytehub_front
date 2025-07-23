@@ -39,7 +39,7 @@ export const checkAuthStore = create((set, get) => ({
     access_type: 'paeneol',
     access_idx: 0,
     auth: 'r',
-    // isBlockId, type, idx, auth에 따라 달라짐
+    // type, idx, auth 는 각 페이지 혹은 상태에 따라 달라져야함
     isBlockId: ({session, type, idx, auth}) => {
         set({
             user_id: session.getItem("userId"),
