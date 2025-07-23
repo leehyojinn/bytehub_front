@@ -24,10 +24,13 @@ const formatDate = (dateStr) => {
 const formatAttendees = (attendees) => {
   if (!attendees || attendees.length === 0) return "-";
   if (Array.isArray(attendees)) {
-    if (attendees.length === 1) {
-      return attendees[0];
-    } else if (attendees.length > 1) {
-      return `${attendees[0]}, ...`;
+    // 중복 제거
+    const uniqueAttendees = [...new Set(attendees)];
+    
+    if (uniqueAttendees.length === 1) {
+      return uniqueAttendees[0];
+    } else if (uniqueAttendees.length > 1) {
+      return `${uniqueAttendees[0]}, ...`;
     }
   }
   return attendees;
@@ -40,8 +43,44 @@ export default function MeetingList() {
   const [posts, setPosts] = useState([]);
   // const [totalPages, setTotalPages] = useState(1);
   const block= checkAuthStore();
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUserName, setCurrentUserName] = useState(null);
 
   const [visibleButton, setVisibleButton] = useState(false);
+
+  // JWT 토큰에서 사용자 ID를 추출하는 함수
+  const getUserIdFromToken = () => {
+    const token = sessionStorage.getItem("token");
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.id || null;
+    } catch {
+      return null;
+    }
+  };
+
+  // 현재 사용자 정보 가져오기
+  const fetchCurrentUserInfo = async () => {
+    try {
+      const token = sessionStorage.getItem("token");
+      if (!token) return;
+
+      const response = await axios.get(`${apiUrl}/mypage/info`, {
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data.success) {
+        const userInfo = response.data.data;
+        setCurrentUserName(userInfo.name);
+      }
+    } catch (error) {
+      console.error('사용자 정보 조회 실패:', error);
+    }
+  };
 
   // 회의록작성 버튼 보여주는 여부
   const showWriteButton=()=>{
@@ -56,6 +95,14 @@ export default function MeetingList() {
   // 게시글 리스트 불러오기
   useEffect(() => {
     showWriteButton();
+    
+    // 현재 로그인한 사용자 ID 설정
+    const userId = getUserIdFromToken();
+    setCurrentUserId(userId);
+    
+    // 현재 사용자 정보 가져오기
+    fetchCurrentUserInfo();
+    
     const fetchPosts = async () => {
       try {
         const token = sessionStorage.getItem("token");
@@ -66,13 +113,6 @@ export default function MeetingList() {
         });
         const data = response.data;
         // data.list가 실제 게시글 배열
-        console.log("===== 게시글 리스트 데이터 확인 =====");
-        console.log("전체 응답:", data);
-        console.log("게시글 리스트:", data.list);
-        if (data.list && data.list.length > 0) {
-          console.log("n 번째 게시글:", data.list[7]);
-          console.log("n 번째 게시글 attendees:", data.list[7].attendees);
-        }
         setPosts(data.list || []);
         // 페이지네이션 정보가 필요하면 data.page 등 활용
         // setTotalPages(data.totalPages || 1); // totalPages가 있으면 사용
@@ -83,8 +123,21 @@ export default function MeetingList() {
     fetchPosts();
   }, [page]);
 
-  // category가 'MEETING'인 글만 필터링
-  const meetingPosts = posts.filter(post => post.category === 'MEETING');
+  // category가 'MEETING'이고 본인이 작성자이거나 참가자인 글만 필터링
+  const meetingPosts = posts.filter(post => {
+    if (post.category !== 'MEETING') return false;
+    
+    // 본인이 작성자인지 확인
+    if (post.user_id === currentUserId) return true;
+    
+    // 본인이 참가자인지 확인 (이름으로 비교)
+    const attendees = post.attendees;
+    if (attendees && attendees.length > 0 && currentUserName) {
+      return attendees.includes(currentUserName);
+    }
+    
+    return false;
+  });
 
   // 검색 필터링 (제목, 작성자, 참가자, 요약은 ㄴㄴ)
   const filteredPosts = meetingPosts.filter(
@@ -149,9 +202,15 @@ export default function MeetingList() {
               </tr>
             </thead>
             <tbody>
-              {currentPosts.length === 0 ? (
+              {currentUserId === null ? (
                 <tr>
-                  <td colSpan={6} style={{ color: "#aaa", padding: "32px 0" }}>검색 결과가 없습니다.</td>
+                  <td colSpan={6} style={{ color: "#aaa", padding: "32px 0" }}>로그인이 필요합니다.</td>
+                </tr>
+              ) : currentPosts.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ color: "#aaa", padding: "32px 0" }}>
+                    {search ? "검색 결과가 없습니다." : "작성하거나 참가자로 등록된 회의록이 없습니다."}
+                  </td>
                 </tr>
               ) : (
                 currentPosts.map((post) => (
