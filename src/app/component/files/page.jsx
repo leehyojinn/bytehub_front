@@ -203,10 +203,10 @@ export default function FileSystem() {
     const oversizedFiles = selectedFiles.filter(file => file.size > 10 * 1024 * 1024);
     const validFiles = selectedFiles.filter(file => file.size <= 10 * 1024 * 1024);
     
-    // 10mMB 초과 파일이 있으면 한 번에 알림
+    // 10MB 초과 파일이 있으면 한 번에 알림
     if (oversizedFiles.length > 0) {
       const fileNames = oversizedFiles.map(file => file.name).join(', ');
-      alert(`다음 파일들은 100MB를 초과하여 제외됩니다:\n${fileNames}`);
+      alert(`다음 파일들은 10MB를 초과하여 제외됩니다:\n${fileNames}`);
     }
     
     setUpload({ ...upload, files: [...upload.files, ...validFiles] });
@@ -535,23 +535,34 @@ export default function FileSystem() {
 
 
 
-  // 파일의 만료일을 계산하는 함수
+  // 파일의 만료일을 계산하는 함수 - Mac 호환성 개선
   const getFileExpireDate = (uploadDate) => {
     if (!uploadDate) return '';
-    const uploadTime = new Date(uploadDate);
-    const expireTime = new Date(uploadTime.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30일 후
-    return expireTime.toISOString().slice(0, 10);
+    try {
+      const uploadTime = new Date(uploadDate);
+      // UTC 시간으로 변환하여 시간대 문제 해결
+      const expireTime = new Date(uploadTime.getTime() + (30 * 24 * 60 * 60 * 1000));
+      return expireTime.toISOString().slice(0, 10);
+    } catch (error) {
+      console.error('날짜 처리 오류:', error);
+      return '';
+    }
   };
 
-  // 만료일까지 남은 일수를 계산하는 함수
+  // 만료일까지 남은 일수를 계산하는 함수 - Mac 호환성 개선
   const getDaysUntilExpire = (uploadDate) => {
     if (!uploadDate) return null;
-    const uploadTime = new Date(uploadDate);
-    const expireTime = new Date(uploadTime.getTime() + (31 * 24 * 60 * 60 * 1000));
-    const currentTime = new Date();
-    const diffTime = expireTime.getTime() - currentTime.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    try {
+      const uploadTime = new Date(uploadDate);
+      const expireTime = new Date(uploadTime.getTime() + (31 * 24 * 60 * 60 * 1000));
+      const currentTime = new Date();
+      const diffTime = expireTime.getTime() - currentTime.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays;
+    } catch (error) {
+      console.error('만료일 계산 오류:', error);
+      return null;
+    }
   };
 
   // 현재 부서 파일만 표시 (숫자 타입으로 일관되게 처리)
@@ -871,16 +882,35 @@ export default function FileSystem() {
                                         const response = await fetch(`${apiUrl}/cloud/download/${file.file_idx || file.id}?user_id=${userId}`);
                                         
                                         if (response.ok) {
-                                            // 파일 다운로드 처리
+                                            // 파일 다운로드 처리 - Mac 호환성 개선
                                             const blob = await response.blob();
                                             const url = window.URL.createObjectURL(blob);
                                             const a = document.createElement('a');
                                             a.href = url;
                                             a.download = file.originalName || file.name;
+                                            a.style.display = 'none';
                                             document.body.appendChild(a);
-                                            a.click();
-                                            window.URL.revokeObjectURL(url);
-                                            document.body.removeChild(a);
+                                            
+                                            // Mac Safari 호환성을 위한 처리
+                                            try {
+                                                a.click();
+                                            } catch (error) {
+                                                // click() 실패 시 대체 방법
+                                                const event = new MouseEvent('click', {
+                                                    view: window,
+                                                    bubbles: true,
+                                                    cancelable: true
+                                                });
+                                                a.dispatchEvent(event);
+                                            }
+                                            
+                                            // 메모리 정리
+                                            setTimeout(() => {
+                                                window.URL.revokeObjectURL(url);
+                                                if (document.body.contains(a)) {
+                                                    document.body.removeChild(a);
+                                                }
+                                            }, 100);
                                         } else {
                                             alert('파일 다운로드에 실패했습니다.');
                                         }
@@ -973,13 +1003,8 @@ export default function FileSystem() {
                     value={link.url}
                     onChange={e => {
                         const inputValue = e.target.value;
-                        // 영어, 숫자, 점(.), 하이픈(-), 언더스코어(_)만 허용
-                        const filteredValue = inputValue.replace(/[^a-zA-Z0-9.-_]/g, '');
-                        
-                        // 필터링된 값과 원본 값이 다르면 경고 알림
-                        if (inputValue !== filteredValue) {
-                            alert('url과 관련되지 않은 문자는 입력할 수 없습니다.');
-                        }
+                        // URL에 필요한 문자들 허용 (영어, 숫자, 점, 하이픈, 언더스코어, 슬래시, 콜론, 물음표, 등호, 앰퍼샌드)
+                        const filteredValue = inputValue.replace(/[^a-zA-Z0-9./?=:&_-]/g, '');
                         
                         setLink({ ...link, url: filteredValue });
                     }}
