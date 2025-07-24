@@ -125,6 +125,7 @@ export default function CalendarPage() {
     const [events, setEvents] = useState(calendar_events);
     const type = useRef('');  // 지금 선택한 놈이 팀이냐...회사냐...개인이냐
 
+    // useMemo 병나발쇼
     const [currentUser, setCurrentUser] = useState({});
     const visibleEvents = useMemo(() => {
         if (!currentUser.id) return [];
@@ -136,21 +137,25 @@ export default function CalendarPage() {
     const todayCount = countTodayEvents(visibleEvents, today);
     const beforeEvent = useRef({});
 
+
     useEffect(() => {
-        callUserInfo().then(async () => {
-            await initiallize();
-            await callEvents();
-        })
-    }, [showModal]);
+        if (showModal || showEditModal) {
+            initiallize();
+        }
+    }, [showEditModal, showModal]);
+
+    useEffect(() => {
+        if (currentUser.id) callEvents();
+    }, [currentUser]);
 
     const userId = useRef('');
     useEffect(() => {
         if (sessionStorage) {
             userId.current = sessionStorage.getItem('userId');
-            callUserInfo().then(async () => {
-                await callEvents();
-            })
         }
+        callUserInfo().then(async () => {
+            await callEvents();
+        })
     }, []);
 
 
@@ -192,7 +197,7 @@ export default function CalendarPage() {
                 eventObj.user_id = scd.user_id;
                 break;
             default:
-                console.log("알 수 없는 일정 유형입니다.");
+                console.log(scd.scd_type + "는 알 수 없는 일정 유형입니다.");
                 break;
         }
         return eventObj;
@@ -203,7 +208,7 @@ export default function CalendarPage() {
         let eventObj = {
             id: currentUser.team_id,
             user_id: scd.writer_id,
-            title: scd.name+':'+scd.subject,
+            title: scd.name+' : '+scd.subject,
             type: 'leave',
             type_idx: scd.appr_idx
         };
@@ -230,16 +235,20 @@ export default function CalendarPage() {
             return mappingScd({scd: item});
         });
         setEvents(scd_list);
-        await callLeaves();
+        await callLeaves(currentUser.team_id);
     }
-
+    // 일정+연차 어캐든 합치는 함수
     const callLeaves = async () => {
-        let {data} = await axios.get(`${apiUrl}/leave/team/${currentUser.team_id}`);
-        // console.log(data);
-        const team_leave_list = data.list.map((item) => {
-            return mappingLeave({scd: item});
-        });
-        setEvents((prev) => [...prev, ...team_leave_list]);
+        // 으윽 트라이캐치 쓰기싫어
+        try{
+            let {data} = await axios.get(`${apiUrl}/leave/team/${currentUser.team_id}`);
+            const team_leave_list = data.list.map((item) => {
+                return mappingLeave({scd: item});
+            });
+            setEvents((prev) => [...prev, ...team_leave_list]);
+        }catch (error) {
+            console.log('UserInfo loading…')
+        }
     }
 
 
@@ -298,8 +307,9 @@ export default function CalendarPage() {
 
         axios.post(`${apiUrl}/scd/insert`, eventObj).then(({data}) => {
             if (data.success) {
-                initiallize();
                 setShowModal(false);
+                initiallize();
+                callEvents();
                 // location.reload();
             } else {
                 alert('오류가 발생했습니다...(생성)');
@@ -328,6 +338,7 @@ export default function CalendarPage() {
             // console.log('들어간 값: ', eventObj);
             if (data.success) {
                 initiallize();
+                callEvents();
                 setShowEditModal(false);
                 // location.reload();
             } else {
@@ -343,6 +354,7 @@ export default function CalendarPage() {
             if (data.success) {
                 alert('삭제되었습니다.');
                 initiallize();
+                callEvents();
                 setShowEditModal(false);
             }
         });
@@ -353,7 +365,6 @@ export default function CalendarPage() {
         setModalTitle('');
         setStartDate(today);
         setEndDate(today);
-        return callEvents();
     }
 
 
