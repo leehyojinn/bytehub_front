@@ -52,7 +52,7 @@ export default function Chatbot() {
   }
 
   async function cloudList() {
-    let {data} = await axios.post(`${api_url}/colud/allList`);
+    let {data} = await axios.post(`${api_url}/cloud/allList`);
     console.log(data);
     setCloudInfo(data);
   }
