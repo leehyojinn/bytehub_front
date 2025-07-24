@@ -69,11 +69,13 @@ textarea {
 
 a,
 a:link,
-a:visited,
-a:active,
+a:visited
+a:active{
+  all:unset;
+}
 a:focus,
 a:hover {
-  all: unset;
+  /*all: unset;*/
   cursor: pointer;
 }
 
@@ -2632,10 +2634,10 @@ a:hover {
   cursor: pointer;
   transition: background 0.18s;
 }
-.fc-event, .fc-event:visited, .fc-event:active, .fc-event:focus, .fc-event:hover {
-  /*pointer-events: none !important;*/
-
+.fc-event, .fc-event:active, .fc-event:focus, .fc-event:hover {
+  pointer-events: auto !important;
 }
+
 .calendar_today_count{
   padding:5px 20px;
   background-color: var(--primary-color2);
