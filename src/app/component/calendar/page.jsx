@@ -126,30 +126,27 @@ export default function CalendarPage() {
     const type=useRef('');  // 지금 선택한 놈이 팀이냐...회사냐...개인이냐
 
     const [currentUser, setCurrentUser] = useState({});
-
     const visibleEvents = useMemo(() => {
         if (!currentUser.id) return [];
         return getVisibleEvents(events, currentUser);
     }, [events, currentUser]);
-
     const calendarData = useMemo(() => {
         return flattenEventsForCalendar(visibleEvents);
     }, [visibleEvents]);
-
-    const beforeEvent = useRef({})
-
     const todayCount = countTodayEvents(visibleEvents, today);
+    const beforeEvent = useRef({});
 
     useEffect(() => {
         initiallize();
+        callUserInfo().then(() => {
+            return callEvents();
+        })
     }, [showModal]);
-
 
     const userId = useRef('');
     useEffect(() => {
         if (sessionStorage) {
             userId.current = sessionStorage.getItem('userId');
-
             callUserInfo().then(() => {
                 return callEvents();
             })
@@ -241,7 +238,7 @@ export default function CalendarPage() {
             end_date: info.event._def.extendedProps.end,
         }
 
-        console.log('parseEvent?: ', beforeEvent.current);
+        // console.log('parseEvent?: ', beforeEvent.current);
 
         setModalTitle(beforeEvent.current.subject);
         setStartDate(beforeEvent.current.start_date);
@@ -274,7 +271,7 @@ export default function CalendarPage() {
             if(data.success){
                 initiallize();
                 setShowModal(false);
-                location.reload();
+                // location.reload();
             }
             else{
                 alert('오류가 발생했습니다...(생성)');
@@ -304,7 +301,7 @@ export default function CalendarPage() {
             if(data.success){
                 initiallize();
                 setShowEditModal(false);
-                location.reload();
+                // location.reload();
             }
             else{
                 alert('오류가 발생했습니다...(수정)');
@@ -319,6 +316,7 @@ export default function CalendarPage() {
         setModalTitle('');
         setStartDate(today);
         setEndDate(today);
+        return callEvents();
     }
 
 
