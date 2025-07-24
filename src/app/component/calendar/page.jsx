@@ -261,7 +261,7 @@ export default function CalendarPage() {
         let eventObj={
             user_id: currentUser.id,
             scd_type: type.current,
-            type_idx: 0,    // leave, project의 경우 따로 들어감(수정도 마찬가지)
+            type_idx: type.current==='team' ? currentUser.team_id : 0,    // leave, project의 경우 따로 들어감(수정도 마찬가지)
             subject: modalTitle.trim(),
             start_date: startDate,
             end_date: endDate,
@@ -297,7 +297,7 @@ export default function CalendarPage() {
         }
 
         axios.post(`${apiUrl}/scd/edit`, eventObj).then(({data})=>{
-            console.log('들어간 값: ', eventObj);
+            // console.log('들어간 값: ', eventObj);
             if(data.success){
                 initiallize();
                 setShowEditModal(false);
@@ -307,9 +307,19 @@ export default function CalendarPage() {
                 alert('오류가 발생했습니다...(수정)');
             }
         })
-
-
     };
+
+    //삭제
+    const handleDeleteEvent = (e) => {
+        e.preventDefault();
+        axios.get(`${apiUrl}/scd/del/${beforeEvent.current.scd_idx}`).then(({data})=>{
+            if(data.success){
+                alert('삭제되었습니다.');
+                initiallize();
+                setShowEditModal(false);
+            }
+        });
+    }
 
     // 초기화함수(ㅋㅋ...)
     const initiallize = ()=>{
@@ -395,6 +405,7 @@ export default function CalendarPage() {
                             setEndDate={setEndDate}
                             modalTitle={modalTitle}
                             setModalTitle={setModalTitle}
+                            handleDeleteEvent={handleDeleteEvent}
                         />
                     )}
 

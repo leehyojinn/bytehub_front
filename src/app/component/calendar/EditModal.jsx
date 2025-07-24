@@ -1,7 +1,7 @@
 import React from "react";
 
 export default function EditModal({setShowEditModal, handleEditEvent, startDate, endDate,
-                                      modalTitle, setModalTitle, setEndDate, setStartDate, types, labels}) {
+                                      modalTitle, setModalTitle, setEndDate, setStartDate, handleDeleteEvent}) {
 
     return(
         <div className="modal_overlay" onClick={() => setShowEditModal(false)}>
@@ -49,7 +49,7 @@ export default function EditModal({setShowEditModal, handleEditEvent, startDate,
                                 onClick={() => setShowEditModal(false)}>취소
                         </button>
                         <button type="button" className="board_btn"
-                                onClick={() => setShowEditModal(false)}>삭제
+                                onClick={handleDeleteEvent}>삭제
                         </button>
                     </div>
                 </form>
