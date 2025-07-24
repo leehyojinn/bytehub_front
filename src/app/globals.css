@@ -2633,7 +2633,8 @@ a:hover {
   transition: background 0.18s;
 }
 .fc-event, .fc-event:visited, .fc-event:active, .fc-event:focus, .fc-event:hover {
-  pointer-events: none !important;
+  /*pointer-events: none !important;*/
+
 }
 .calendar_today_count{
   padding:5px 20px;

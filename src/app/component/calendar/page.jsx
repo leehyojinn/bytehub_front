@@ -6,6 +6,8 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
 import axios from "axios";
+import InsertModal from "@/app/component/calendar/InsertModal";
+import EditModal from "@/app/component/calendar/EditModal";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -27,7 +29,7 @@ const typeLabels = {
     project: "프로젝트",
 };
 // initial today
-let today = new Date();
+let today = '2025-07-24';
 
 // initial events
 const calendar_events = [
@@ -116,10 +118,12 @@ function countTodayEvents(events, today) {
 
 export default function CalendarPage() {
     const [showModal, setShowModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
     const [modalTitle, setModalTitle] = useState('');
     const [startDate, setStartDate] = useState(today);
     const [endDate, setEndDate] = useState(today);
     const [events, setEvents] = useState(calendar_events);
+    const type=useRef('');  // 지금 선택한 놈이 팀이냐...회사냐...개인이냐
 
     const [currentUser, setCurrentUser] = useState({});
 
@@ -132,7 +136,13 @@ export default function CalendarPage() {
         return flattenEventsForCalendar(visibleEvents);
     }, [visibleEvents]);
 
+    const beforeEvent = useRef({})
+
     const todayCount = countTodayEvents(visibleEvents, today);
+
+    useEffect(() => {
+        initiallize();
+    }, [showModal]);
 
 
     const userId = useRef('');
@@ -147,11 +157,13 @@ export default function CalendarPage() {
     }, []);
 
 
+    // 일정 가져올때 쓰는 매핑함수
     const mappingScd=({scd})=>{
         let eventObj={
-            id: scd.type_idx,
+            id: scd.scd_idx,
             title: scd.subject,
             type: scd.scd_type,
+            type_idx:scd.type_idx
         };
 
         // end date + 1을 해야 끝까지 출력됨
@@ -201,7 +213,7 @@ export default function CalendarPage() {
         const scd_list = data.scd_list.map((item) => {
             return mappingScd({scd: item});
         });
-        console.log('events?:', scd_list);
+        // console.log('events?:', scd_list);
         setEvents(scd_list);
     }
 
@@ -217,8 +229,31 @@ export default function CalendarPage() {
         });
     }
 
+    // 일정 1개의 정보를 불러오는 함수(수정할때 사용)
+    const parseEvent=(info)=>{
+        beforeEvent.current={
+            scd_idx: info.event._def.extendedProps.id,
+            user_id: currentUser.id,
+            scd_type: info.event._def.extendedProps.type,
+            type_idx: info.event._def.extendedProps.type_idx,
+            subject: info.event._def.extendedProps.title,
+            start_date: info.event._def.extendedProps.start,
+            end_date: info.event._def.extendedProps.end,
+        }
+
+        console.log('parseEvent?: ', beforeEvent.current);
+
+        setModalTitle(beforeEvent.current.subject);
+        setStartDate(beforeEvent.current.start_date);
+        setEndDate(beforeEvent.current.end_date);
+
+        if(!(beforeEvent.current.scd_type==='project' || beforeEvent.current.scd_type==='leave')){
+            setShowEditModal(true);
+        }
+    }
+
     // 입력버튼
-    const handleAddPersonalEvent = (e) => {
+    const handleAddEvent = (e) => {
         e.preventDefault();
 
         if (!modalTitle.trim() || !startDate) {
@@ -229,53 +264,61 @@ export default function CalendarPage() {
         let eventObj={
             user_id: currentUser.id,
             scd_type: type.current,
-            type_idx: 0,    // 0은 임시, subject로 구분
+            type_idx: 0,    // leave, project의 경우 따로 들어감(수정도 마찬가지)
             subject: modalTitle.trim(),
             start_date: startDate,
             end_date: endDate,
         }
 
-        // if (startDate === endDate) {
-        //     eventObj = {
-        //         id: `p${Date.now()}`,
-        //         title: modalTitle.trim(),
-        //         date: startDate,
-        //         type: "personal",
-        //         user_id: currentUser.id
-        //     };
-        // } else {
-        //     // end는 반드시 "마지막날+1"로 넣어야 마지막날까지 표시됨
-        //     const endPlusOne = new Date(endDate);
-        //     endPlusOne.setDate(endPlusOne.getDate() + 1);
-        //     const endStr = endPlusOne.toISOString().slice(0, 10);
-        //     eventObj = {
-        //         id: `p${Date.now()}`,
-        //         title: modalTitle.trim(),
-        //         start: startDate,
-        //         end: endStr,
-        //         type: "personal",
-        //         user_id: currentUser.id
-        //     };
-        // }
-        // setEvents(prev => [...prev, eventObj]);  //< 프론트에서 임시로 처리하던 코드
-        //insertEvents(eventObj);
-        const success = insertEvents(eventObj);
-        if (success) {
-            // initialize
-            setModalTitle('');
-            setStartDate(today);
-            setEndDate(today);
-
-            setShowModal(false);
-            location.reload();
-        }else{
-            alert('오류가 발생했습니다...');
-        }
+        axios.post(`${apiUrl}/scd/insert`, eventObj).then(({data})=>{
+            if(data.success){
+                initiallize();
+                setShowModal(false);
+                location.reload();
+            }
+            else{
+                alert('오류가 발생했습니다...(생성)');
+            }
+        })
     };
-    const type=useRef('');
-    const insertEvents = async (event) => {
-        let {data}= await axios.post(`${apiUrl}/scd/insert`, event);
-        return data.success;
+
+
+    // 수정
+    const handleEditEvent = (e) => {
+        e.preventDefault();
+
+        if (!modalTitle.trim() || !startDate) {
+            alert('시작날짜와 제목을 입력하세요.');
+            return;
+        }
+        // 단일 일정이면 start==end, 기간 일정이면 다르게
+        let eventObj={
+            scd_idx: beforeEvent.current.scd_idx,
+            subject: modalTitle.trim(),
+            start_date: startDate,
+            end_date: endDate,
+        }
+
+        axios.post(`${apiUrl}/scd/edit`, eventObj).then(({data})=>{
+            console.log('들어간 값: ', eventObj);
+            if(data.success){
+                initiallize();
+                setShowEditModal(false);
+                location.reload();
+            }
+            else{
+                alert('오류가 발생했습니다...(수정)');
+            }
+        })
+
+
+    };
+
+    // 초기화함수(ㅋㅋ...)
+    const initiallize = ()=>{
+        setModalTitle('');
+        setStartDate(today);
+        setEndDate(today);
     }
 
 
@@ -320,13 +363,9 @@ export default function CalendarPage() {
                             right: 'prev,next today'
                         }}
                         dayMaxEvents={2}
-                        eventClick={(info) => {
-                            console.log("클릭됨:", info.event.title);  // 작동 확인
-                            // console.log("전체 이벤트 객체:", info.event);
-                            // alert(`이벤트: ${info.event.title}`);
+                        eventClick={(info)=>{
+                            parseEvent(info);
                         }}
-                        //   clickEvents 어쩌구는 globals.css의 fc-events 지워야하는데 어쩌지
-                        // 수정어캐해흑흑...
                     />
 
                     {/* 일정 등록 모달 */}
@@ -335,7 +374,7 @@ export default function CalendarPage() {
                             types={type.current}
                             labels={typeLabels}
                             setShowModal={setShowModal}
-                            handleAddPersonalEvent={handleAddPersonalEvent}
+                            handleAddEvent={handleAddEvent}
                             startDate={startDate}
                             setStartDate={setStartDate}
                             endDate={endDate}
@@ -344,68 +383,26 @@ export default function CalendarPage() {
                             setModalTitle={setModalTitle}
                         />
                     )}
+                    {showEditModal && (
+                        <EditModal
+                            showEditModal={showEditModal}
+                            setShowEditModal={setShowEditModal}
+                            types={type.current}
+                            labels={typeLabels}
+                            setShowModal={setShowModal}
+                            handleEditEvent={handleEditEvent}
+                            startDate={startDate}
+                            setStartDate={setStartDate}
+                            endDate={endDate}
+                            setEndDate={setEndDate}
+                            modalTitle={modalTitle}
+                            setModalTitle={setModalTitle}
+                        />
+                    )}
+
                 </div>
             </div>
             <Footer/>
-        </div>
-    );
-}
-
-
-
-// insert 모달창
-function InsertModal({setShowModal, handleAddPersonalEvent, startDate, endDate,
-                         modalTitle, setModalTitle, setEndDate, setStartDate, types, labels}) {
-
-
-    return(
-        <div className="modal_overlay" onClick={() => setShowModal(false)}>
-            <div className="modal_content" onClick={e => e.stopPropagation()}>
-                <h3 className="card_title font_700 mb_20">{labels[types]} 일정 등록</h3>
-                <form onSubmit={handleAddPersonalEvent} className="flex flex_column gap_10">
-                    <div className="board_write_row">
-                        <label htmlFor="event_start" className="board_write_label">시작날짜</label>
-                        <input
-                            id="event_start"
-                            type="date"
-                            className="board_write_input"
-                            value={startDate}
-                            onChange={e => setStartDate(e.target.value)}
-                            required
-                        />
-                    </div>
-                    <div className="board_write_row">
-                        <label htmlFor="event_end" className="board_write_label">끝날짜</label>
-                        <input
-                            id="event_end"
-                            type="date"
-                            className="board_write_input"
-                            value={endDate}
-                            min={startDate}
-                            onChange={e => setEndDate(e.target.value)}
-                            required
-                        />
-                    </div>
-                    <div className="board_write_row">
-                        <label htmlFor="event_title" className="board_write_label">일정 제목</label>
-                        <input
-                            id="event_title"
-                            type="text"
-                            className="board_write_input"
-                            value={modalTitle}
-                            onChange={e => setModalTitle(e.target.value)}
-                            required
-                            autoFocus
-                        />
-                    </div>
-                    <div className="modal_buttons">
-                        <button type="submit" className="board_btn">등록</button>
-                        <button type="button" className="board_btn board_btn_cancel"
-                                onClick={() => setShowModal(false)}>취소
-                        </button>
-                    </div>
-                </form>
-            </div>
         </div>
     );
 }
