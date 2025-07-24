@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useEffect, useRef, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import Header from "@/app/Header";
@@ -123,8 +123,15 @@ export default function CalendarPage() {
 
     const [currentUser, setCurrentUser] = useState({});
 
-    const visibleEvents=getVisibleEvents(events, currentUser);
-    let calendarData = flattenEventsForCalendar(visibleEvents);
+    const visibleEvents = useMemo(() => {
+        if (!currentUser.id) return [];
+        return getVisibleEvents(events, currentUser);
+    }, [events, currentUser]);
+
+    const calendarData = useMemo(() => {
+        return flattenEventsForCalendar(visibleEvents);
+    }, [visibleEvents]);
+
     const todayCount = countTodayEvents(visibleEvents, today);
 
 
@@ -135,9 +142,7 @@ export default function CalendarPage() {
 
             callUserInfo().then(() => {
                 return callEvents();
-            }).then(() => {
-                calendarData = flattenEventsForCalendar(visibleEvents);
-            });
+            })
         }
     }, []);
 
@@ -262,9 +267,9 @@ export default function CalendarPage() {
             setEndDate(today);
 
             setShowModal(false);
-            callEvents();
+            location.reload();
         }else{
-            alert('오류가 발생했습니다.');
+            alert('오류가 발생했습니다...');
         }
     };
     const type=useRef('');
