@@ -320,12 +320,12 @@ export default function CalendarPage() {
                             right: 'prev,next today'
                         }}
                         dayMaxEvents={2}
-                        // eventClick={(info) => {
-                        //     console.log("클릭됨:", info.event.title);  // 작동 확인
-                        //     console.log("전체 이벤트 객체:", info.event);
-                        //     alert(`이벤트: ${info.event.title}`);
-                        // }}
-                        //   clickEvents 어쩌구는 globals.css의 fc어쩌구 지워야하는데 어쩌지
+                        eventClick={(info) => {
+                            console.log("클릭됨:", info.event.title);  // 작동 확인
+                            // console.log("전체 이벤트 객체:", info.event);
+                            // alert(`이벤트: ${info.event.title}`);
+                        }}
+                        //   clickEvents 어쩌구는 globals.css의 fc-events 지워야하는데 어쩌지
                         // 수정어캐해흑흑...
                     />
 
