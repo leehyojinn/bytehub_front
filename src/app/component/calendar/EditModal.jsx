@@ -1,7 +1,13 @@
-import React from "react";
+'use client'
+import React, {useEffect} from "react";
 
-export default function EditModal({setShowEditModal, handleEditEvent, startDate, endDate,
+export default function EditModal({setShowEditModal, handleEditEvent, startDate, endDate, clickFilter,
                                       modalTitle, setModalTitle, setEndDate, setStartDate, handleDeleteEvent}) {
+
+    useEffect(() => {
+        clickFilter();
+    },[]);
+
 
     return(
         <div className="modal_overlay" onClick={() => setShowEditModal(false)}>

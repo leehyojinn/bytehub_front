@@ -123,6 +123,7 @@ export default function CalendarPage() {
     const [startDate, setStartDate] = useState(today);
     const [endDate, setEndDate] = useState(today);
     const [events, setEvents] = useState(calendar_events);
+    const [editFilter, setEditFilter] = useState(false);
     const type = useRef('');  // 지금 선택한 놈이 팀이냐...회사냐...개인이냐
 
     // useMemo 병나발쇼
@@ -157,6 +158,16 @@ export default function CalendarPage() {
             await callEvents();
         })
     }, []);
+
+    // 남의꺼 함부로 수정 못하게 하는거
+    const edit_filter = () => {
+        if (currentUser.grade < 3 && type.current === 'company') {
+            setEditFilter(true);
+        } else if (currentUser.grade < 4 && type.current === 'team') {
+            setEditFilter(true);
+        }
+        setEditFilter(false);
+    }
 
 
     // 일정 가져올때 쓰는 매핑함수
@@ -299,7 +310,7 @@ export default function CalendarPage() {
         let eventObj = {
             user_id: currentUser.id,
             scd_type: type.current,
-            type_idx: type.current === 'team' ? currentUser.team_id : 0,    // leave, project의 경우 따로 들어감(수정도 마찬가지)
+            type_idx: type.current === 'team' ? currentUser.team_id : 0,    // ★leave, project의 경우 일정에서 안 다룸
             subject: modalTitle.trim(),
             start_date: startDate,
             end_date: endDate,
@@ -434,8 +445,9 @@ export default function CalendarPage() {
                             setModalTitle={setModalTitle}
                         />
                     )}
-                    {showEditModal && (
+                    {showEditModal && editFilter && (
                         <EditModal
+                            clickFilter={edit_filter}
                             showEditModal={showEditModal}
                             setShowEditModal={setShowEditModal}
                             types={type.current}
