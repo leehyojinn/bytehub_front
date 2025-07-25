@@ -1,12 +1,9 @@
 'use client'
 import React, {useEffect} from "react";
 
-export default function EditModal({setShowEditModal, handleEditEvent, startDate, endDate, clickFilter,
+export default function EditModal({setShowEditModal, handleEditEvent, startDate, endDate,
                                       modalTitle, setModalTitle, setEndDate, setStartDate, handleDeleteEvent}) {
 
-    useEffect(() => {
-        clickFilter();
-    },[]);
 
 
     return(

@@ -123,7 +123,7 @@ export default function CalendarPage() {
     const [startDate, setStartDate] = useState(today);
     const [endDate, setEndDate] = useState(today);
     const [events, setEvents] = useState(calendar_events);
-    const [editFilter, setEditFilter] = useState(false);
+    const editFilter=useRef(false);
     const type = useRef('');  // 지금 선택한 놈이 팀이냐...회사냐...개인이냐
 
     // useMemo 병나발쇼
@@ -160,13 +160,17 @@ export default function CalendarPage() {
     }, []);
 
     // 남의꺼 함부로 수정 못하게 하는거
-    const edit_filter = () => {
-        if (currentUser.grade < 3 && type.current === 'company') {
-            setEditFilter(true);
-        } else if (currentUser.grade < 4 && type.current === 'team') {
-            setEditFilter(true);
+    const edit_filter = (type) => {
+        console.log(currentUser.grade, type);
+        if (currentUser.grade < 3 && type === 'company') {
+            editFilter.current=true;
+        } else if (currentUser.grade < 4 && type === 'team') {
+            editFilter.current=true;
+        } else if (type === 'personal') {
+            editFilter.current=true;
+        } else{
+            editFilter.current=false;
         }
-        setEditFilter(false);
     }
 
 
@@ -277,6 +281,9 @@ export default function CalendarPage() {
 
     // 일정 1개의 정보를 불러오는 함수(수정할때 사용)
     const parseEvent = (info) => {
+
+        edit_filter(info.event._def.extendedProps.type);
+
         beforeEvent.current = {
             scd_idx: info.event._def.extendedProps.id,
             user_id: currentUser.id,
@@ -293,7 +300,7 @@ export default function CalendarPage() {
         setStartDate(beforeEvent.current.start_date);
         setEndDate(beforeEvent.current.end_date);
 
-        if (!(beforeEvent.current.scd_type === 'project' || beforeEvent.current.scd_type === 'leave')) {
+        if (!(beforeEvent.current.scd_type === 'project' || beforeEvent.current.scd_type === 'leave') && editFilter.current) {
             setShowEditModal(true);
         }
     }
@@ -445,9 +452,8 @@ export default function CalendarPage() {
                             setModalTitle={setModalTitle}
                         />
                     )}
-                    {showEditModal && editFilter && (
+                    {showEditModal && (
                         <EditModal
-                            clickFilter={edit_filter}
                             showEditModal={showEditModal}
                             setShowEditModal={setShowEditModal}
                             types={type.current}
