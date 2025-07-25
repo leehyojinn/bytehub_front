@@ -139,10 +139,10 @@ export default function CalendarPage() {
 
 
     useEffect(() => {
-        if (showModal || showEditModal) {
+        if (showModal) {
             initiallize();
         }
-    }, [showEditModal, showModal]);
+    }, [showModal]);
 
     useEffect(() => {
         if (currentUser.id) callEvents();
