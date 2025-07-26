@@ -3,7 +3,7 @@
 import Footer from "@/app/Footer";
 import Header from "@/app/Header";
 import Link from "next/link";
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect, useRef} from "react";
 import axios from "axios";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -22,6 +22,20 @@ export default function Board() {
   const [search, setSearch] = useState("");
   const [posts, setPosts] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
+  const userIdrRef= useRef(null);
+
+  useEffect(() => {
+    if(sessionStorage){
+      userIdrRef.current = sessionStorage.getItem("userId");
+      callUserInfo();
+    }
+  },[]);
+
+  // 서버에서 유저정보 불러오는 기능
+  const callUserInfo = async () => {
+    let {data} = await axios.get(`${apiUrl}/mypage/info`, {headers: {Authorization: sessionStorage.getItem('token')}});
+    userIdrRef.current=data.data.lv_idx;
+  }
 
   // 게시글 리스트 불러오기
   useEffect(() => {
@@ -154,9 +168,9 @@ export default function Board() {
             </button>
           </div>
           <div className="board_footer">
-            <Link href="/component/board/board_write">
+            {userIdrRef.current < 3 ? (<Link href="/component/board/board_write">
               <button className="board_btn">글쓰기</button>
-            </Link>
+            </Link>) : null}
           </div>
         </div>
       </div>
