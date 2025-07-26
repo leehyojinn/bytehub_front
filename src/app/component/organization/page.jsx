@@ -93,7 +93,6 @@ export default function OrgChartHierarchy() {
     fetchMembers();
   }, [api_url]);
 
-  // 서버에서 유저정보 불러오는 기능
   const callUserInfo = async () => {
     let {data} = await axios.get(`${apiUrl}/mypage/info`, {headers: {Authorization: sessionStorage.getItem('token')}});
     userLevelRef.current = data.data.lv_idx;

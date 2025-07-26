@@ -6,6 +6,7 @@ import AdminPaeneol from './component/adminpaeneol/AdminPaeneol';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import axios from 'axios';
+import {checkAuthStore} from "@/app/zustand/store";
 
 const menuItems = [
   { name: '출결 확인', href: '/component/attendance' },
@@ -30,6 +31,27 @@ export default function Header() {
     const [connected, setConnected] = useState(false);
     const stompClientRef = useRef(null);
     const subscriptionRef = useRef(null);
+
+    /* ----------권한부분 ----------*/
+    const block = checkAuthStore();
+    const userLevelRef=useRef(null);
+    const visibleRef=useRef(false);
+
+    useEffect(() => {
+        if(sessionStorage){
+            callUserInfo();
+        }
+    },[])
+
+    const callUserInfo = async () => {
+        let {data} = await axios.get(`${apiUrl}/mypage/info`, {headers: {Authorization: sessionStorage.getItem('token')}});
+        userLevelRef.current = data.data.lv_idx;
+        visibleRef.current = block.checkUserLv({user_lv: userLevelRef.current, authLevel: 5});
+        // 팀장레벨이몇이었죠?
+    }
+
+
+
 
     // 로그아웃 핸들러
     const handleLogout = async (e) => {
@@ -184,21 +206,30 @@ export default function Header() {
         }
     };
 
+
   return (
     <div className='bg_tertiary widht_100'>
         <div className='wrap'>
         <div className='header'>
             <div>
                 <Link href={"/component/main"}>
-                <img style={{ width: "200px" }} src="/logo.png" alt="logo" />
+                    <img style={{width: "200px"}} src="/logo.png" alt="logo"/>
                 </Link>
             </div>
             <ul className='flex gap_10'>
-            {menuItems.map(item => (
-                <li className='su_small_text font_500 links' key={item.href}>
-                <Link href={item.href}>{item.name}</Link>
-                </li>
-            ))}
+                {menuItems.map(item => {
+                        if (item.name === '비상연락망') {
+                            return visibleRef.current ? <li className='su_small_text font_500 links' key={item.href}>
+                                <Link href={item.href}>{item.name}</Link>
+                            </li> : null;
+                        }
+                        return (
+                            <li className='su_small_text font_500 links' key={item.href}>
+                                <Link href={item.href}>{item.name}</Link>
+                            </li>
+                        );
+                    }
+                )}
             </ul>
             <ul className='flex gap_10'>
               <li className='su_small_text font_500 links'>
