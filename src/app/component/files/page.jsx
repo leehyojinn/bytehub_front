@@ -331,7 +331,12 @@ export default function FileSystem() {
     }
 
     try {
-      const response = await fetch(`${apiUrl}/cloud/delete/${id}`, {
+      // user_id 파라미터 추가
+      const userId = sessionStorage.getItem('userId');
+      const params = new URLSearchParams();
+      params.append('user_id', userId); // userId는 현재 로그인한 사용자 ID
+
+      const response = await fetch(`${apiUrl}/cloud/delete/${id}?${params}`, {
         method: 'DELETE',
       });
 
@@ -475,36 +480,14 @@ export default function FileSystem() {
     }
   };
 
-  // 링크 수정/삭제 권한 확인
+  // 링크 수정/삭제 권한 확인 - 본인만 가능
   const canEditLink = (link) => {
     if (!userInfo) return false;
     
-    const userLevel = userInfo.lv_idx || userInfo.lvIdx;
-    const linkUploaderLevel = link.lv_idx || link.uploaderLvIdx;
     const currentUserId = sessionStorage.getItem('userId');
     
-    // 본인이 올린 링크는 항상 수정/삭제 가능
-    if (link.user_id === currentUserId) {
-      return true;
-    }
-    
-    // 레벨 1: 1을 제외한 모든 링크 수정/삭제 가능
-    if (userLevel === 1) {
-      return linkUploaderLevel !== 1;
-    }
-    
-    // 레벨 2: 1을 제외한 모든 링크 수정/삭제 가능
-    if (userLevel === 2) {
-      return linkUploaderLevel !== 1;
-    }
-    
-    // 레벨 3: 1,2를 제외한 모든 링크 수정/삭제 가능
-    if (userLevel === 3) {
-      return linkUploaderLevel > 2;
-    }
-    
-    // 레벨 4 이상: 자신이 업로드한 링크만 수정/삭제 가능
-    return link.user_id === userInfo.user_id;
+    // 본인이 올린 링크만 수정/삭제 가능
+    return link.user_id === currentUserId;
   };
 
   // 외부 링크 삭제
@@ -713,6 +696,9 @@ export default function FileSystem() {
             <button type="submit" className="fs_btn" disabled={upload.files.length === 0 || !selectedDeptIdx}>
                 업로드
             </button>
+            </div>
+            <div style={{ fontSize: '14px', color: '#666', marginTop: '8px' }}>
+                ※ 파일 크기 제한: 100MB 이하
             </div>
             
             {/* 선택된 파일 목록 */}

@@ -431,7 +431,7 @@ export default function ApprovalSystem() {
     switch (final_status) {
       case '반려': return '반려';
       case '승인완료': return '승인';
-      case '대기중': return '결재중';
+      case '대기중': return '상신';
       default: return '기안';
     }
   };
@@ -623,14 +623,7 @@ export default function ApprovalSystem() {
             <div className="approval_section width_100">
               <h3 className="card_title font_600 mb_10">결재 문서 기안</h3>
               <form className="approval_form" onSubmit={handleSubmit} encType="multipart/form-data">
-                <input
-                  className="approval_input"
-                  type="text"
-                  placeholder="제목"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
+                
                 <select
                   className="approval_input"
                   required
@@ -688,7 +681,17 @@ export default function ApprovalSystem() {
                       </div>
                     )}
                   </div>
+                  
                 )}
+                
+                <input
+                  className="approval_input"
+                  type="text"
+                  placeholder="제목"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
                 <textarea
                   className="approval_input"
                   rows={4}
@@ -712,6 +715,9 @@ export default function ApprovalSystem() {
                     className="board_write_file"
                     style={{ display: "none" }}
                   />
+                  <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>
+                    ※ 파일 크기 제한: 10MB 이하
+                  </div>
                   {files.length > 0 && (
                     <div className="mt_5">
                       {files.map((file, idx) => (
@@ -739,7 +745,7 @@ export default function ApprovalSystem() {
               <h3 className="card_title font_600 mb_10">내가 올린 결재</h3>
               <div className="approval_status_legend mb_16 flex gap_10">
                 <span className="approval_status_badge status_rejected">반려</span>
-                <span className="approval_status_badge status_progress">결재중</span>
+                <span className="approval_status_badge status_progress">상신</span>
                 <span className="approval_status_badge status_approved">승인</span>
               </div>
               {loading ? (
@@ -839,7 +845,7 @@ export default function ApprovalSystem() {
               <h3 className="card_title font_600 mb_10">결재 처리 리스트</h3>
               <div className="approval_status_legend mb_16 flex gap_10">
                 <span className="approval_status_badge status_rejected">반려</span>
-                <span className="approval_status_badge status_progress">결재중</span>
+                <span className="approval_status_badge status_progress">상신</span>
                 <span className="approval_status_badge status_approved">승인</span>
               </div>
               {loading ? (
