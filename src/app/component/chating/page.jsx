@@ -274,32 +274,27 @@ export default function ChatPage() {
     if (file) handleFileUpload(file);
   };
 
-  // 메시지 전송(텍스트만)
-  const handleSend = (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-    if (stompClientRef.current && connected) {
-      const now = new Date();
-      const msg = {
-        chat_idx: selectedRoomId,
-        user_id: getCurrentUser(),
-        content: input,
-        msg_type: "text",
-        is_read: false,
-        reg_date: now.toISOString().slice(0, 16).replace("T", " "),
-        files: []
-      };
-      stompClientRef.current.publish({
-        destination: `/app/chat/${selectedRoomId}`,
-        body: JSON.stringify(msg)
-      });
-      axios.post(`${apiUrl}/chat/room/${selectedRoomId}/message`, {
-        last_active: now.toISOString().slice(0, 19).replace("T", " ")
-      });
-    }
-    setInput("");
-  };
-
+const handleSend = (e) => {
+  e.preventDefault();
+  if (!input.trim()) return;
+  if (stompClientRef.current && connected) {
+    const now = new Date();
+    const msg = {
+      chat_idx: selectedRoomId,
+      user_id: getCurrentUser(),
+      content: input,
+      msg_type: "text",
+      is_read: false,
+      reg_date: now.toISOString().slice(0, 16).replace("T", " "),
+      files: []
+    };
+    stompClientRef.current.publish({
+      destination: `/app/chat/${selectedRoomId}`,
+      body: JSON.stringify(msg)
+    });
+  }
+  setInput("");
+};
   // unread 0으로 초기화
   async function resetUnread(chat_idx) {
     try {
