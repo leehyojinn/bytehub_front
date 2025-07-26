@@ -161,7 +161,7 @@ export default function CalendarPage() {
 
     // 남의꺼 함부로 수정 못하게 하는거
     const edit_filter = (type) => {
-        console.log(currentUser.grade, type);
+        // console.log(currentUser.grade, type);
         if (currentUser.grade < 3 && type === 'company') {
             editFilter.current=true;
         } else if (currentUser.grade < 4 && type === 'team') {
