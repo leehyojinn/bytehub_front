@@ -1,4 +1,6 @@
 import "./globals.css";
+import AlertModal from "./component/alertmodal/page";
+import AuthWrapper from "./component/AuthWrapper";
 
 export default function layout({children}) {
   return (
@@ -9,7 +11,10 @@ export default function layout({children}) {
         <title>Document</title>
     </head>
     <body>
-      {children}
+      <AlertModal />
+      <AuthWrapper>
+        {children}
+      </AuthWrapper>
     </body>
     </html>
   )
