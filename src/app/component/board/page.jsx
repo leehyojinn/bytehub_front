@@ -37,7 +37,7 @@ export default function Board() {
   // 서버에서 유저정보 불러오는 기능
   const callUserInfo = async () => {
     let {data} = await axios.get(`${apiUrl}/mypage/info`, {headers: {Authorization: sessionStorage.getItem('token')}});
-    setVisibleButton(block.getUserLv({user_lv:data.data.lv_idx, authLevel: 3}));
+    setVisibleButton(block.checkUserLv({user_lv:data.data.lv_idx, authLevel: 3}));
   }
 
   // 게시글 리스트 불러오기

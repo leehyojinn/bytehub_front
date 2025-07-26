@@ -60,8 +60,6 @@ export default function ProjectManagement() {
     }));
   }
 
-
-
   // 부서 리스트
   useEffect(() => {
     showWriteButton();

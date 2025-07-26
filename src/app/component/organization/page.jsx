@@ -3,7 +3,7 @@
 import Footer from "@/app/Footer";
 import Header from "@/app/Header";
 import axios from "axios";
-import React, { useState, useEffect, useCallback } from "react";
+import React, {useState, useEffect, useCallback, useRef} from "react";
 import {checkAuthStore} from "@/app/zustand/store";
 
 // 부서명 → 부서ID 매핑 함수
@@ -48,7 +48,8 @@ export default function OrgChartHierarchy() {
   const [modalUser, setModalUser] = useState(null);
 
   const api_url = process.env.NEXT_PUBLIC_API_URL;
-
+  const block = checkAuthStore();
+  const userLevelRef=useRef(0); //현재유저레벨
 
   // 부서 찾기
   const getDept = (user) => {
@@ -56,9 +57,11 @@ export default function OrgChartHierarchy() {
     return departments.find(d => d.id === user.dept_id);
   };
 
+
   useEffect(() => {
     async function fetchMembers() {
       try {
+        callUserInfo();
         const { data } = await axios.post(`${api_url}/member/list`);
         // 1. 부서 정보 추출
         const deptMap = {};
@@ -89,6 +92,12 @@ export default function OrgChartHierarchy() {
     }
     fetchMembers();
   }, [api_url]);
+
+  // 서버에서 유저정보 불러오는 기능
+  const callUserInfo = async () => {
+    let {data} = await axios.get(`${apiUrl}/mypage/info`, {headers: {Authorization: sessionStorage.getItem('token')}});
+    userLevelRef.current = data.data.lv_idx;
+  }
 
   // 계층 분류
   const ceo = users.find(u => u.position === "대표");
