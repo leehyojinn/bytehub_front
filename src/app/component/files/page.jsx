@@ -539,10 +539,10 @@ export default function FileSystem() {
   const getFileExpireDate = (uploadDate) => {
     if (!uploadDate) return '';
     try {
-      const uploadTime = new Date(uploadDate);
+    const uploadTime = new Date(uploadDate);
       // UTC 시간으로 변환하여 시간대 문제 해결
       const expireTime = new Date(uploadTime.getTime() + (30 * 24 * 60 * 60 * 1000));
-      return expireTime.toISOString().slice(0, 10);
+    return expireTime.toISOString().slice(0, 10);
     } catch (error) {
       console.error('날짜 처리 오류:', error);
       return '';
