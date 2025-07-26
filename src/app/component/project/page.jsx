@@ -4,7 +4,7 @@ import Header from "@/app/Header";
 import Footer from "@/app/Footer";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import {checkAuthStore} from "@/app/zustand/store";
+import { checkAuthStore } from "@/app/zustand/store";
 
 // JWT 토큰에서 사용자 ID 추출
 function getUserIdFromToken() {
@@ -47,32 +47,36 @@ export default function ProjectManagement() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const token = typeof window !== "undefined" ? sessionStorage.getItem("token") : "";
 
-  const block= checkAuthStore();
+  const block = checkAuthStore();
   const [visibleButton, setVisibleButton] = useState(false);
 
   // 작성버튼 보여주는 여부
-  const showWriteButton=()=>{
-    setVisibleButton(block.isBlockId({
-      session:sessionStorage,
-      type:'project',
-      idx:0,
-      auth:'w',
-    }));
-  }
+  const showWriteButton = () => {
+    setVisibleButton(
+      block.isBlockId({
+        session: sessionStorage,
+        type: "project",
+        idx: 0,
+        auth: "w",
+      })
+    );
+  };
 
   // 부서 리스트
   useEffect(() => {
     showWriteButton();
 
-    axios.post(`${apiUrl}/dept/list`)
-      .then(res => setDeptList(res.data.list || []))
+    axios
+      .post(`${apiUrl}/dept/list`)
+      .then((res) => setDeptList(res.data.list || []))
       .catch(() => {});
   }, []);
 
   // 멤버 리스트
   useEffect(() => {
-    axios.post(`${apiUrl}/member/list`)
-      .then(res => {
+    axios
+      .post(`${apiUrl}/member/list`)
+      .then((res) => {
         setUsers(res.data.list || []);
         setMemberList(res.data.list || []);
       })
@@ -87,8 +91,8 @@ export default function ProjectManagement() {
   const fetchProjects = async () => {
     try {
       const res = await axios.get(`${apiUrl}/project/list`);
-      const me = users.find(u => u.user_id === userId);
-      const plist = (res.data.list || []).map(p => ({
+      const me = users.find((u) => u.user_id === userId);
+      const plist = (res.data.list || []).map((p) => ({
         ...p,
         id: p.project_idx,
         dept_idx: p.dept_idx || me?.dept_idx || "",
@@ -96,9 +100,9 @@ export default function ProjectManagement() {
         end_date: p.end_date?.split("T")[0] || "",
         progress: p.progress || 0,
         priority: p.priority ?? 1,
-        members: (p.members || []).map(m => m.user_id),
+        members: (p.members || []).map((m) => m.user_id),
         files: p.files || [],
-        status: p.status || "진행중",
+        status: p.status || false, // boolean 타입 유지, 기본 false
       }));
       setProjects(plist);
       setCurrentUser(me);
@@ -118,8 +122,8 @@ export default function ProjectManagement() {
 
   // --------------------- 리스트/필터 ----------------------
   const filteredProjects = projects
-    .filter(p => filterTeam === "전체" || p.dept_idx == filterTeam)
-    .filter(p => !myOnly || p.members.includes(currentUser.user_id))
+    .filter((p) => filterTeam === "전체" || p.dept_idx == filterTeam)
+    .filter((p) => !myOnly || p.members.includes(currentUser.user_id))
     .sort((a, b) => a.priority - b.priority);
 
   const totalPages = Math.ceil(filteredProjects.length / PAGE_SIZE);
@@ -140,7 +144,8 @@ export default function ProjectManagement() {
         ...project,
         ...data.project,
         members: data.users || [],
-        files: data.files || []
+        files: data.files || [],
+        status: data.project?.status || false, // boolean 타입 강제
       });
       setDetailOpen(true);
     } catch {
@@ -153,7 +158,10 @@ export default function ProjectManagement() {
   // ------------------ 생성/수정 ------------------
   const openModal = (project = null) => {
     if (project) {
-      setModalData({ ...project });
+      setModalData({
+        ...project,
+        status: Boolean(project.status),
+      });
       setSelectedMembers(project.members || []);
       setFileInputs(project.files || []);
     } else {
@@ -167,8 +175,8 @@ export default function ProjectManagement() {
         dept_idx: currentUser.dept_idx,
         members: [],
         progress: 0,
-        status: "진행중",
-        files: []
+        status: false,
+        files: [],
       });
       setSelectedMembers([]);
       setFileInputs([]);
@@ -176,12 +184,19 @@ export default function ProjectManagement() {
     setModalOpen(true);
   };
   const closeModal = () => {
-    setModalOpen(false); setModalData(null); setSelectedMembers([]); setFileInputs([]);
+    setModalOpen(false);
+    setModalData(null);
+    setSelectedMembers([]);
+    setFileInputs([]);
   };
 
   const handleModalChange = (e) => {
-    const { name, value } = e.target;
-    setModalData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    if (name === "status" && type === "checkbox") {
+      setModalData((prev) => ({ ...prev, status: checked }));
+    } else {
+      setModalData((prev) => ({ ...prev, [name]: value }));
+    }
     if (name === "team") setSelectedMembers([]);
   };
 
@@ -201,7 +216,7 @@ export default function ProjectManagement() {
     setSearchKeyword(keyword);
     setFilteredMembers(
       memberList.filter(
-        m =>
+        (m) =>
           m.user_id.includes(keyword) ||
           (m.name && m.name.includes(keyword)) ||
           (m.email && m.email.includes(keyword))
@@ -209,14 +224,12 @@ export default function ProjectManagement() {
     );
   };
   const handleSelectMember = (user_id) => {
-    setSelectedMembers(prev =>
-      prev.includes(user_id)
-        ? prev.filter(id => id !== user_id)
-        : [...prev, user_id]
+    setSelectedMembers((prev) =>
+      prev.includes(user_id) ? prev.filter((id) => id !== user_id) : [...prev, user_id]
     );
   };
   const handleMemberConfirm = () => {
-    setModalData(prev => ({ ...prev, members: selectedMembers }));
+    setModalData((prev) => ({ ...prev, members: selectedMembers }));
     setMemberModalOpen(false);
   };
 
@@ -230,27 +243,35 @@ export default function ProjectManagement() {
     try {
       const isEdit = !!modalData.id;
       const url = isEdit ? `${apiUrl}/project/edit` : `${apiUrl}/project/create`;
-      const method = isEdit ? 'put' : 'post';
+      const method = isEdit ? "put" : "post";
 
       const formData = new FormData();
-      formData.append("projectData", new Blob([JSON.stringify({
-        proj: {
-          project_idx: modalData.id,
-          subject: modalData.subject,
-          content: modalData.content,
-          start_date: modalData.start_date,
-          end_date: modalData.end_date,
-          priority: modalData.priority,
-          user_id: currentUser.user_id,
-          status: modalData.status,
-          progress: modalData.progress,
-          dept_idx: parseInt(modalData.dept_idx, 10),
-        },
-        user_id: selectedMembers
-      })], { type: "application/json" }));
+      formData.append(
+        "projectData",
+        new Blob(
+          [
+            JSON.stringify({
+              proj: {
+                project_idx: modalData.id,
+                subject: modalData.subject,
+                content: modalData.content,
+                start_date: modalData.start_date,
+                end_date: modalData.end_date,
+                priority: modalData.priority,
+                user_id: currentUser.user_id,
+                status: modalData.status, // boolean 유지
+                progress: modalData.progress,
+                dept_idx: parseInt(modalData.dept_idx, 10),
+              },
+              user_id: selectedMembers,
+            }),
+          ],
+          { type: "application/json" }
+        )
+      );
 
       if (fileInputs && fileInputs.length > 0) {
-        fileInputs.forEach(f => formData.append("files", f));
+        fileInputs.forEach((f) => formData.append("files", f));
       }
 
       await axios({
@@ -259,8 +280,8 @@ export default function ProjectManagement() {
         data: formData,
         headers: {
           "Content-Type": "multipart/form-data",
-          "Authorization": token
-        }
+          Authorization: token,
+        },
       });
 
       alert(isEdit ? "수정 완료!" : "등록 완료!");
@@ -271,31 +292,35 @@ export default function ProjectManagement() {
     }
   };
 
-  const fileDownloadUrl = (file) =>
-    `${apiUrl}/project/download/${file.file_idx}`;
+  const fileDownloadUrl = (file) => `${apiUrl}/project/download/${file.file_idx}`;
 
   const deleteProject = async (id) => {
     if (confirm("정말 삭제하시겠습니까?")) {
-      let {data} = await axios.post(`${apiUrl}/project/delete`,{project_idx : id},{
-        headers: { 'Content-Type': 'application/json' }
-      });
-      if(data && data.success){
+      let { data } = await axios.post(
+        `${apiUrl}/project/delete`,
+        { project_idx: id },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      if (data && data.success) {
         fetchProjects();
       }
     }
   };
 
-  // console.log(pagedProjects);
-
   const getDeptName = (dept_idx) => {
-    const dept = deptList.find(d => d.dept_idx === dept_idx);
+    const dept = deptList.find((d) => d.dept_idx === dept_idx);
     return dept ? dept.dept_name : "알 수 없음";
   };
 
   const getUserNamesByIds = (ids = []) =>
-    ids.map(id => users.find(u => u.user_id === id)?.name || id).join(", ");
+    ids.map((id) => users.find((u) => u.user_id === id)?.name || id).join(", ");
 
-  const handleMyOnlyChange = (e) => { setMyOnly(e.target.checked); setPage(1); };
+  const handleMyOnlyChange = (e) => {
+    setMyOnly(e.target.checked);
+    setPage(1);
+  };
 
   return (
     <div>
@@ -306,21 +331,40 @@ export default function ProjectManagement() {
           {/* 팀 필터 */}
           <div className="board_search_wrap flex gap_10 mb_20">
             <label>팀 필터 &nbsp;</label>
-            <select className="login_input" style={{ minWidth: "200px" }} value={filterTeam}
-              onChange={e => { setFilterTeam(e.target.value); setPage(1); }}>
+            <select
+              className="login_input"
+              style={{ minWidth: "200px" }}
+              value={filterTeam}
+              onChange={(e) => {
+                setFilterTeam(e.target.value);
+                setPage(1);
+              }}
+            >
               <option value="전체">전체</option>
-              {deptList.map(dept => (
-                <option key={dept.dept_idx} value={dept.dept_idx}>{dept.dept_name}</option>
+              {deptList.map((dept) => (
+                <option key={dept.dept_idx} value={dept.dept_idx}>
+                  {dept.dept_name}
+                </option>
               ))}
             </select>
             <label className="my_checkbox_label">
-              <input type="checkbox" className="my_checkbox_input"
-                checked={myOnly} onChange={handleMyOnlyChange} />
+              <input
+                type="checkbox"
+                className="my_checkbox_input"
+                checked={myOnly}
+                onChange={handleMyOnlyChange}
+              />
               <span className="my_checkbox_box"></span>
               <span className="my_checkbox_text">내 프로젝트</span>
             </label>
-            {(currentUser.lv_name === "사장" || currentUser.lv_idx <= 2 || visibleButton) && (
-              <button className="board_btn" style={{ marginLeft: 20 }} onClick={() => openModal()}>
+            {(currentUser.lv_name === "사장" ||
+              currentUser.lv_idx <= 2 ||
+              visibleButton) && (
+              <button
+                className="board_btn"
+                style={{ marginLeft: 20 }}
+                onClick={() => openModal()}
+              >
                 프로젝트 생성
               </button>
             )}
@@ -328,14 +372,23 @@ export default function ProjectManagement() {
           {/* 프로젝트 카드 리스트 */}
           <div className="project_card_list">
             {pagedProjects.length === 0 ? (
-              <div className="board_card text_center" style={{ padding: "48px 0" }}>프로젝트가 없습니다.</div>
+              <div className="board_card text_center" style={{ padding: "48px 0" }}>
+                프로젝트가 없습니다.
+              </div>
             ) : (
-              pagedProjects.map(p => (
-                <div key={p.id} className={`project_card board_card${isNearDeadline(p.end_date) ? " near_deadline" : ""}`}>
+              pagedProjects.map((p) => (
+                <div
+                  key={p.id}
+                  className={`project_card board_card${
+                    isNearDeadline(p.end_date) ? " near_deadline" : ""
+                  }`}
+                >
                   <div className="project_card_head">
                     <span className="project_priority">우선순위 {p.priority}</span>
-                    <span className="project_status">{p.status}</span>
-                    {isNearDeadline(p.end_date) && <span className="project_deadline_badge">마감일 임박</span>}
+                    <span className="project_status">{p.status ? "삭제됨" : "진행중"}</span>
+                    {isNearDeadline(p.end_date) && (
+                      <span className="project_deadline_badge">마감일 임박</span>
+                    )}
                   </div>
                   <div className="project_subject">{p.subject}</div>
                   <div className="project_content">{p.content}</div>
@@ -348,29 +401,44 @@ export default function ProjectManagement() {
                   </div>
                   <div className="project_members">
                     <b>멤버:</b>{" "}
-                    {p.members.length > 0
-                    ? getUserNamesByIds(p.members)
-                    : <span style={{ color: "#bbb" }}>없음</span>}
+                    {p.members.length > 0 ? (
+                      getUserNamesByIds(p.members)
+                    ) : (
+                      <span style={{ color: "#bbb" }}>없음</span>
+                    )}
                   </div>
                   <div className="project_files">
                     <b>파일:</b>{" "}
-                    {p.files && p.files.length > 0
-                      ? p.files.map((f, idx) =>
-                        <a key={f.file_idx || idx}
+                    {p.files && p.files.length > 0 ? (
+                      p.files.map((f, idx) => (
+                        <a
+                          key={f.file_idx || idx}
                           href={fileDownloadUrl(f)}
                           className="file_link"
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ marginRight: 8 }}>
+                          style={{ marginRight: 8 }}
+                        >
                           📎 {f.ori_filename || f.name}
                         </a>
-                      )
-                      : <span style={{ color: "#bbb" }}>없음</span>}
+                      ))
+                    ) : (
+                      <span style={{ color: "#bbb" }}>없음</span>
+                    )}
                   </div>
                   <div className="project_card_btns">
-                    <button className="board_btn" onClick={() => openDetail(p)}>상세보기</button>
-                    <button className="board_btn" onClick={() => openModal(p)}>수정</button>
-                    <button className="board_btn board_btn_cancel" onClick={() => deleteProject(p.id)}>삭제</button>
+                    <button className="board_btn" onClick={() => openDetail(p)}>
+                      상세보기
+                    </button>
+                    <button className="board_btn" onClick={() => openModal(p)}>
+                      수정
+                    </button>
+                    <button
+                      className="board_btn board_btn_cancel"
+                      onClick={() => deleteProject(p.id)}
+                    >
+                      삭제
+                    </button>
                   </div>
                 </div>
               ))
@@ -379,7 +447,13 @@ export default function ProjectManagement() {
 
           {/* 페이지네이션 */}
           <div className="board_pagination">
-            <button className="board_btn" onClick={() => setPage(page - 1)} disabled={page === 1}>이전</button>
+            <button
+              className="board_btn"
+              onClick={() => setPage(page - 1)}
+              disabled={page === 1}
+            >
+              이전
+            </button>
             {[...Array(totalPages)].map((_, idx) => (
               <button
                 key={idx}
@@ -389,41 +463,72 @@ export default function ProjectManagement() {
                 {idx + 1}
               </button>
             ))}
-            <button className="board_btn" onClick={() => setPage(page + 1)} disabled={page === totalPages}>다음</button>
+            <button
+              className="board_btn"
+              onClick={() => setPage(page + 1)}
+              disabled={page === totalPages}
+            >
+              다음
+            </button>
           </div>
         </div>
 
         {/* 상세 모달 */}
         {detailOpen && detailData && (
           <div className="modal_overlay" onClick={closeDetail}>
-            <div className="modal_content" onClick={e => e.stopPropagation()}>
+            <div className="modal_content" onClick={(e) => e.stopPropagation()}>
               <h3 className="card_title font_700 mb_20">프로젝트 상세</h3>
-              <div className="project_detail_row"><b>제목:</b> {detailData.subject}</div>
-              <div className="project_detail_row"><b>내용:</b> {detailData.content}</div>
-              <div className="project_detail_row"><b>팀:</b> {getDeptName(detailData.dept_idx)}</div>
-              <div className="project_detail_row"><b>기간:</b> {detailData.start_date} ~ {detailData.end_date}</div>
-              <div className="project_detail_row"><b>우선순위:</b> {detailData.priority}</div>
-              <div className="project_detail_row"><b>진행률:</b> {detailData.progress}%</div>
-              <div className="project_detail_row"><b>멤버:</b> {Array.isArray(detailData.members) && detailData.members.length > 0 ?
-                detailData.members.map(id => users.find(u => u.user_id === id)?.name || id).join(", ")
-                : <span style={{ color: "#bbb" }}>없음</span>}
+              <div className="project_detail_row">
+                <b>제목:</b> {detailData.subject}
               </div>
-              <div className="project_detail_row"><b>파일:</b>{" "}
-                {detailData.files && detailData.files.length > 0 ?
-                  detailData.files.map((f, idx) =>
-                    <a key={f.file_idx || idx}
+              <div className="project_detail_row">
+                <b>내용:</b> {detailData.content}
+              </div>
+              <div className="project_detail_row">
+                <b>팀:</b> {getDeptName(detailData.dept_idx)}
+              </div>
+              <div className="project_detail_row">
+                <b>기간:</b> {detailData.start_date} ~ {detailData.end_date}
+              </div>
+              <div className="project_detail_row">
+                <b>우선순위:</b> {detailData.priority}
+              </div>
+              <div className="project_detail_row">
+                <b>진행률:</b> {detailData.progress}%
+              </div>
+              <div className="project_detail_row">
+                <b>멤버:</b>{" "}
+                {Array.isArray(detailData.members) && detailData.members.length > 0 ? (
+                  detailData.members
+                    .map((id) => users.find((u) => u.user_id === id)?.name || id)
+                    .join(", ")
+                ) : (
+                  <span style={{ color: "#bbb" }}>없음</span>
+                )}
+              </div>
+              <div className="project_detail_row">
+                <b>파일:</b>{" "}
+                {detailData.files && detailData.files.length > 0 ? (
+                  detailData.files.map((f, idx) => (
+                    <a
+                      key={f.file_idx || idx}
                       href={fileDownloadUrl(f)}
                       className="file_link"
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ marginRight: 8 }}>
+                      style={{ marginRight: 8 }}
+                    >
                       📎 {f.ori_filename || f.name}
                     </a>
-                  ) : <span style={{ color: "#bbb" }}>없음</span>
-                }
+                  ))
+                ) : (
+                  <span style={{ color: "#bbb" }}>없음</span>
+                )}
               </div>
               <div className="modal_buttons">
-                <button className="board_btn" onClick={closeDetail}>닫기</button>
+                <button className="board_btn" onClick={closeDetail}>
+                  닫기
+                </button>
               </div>
             </div>
           </div>
@@ -432,47 +537,93 @@ export default function ProjectManagement() {
         {/* 프로젝트 생성/수정 모달 + 멤버 선택 모달 */}
         {modalOpen && (
           <div className="modal_overlay" onClick={closeModal}>
-            <div className="modal_content" onClick={e => e.stopPropagation()}>
-              <h3 className="card_title font_700 mb_20">{modalData.id ? "프로젝트 수정" : "프로젝트 생성"}</h3>
+            <div className="modal_content" onClick={(e) => e.stopPropagation()}>
+              <h3 className="card_title font_700 mb_20">
+                {modalData.id ? "프로젝트 수정" : "프로젝트 생성"}
+              </h3>
               <form className="flex flex_column gap_10" onSubmit={saveProject}>
                 <div className="board_write_row">
                   <label className="board_write_label">제목</label>
-                  <input className="board_write_input" name="subject" value={modalData.subject} onChange={handleModalChange} required />
+                  <input
+                    className="board_write_input"
+                    name="subject"
+                    value={modalData.subject}
+                    onChange={handleModalChange}
+                    required
+                  />
                 </div>
                 <div className="board_write_row">
                   <label className="board_write_label">내용</label>
-                  <textarea className="board_write_input" name="content" value={modalData.content} onChange={handleModalChange} required />
+                  <textarea
+                    className="board_write_input"
+                    name="content"
+                    value={modalData.content}
+                    onChange={handleModalChange}
+                    required
+                  />
                 </div>
                 <div className="board_write_row">
                   <label className="board_write_label">우선순위</label>
-                  <input type="number" name="priority" className="board_write_input" value={modalData.priority} onChange={handleModalChange} min={1} max={10} required />
+                  <input
+                    type="number"
+                    name="priority"
+                    className="board_write_input"
+                    value={modalData.priority}
+                    onChange={handleModalChange}
+                    min={1}
+                    max={10}
+                    required
+                  />
                 </div>
                 <div className="board_write_row">
                   <label className="board_write_label">팀</label>
-                    <select
-                      className="board_write_input"
-                      name="dept_idx"
-                      value={modalData.dept_idx}
-                      onChange={handleModalChange}
-                    >
-                      {deptList.map((dept) => (
-                        <option key={dept.dept_idx} value={dept.dept_idx}>
-                          {dept.dept_name}
-                        </option>
-                      ))}
-                    </select>
+                  <select
+                    className="board_write_input"
+                    name="dept_idx"
+                    value={modalData.dept_idx}
+                    onChange={handleModalChange}
+                  >
+                    {deptList.map((dept) => (
+                      <option key={dept.dept_idx} value={dept.dept_idx}>
+                        {dept.dept_name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="board_write_row">
                   <label className="board_write_label">시작일</label>
-                  <input type="date" name="start_date" className="board_write_input" value={modalData.start_date} onChange={handleModalChange} required />
+                  <input
+                    type="date"
+                    name="start_date"
+                    className="board_write_input"
+                    value={modalData.start_date}
+                    onChange={handleModalChange}
+                    required
+                  />
                 </div>
                 <div className="board_write_row">
                   <label className="board_write_label">마감일</label>
-                  <input type="date" name="end_date" className="board_write_input" value={modalData.end_date} onChange={handleModalChange} required />
+                  <input
+                    type="date"
+                    name="end_date"
+                    className="board_write_input"
+                    value={modalData.end_date}
+                    onChange={handleModalChange}
+                    required
+                  />
                 </div>
                 <div className="board_write_row">
                   <label className="board_write_label">진행률</label>
-                  <input type="number" name="progress" className="board_write_input" value={modalData.progress} onChange={handleModalChange} min={0} max={100} required />
+                  <input
+                    type="number"
+                    name="progress"
+                    className="board_write_input"
+                    value={modalData.progress}
+                    onChange={handleModalChange}
+                    min={0}
+                    max={100}
+                    required
+                  />
                 </div>
                 <div className="board_write_row">
                   <label className="board_write_label">팀 멤버</label>
@@ -492,21 +643,26 @@ export default function ProjectManagement() {
                   {fileInputs.length > 0 && (
                     <div className="project_files_preview">
                       {fileInputs.map((f, idx) => (
-                        <span key={idx}>{f.name}{idx < fileInputs.length - 1 ? ", " : ""}</span>
+                        <span key={idx}>
+                          {f.name}
+                          {idx < fileInputs.length - 1 ? ", " : ""}
+                        </span>
                       ))}
                     </div>
                   )}
                   {/* 기존 파일 목록 (수정시) */}
                   {Array.isArray(modalData.files) && modalData.files.length > 0 && (
-                    <div className="project_files_preview" style={{marginTop:8, color:'#333'}}>
-                      <b style={{marginRight:4}}>기존파일:</b>
+                    <div className="project_files_preview" style={{ marginTop: 8, color: "#333" }}>
+                      <b style={{ marginRight: 4 }}>기존파일:</b>
                       {modalData.files.map((f, idx) => (
-                        <a key={f.file_idx || idx}
-                           href={fileDownloadUrl(f)}
-                           className="file_link"
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           style={{ marginRight: 8 }}>
+                        <a
+                          key={f.file_idx || idx}
+                          href={fileDownloadUrl(f)}
+                          className="file_link"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ marginRight: 8 }}
+                        >
                           📎 {f.ori_filename || f.name}
                         </a>
                       ))}
@@ -514,23 +670,57 @@ export default function ProjectManagement() {
                   )}
                 </div>
                 <div className="modal_buttons">
-                  <button type="submit" className="board_btn">{modalData.id ? "수정" : "등록"}</button>
-                  <button type="button" className="board_btn board_btn_cancel" onClick={closeModal}>취소</button>
+                  <button type="submit" className="board_btn">
+                    {modalData.id ? "수정" : "등록"}
+                  </button>
+                  <button type="button" className="board_btn board_btn_cancel" onClick={closeModal}>
+                    취소
+                  </button>
                 </div>
               </form>
             </div>
             {/* ---- 팀 멤버 선택 모달 ---- */}
             {memberModalOpen && (
-              <div className="modal_overlay" style={{
-                position: "fixed", left: 0, top: 0, width: "100vw", height: "100vh",
-                background: "rgba(0,0,0,0.35)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center"
-              }}>
-                <div className="modal_content" onClick={e => e.stopPropagation()} style={{
-                  background: "#fff", borderRadius: "12px", padding: "32px 24px", minWidth: 420, maxHeight: "70vh", overflowY: "auto"
-                }}>
-                  <div className="modal_header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div className="font_700" style={{ fontSize: "1.2rem" }}>팀 멤버 선택</div>
-                    <button onClick={closeMemberModal} style={{ fontSize: "1.3rem", background: "none", border: "none", cursor: "pointer" }}>×</button>
+              <div
+                className="modal_overlay"
+                style={{
+                  position: "fixed",
+                  left: 0,
+                  top: 0,
+                  width: "100vw",
+                  height: "100vh",
+                  background: "rgba(0,0,0,0.35)",
+                  zIndex: 9999,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <div
+                  className="modal_content"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: "#fff",
+                    borderRadius: "12px",
+                    padding: "32px 24px",
+                    minWidth: 420,
+                    maxHeight: "70vh",
+                    overflowY: "auto",
+                  }}
+                >
+                  <div
+                    className="modal_header"
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                  >
+                    <div className="font_700" style={{ fontSize: "1.2rem" }}>
+                      팀 멤버 선택
+                    </div>
+                    <button
+                      onClick={closeMemberModal}
+                      style={{ fontSize: "1.3rem", background: "none", border: "none", cursor: "pointer" }}
+                    >
+                      ×
+                    </button>
                   </div>
                   <div className="modal_body" style={{ marginTop: 16 }}>
                     <input
@@ -544,7 +734,7 @@ export default function ProjectManagement() {
                       {filteredMembers.length === 0 && (
                         <div style={{ padding: "16px", color: "#888" }}>검색 결과가 없습니다.</div>
                       )}
-                      {filteredMembers.map(member => (
+                      {filteredMembers.map((member) => (
                         <div
                           key={member.user_id}
                           onClick={() => handleSelectMember(member.user_id)}
@@ -552,15 +742,13 @@ export default function ProjectManagement() {
                             padding: "8px 12px",
                             cursor: "pointer",
                             background: selectedMembers.includes(member.user_id) ? "#e2f0ff" : "#fff",
-                            borderBottom: "1px solid #f0f0f0"
+                            borderBottom: "1px solid #f0f0f0",
                           }}
                         >
                           <span style={{ fontWeight: 500 }}>{member.name}</span>
                           <span style={{ color: "#888", marginLeft: 8 }}>{member.user_id}</span>
                           <span style={{ color: "#bbb", marginLeft: 8 }}>{member.email}</span>
-                          {selectedMembers.includes(member.user_id) && (
-                            <span style={{ marginLeft: "20px" }}>✔</span>
-                          )}
+                          {selectedMembers.includes(member.user_id) && <span style={{ marginLeft: "20px" }}>✔</span>}
                         </div>
                       ))}
                     </div>
