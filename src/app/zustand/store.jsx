@@ -39,6 +39,12 @@ export const checkAuthStore = create((set, get) => ({
     access_type: 'paeneol',
     access_idx: 0,
     auth: 'r',
+    // 유저 권한정보 들고오는거
+    getUserLv: ({user_lv, authLevel}) => { //인자: 인간 lv, 한계레벨
+        if (user_lv <= authLevel) {
+            return true;
+        } else return false;
+    },
     // type, idx, auth 는 각 페이지 혹은 상태에 따라 달라져야함
     isBlockId: ({session, type, idx, auth}) => {
         set({

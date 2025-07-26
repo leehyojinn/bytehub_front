@@ -5,6 +5,7 @@ import Header from "@/app/Header";
 import Link from "next/link";
 import React, {useState, useEffect, useRef} from "react";
 import axios from "axios";
+import {checkAuthStore} from "@/app/zustand/store";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -22,19 +23,21 @@ export default function Board() {
   const [search, setSearch] = useState("");
   const [posts, setPosts] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
-  const userIdrRef= useRef(null);
+  const block= checkAuthStore();  // 유저정보갖고오기
+  const [visibleButton, setVisibleButton] = useState(false);
 
   useEffect(() => {
     if(sessionStorage){
-      userIdrRef.current = sessionStorage.getItem("userId");
-      callUserInfo();
+      callUserInfo().then({
+
+      })
     }
   },[]);
 
   // 서버에서 유저정보 불러오는 기능
   const callUserInfo = async () => {
     let {data} = await axios.get(`${apiUrl}/mypage/info`, {headers: {Authorization: sessionStorage.getItem('token')}});
-    userIdrRef.current=data.data.lv_idx;
+    setVisibleButton(block.getUserLv({user_lv:data.data.lv_idx, authLevel: 3}));
   }
 
   // 게시글 리스트 불러오기
@@ -168,7 +171,7 @@ export default function Board() {
             </button>
           </div>
           <div className="board_footer">
-            {userIdrRef.current < 3 ? (<Link href="/component/board/board_write">
+            {visibleButton ? (<Link href="/component/board/board_write">
               <button className="board_btn">글쓰기</button>
             </Link>) : null}
           </div>

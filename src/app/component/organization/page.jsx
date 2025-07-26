@@ -4,6 +4,7 @@ import Footer from "@/app/Footer";
 import Header from "@/app/Header";
 import axios from "axios";
 import React, { useState, useEffect, useCallback } from "react";
+import {checkAuthStore} from "@/app/zustand/store";
 
 // 부서명 → 부서ID 매핑 함수
 function getDeptId(deptName, deptMap) {
@@ -47,6 +48,7 @@ export default function OrgChartHierarchy() {
   const [modalUser, setModalUser] = useState(null);
 
   const api_url = process.env.NEXT_PUBLIC_API_URL;
+
 
   // 부서 찾기
   const getDept = (user) => {
