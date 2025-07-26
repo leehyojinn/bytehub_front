@@ -192,15 +192,16 @@ export default function KeywordManagePage() {
             <span className="su_small_text">챗봇에서 사용하는 키워드를 등록·수정·삭제할 수 있습니다.</span>
             <button className="board_btn" onClick={() => openForm()}>+ 키워드 등록</button>
           </div>
-          <table className="keyword_table">
-            <thead>
-              <tr>
-                <th style={{width: '18%'}}>키워드</th>
-                <th style={{width: '40%'}}>답변</th>
-                <th style={{width: '17%'}}>관리</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="keyword_table">
+              <thead>
+                <tr>
+                  <th style={{width: '18%'}}>키워드</th>
+                  <th style={{width: '40%'}}>답변</th>
+                  <th style={{width: '17%'}}>관리</th>
+                </tr>
+              </thead>
+              <tbody>
               {keywords.length === 0 && (
                 <tr>
                   <td colSpan={4} style={{textAlign: 'center', color: '#aaa'}}>등록된 키워드가 없습니다.</td>
@@ -210,14 +211,15 @@ export default function KeywordManagePage() {
                 <tr key={kw.key_idx}>
                   <td><b>{kw.keyword}</b></td>
                   <td>{kw.response}</td>
-                  <td>
+                  <td className="keyword_manage_actions">
                     <button className="board_btn board_btn_small" onClick={() => openForm(kw)}>수정</button>
-                    <button className="board_btn board_btn_small board_btn_cancel" style={{marginLeft: 8}} onClick={() => keyword_delete(kw.key_idx)}>삭제</button>
+                    <button className="board_btn board_btn_small board_btn_cancel" onClick={() => keyword_delete(kw.key_idx)}>삭제</button>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
 
         {/* 등록/수정 모달 */}

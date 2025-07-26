@@ -745,6 +745,8 @@ export default function ApprovalSystem() {
               {loading ? (
                 <div>로딩 중...</div>
               ) : (<>
+              <div className="approval_table_container">
+
                 <table className="approval_table">
                   <thead>
                     <tr>
@@ -799,6 +801,7 @@ export default function ApprovalSystem() {
                     })}
                   </tbody>
                 </table>
+              </div>
 
                   <div className="board_pagination">
                     <button
@@ -842,7 +845,7 @@ export default function ApprovalSystem() {
               {loading ? (
                 <div>로딩 중...</div>
               ) : (
-                <>
+                <div className="approval_table_container">
                 <table className="approval_table">
                   <thead>
                     <tr>
@@ -935,7 +938,7 @@ export default function ApprovalSystem() {
                       다음
                     </button>
                   </div>
-              </>
+              </div>
               )}
             </div>
           )}
@@ -952,7 +955,7 @@ export default function ApprovalSystem() {
                 {loading ? (
                     <div>로딩 중...</div>
                 ) : (
-                  <>
+                  <div className="approval_table_container">
                     <table className="approval_table">
                       <thead>
                       <tr>
@@ -1046,7 +1049,7 @@ export default function ApprovalSystem() {
                       다음
                     </button>
                   </div>
-              </>
+              </div>
             )}
           </div>
       )}

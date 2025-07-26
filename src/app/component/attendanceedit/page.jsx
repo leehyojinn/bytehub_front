@@ -344,20 +344,21 @@ export default function AttendanceManagePage() {
             </div>
           </div>
           {/* 근태 테이블 */}
-          <table className="attendance_table">
-            <thead>
-              <tr>
-                <th>이름</th>
-                <th>아이디</th>
-                <th>부서</th>
-                <th>날짜</th>
-                <th>출근</th>
-                <th>퇴근</th>
-                <th>근태상태</th>
-                <th>수정</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="attendance_table">
+              <thead>
+                <tr>
+                  <th>이름</th>
+                  <th>아이디</th>
+                  <th>부서</th>
+                  <th>날짜</th>
+                  <th>출근</th>
+                  <th>퇴근</th>
+                  <th>근태상태</th>
+                  <th>수정</th>
+                </tr>
+              </thead>
+              <tbody>
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={8} style={{textAlign: 'center', color: '#aaa'}}>검색 결과가 없습니다.</td>
@@ -378,7 +379,8 @@ export default function AttendanceManagePage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
 
         {/* 출근/퇴근 설정 모달 */}

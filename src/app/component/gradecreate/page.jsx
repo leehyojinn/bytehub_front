@@ -136,15 +136,16 @@ export default function LevelManagePage() {
             <span className="su_small_text">직급(레벨)을 생성·수정·삭제할 수 있습니다.</span>
             <button className="board_btn" onClick={() => openForm()}>+ 직급 등록</button>
           </div>
-          <table className="level_table">
-            <thead>
-              <tr>
-                <th style={{width: '30%'}}>직급명</th>
-                <th style={{width: '50%'}}>설명</th>
-                <th style={{width: '20%'}}>관리</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="level_table">
+              <thead>
+                <tr>
+                  <th style={{width: '30%'}}>직급명</th>
+                  <th style={{width: '50%'}}>설명</th>
+                  <th style={{width: '20%'}}>관리</th>
+                </tr>
+              </thead>
+              <tbody>
               {levels.length === 0 && (
                 <tr>
                   <td colSpan={3} style={{textAlign: 'center', color: '#aaa'}}>등록된 직급이 없습니다.</td>
@@ -154,18 +155,18 @@ export default function LevelManagePage() {
                 <tr key={l.id}>
                   <td><b>{l.name}</b></td>
                   <td>{l.description}</td>
-                  <td>
+                  <td className="keyword_manage_actions">
                     <button className="board_btn board_btn_small" onClick={() => openForm(l)}>수정</button>
                     <button
                       className="board_btn board_btn_small board_btn_cancel"
-                      style={{marginLeft: 8}}
                       onClick={() => lvDelete(l.id)}
                     >삭제</button>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
 
         {/* 등록/수정 모달 */}

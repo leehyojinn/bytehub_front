@@ -131,14 +131,15 @@ export default function DepartmentManagePage() {
             <span className="su_small_text">부서(팀)을 생성·수정할 수 있습니다.</span>
             <button className="board_btn" onClick={() => openForm()}>+ 부서 등록</button>
           </div>
-          <table className="department_table">
-            <thead>
-              <tr>
-                <th style={{ width: '70%' }}>부서명</th>
-                <th style={{ width: '30%' }}>관리</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="department_table">
+              <thead>
+                <tr>
+                  <th style={{ width: '70%' }}>부서명</th>
+                  <th style={{ width: '30%' }}>관리</th>
+                </tr>
+              </thead>
+              <tbody>
               {departments.filter(d => d.status !== true).length === 0 && (
                 <tr>
                   <td colSpan={2} style={{ textAlign: 'center', color: '#aaa' }}>등록된 부서가 없습니다.</td>
@@ -149,18 +150,18 @@ export default function DepartmentManagePage() {
                 .map(d => (
                   <tr key={d.id}>
                     <td><b>{d.name}</b></td>
-                    <td>
+                    <td className="keyword_manage_actions">
                       <button className="board_btn board_btn_small" onClick={() => openForm(d)}>수정</button>
                       <button
                         className="board_btn board_btn_small board_btn_cancel"
-                        style={{ marginLeft: 8 }}
                         onClick={() => deptDelete(d.id)}
                       >삭제</button>
                     </td>
                   </tr>
                 ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
 
         {/* 등록/수정 모달 */}

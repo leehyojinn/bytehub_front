@@ -42,6 +42,7 @@ function MemberModal({ user, dept, onClose }) {
   );
 }
 
+
 export default function OrgChartHierarchy() {
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -94,7 +95,7 @@ export default function OrgChartHierarchy() {
   }, [api_url]);
 
   const callUserInfo = async () => {
-    let {data} = await axios.get(`${apiUrl}/mypage/info`, {headers: {Authorization: sessionStorage.getItem('token')}});
+    let {data} = await axios.get(`${api_url}/mypage/info`, {headers: {Authorization: sessionStorage.getItem('token')}});
     userLevelRef.current = data.data.lv_idx;
   }
 

@@ -252,20 +252,22 @@ export default function StatisticsPage() {
               </div>
               {statLoading && <div style={{marginBottom:10}}>로딩 중...</div>}
               {statError && <div style={{color:'red',marginBottom:10}}>{statError}</div>}
-              <table className="stat_table">
-                <thead>
-                  <tr>
-                    <th>이름</th>
-                    <th>아이디</th>
-                    <th>부서</th>
-                    <th>출근</th>
-                    <th>지각</th>
-                    <th>조퇴</th>
-                    <th>결석</th>
-                    <th>연차</th>
-                  </tr>
-                </thead>
-                <tbody>
+              {/* 근태 통계 테이블을 감싸는 div 추가 */}
+              <div style={{ overflowX: 'auto', width: '100%' }}>
+                <table className="stat_table">
+                  <thead>
+                    <tr>
+                      <th>이름</th>
+                      <th>아이디</th>
+                      <th>부서</th>
+                      <th>출근</th>
+                      <th>지각</th>
+                      <th>조퇴</th>
+                      <th>결석</th>
+                      <th>연차</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                   {filteredAttendance.length === 0 && (
                     <tr>
                       <td colSpan={8} style={{ textAlign: 'center', color: '#aaa' }}>검색 결과가 없습니다.</td>
@@ -284,7 +286,8 @@ export default function StatisticsPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+                </table>
+              </div>
             </div>
           )}
 
@@ -309,17 +312,19 @@ export default function StatisticsPage() {
               </div>
               {downloadStatsLoading && <div style={{marginBottom:10}}>로딩 중...</div>}
               {downloadStatsError && <div style={{color:'red',marginBottom:10}}>{downloadStatsError}</div>}
-              <table className="stat_table">
-                <thead>
-                  <tr>
-                    <th>파일명</th>
-                    <th>부서</th>
-                    <th>다운로드 횟수</th>
-                    <th>다운로드한 사용자</th>
-                    <th>다운로드 시간</th>
-                  </tr>
-                </thead>
-                <tbody>
+              {/* 다운로드 통계 테이블을 감싸는 div 추가 */}
+              <div style={{ overflowX: 'auto', width: '100%' }}>
+                <table className="stat_table">
+                  <thead>
+                    <tr>
+                      <th>파일명</th>
+                      <th>부서</th>
+                      <th>다운로드 횟수</th>
+                      <th>다운로드한 사용자</th>
+                      <th>다운로드 시간</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                   {filteredDownloadStats.length === 0 && (
                     <tr>
                       <td colSpan={5} style={{ textAlign: 'center', color: '#aaa' }}>다운로드 통계가 없습니다.</td>
@@ -335,7 +340,8 @@ export default function StatisticsPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+                </table>
+              </div>
             </div>
           )}
         </div>

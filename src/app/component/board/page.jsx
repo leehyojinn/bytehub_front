@@ -112,16 +112,17 @@ export default function Board() {
               </svg>
             </button>
           </div>
-          <table className="board_table">
-            <thead>
-              <tr>
-                <th className="small_text">번호</th>
-                <th className="small_text">제목</th>
-                <th className="small_text">작성자</th>
-                <th className="small_text">등록일</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="board_table">
+              <thead>
+                <tr>
+                  <th className="small_text">번호</th>
+                  <th className="small_text">제목</th>
+                  <th className="small_text">작성자</th>
+                  <th className="small_text">등록일</th>
+                </tr>
+              </thead>
+              <tbody>
               {/* 상단 고정 여부 티내고 싶으미 */}
               {currentPosts.length === 0 ? (
                 <tr>
@@ -144,7 +145,8 @@ export default function Board() {
                 ))
               )}
             </tbody>
-          </table>
+            </table>
+          </div>
           <div className="board_pagination">
             <button
               className="board_btn"

@@ -225,46 +225,49 @@ export default function GrantUser() {
             <div className="wrap padding_60_0">
                 <div className="main_box">
                     <div className="card_title font_700 mb_20">직원 권한 관리</div>
-                    <table className="custom_permission_table">
-                        <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>이름</th>
-                            <th>성별</th>
-                            <th>부서</th>
-                            <th>직급</th>
-                            <th>이메일</th>
-                            <th>입사일</th>
-                            <th>권한 관리</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {members.length === 0 && (
+                    {/* 테이블을 감싸는 div 추가 */}
+                    <div style={{ overflowX: 'auto', width: '100%' }}>
+                        <table className="custom_permission_table">
+                            <thead>
                             <tr>
-                                <td colSpan={9} style={{textAlign: "center", color: "#aaa"}}>직원 정보가 없습니다.</td>
+                                <th>ID</th>
+                                <th>이름</th>
+                                <th>성별</th>
+                                <th>부서</th>
+                                <th>직급</th>
+                                <th>이메일</th>
+                                <th>입사일</th>
+                                <th>권한 관리</th>
                             </tr>
-                        )}
-                        {members.map(item => (
-                            <tr key={item.user_id} id={item.user_id}>
-                                <td className="board_title">{item.user_id}</td>
-                                <td>{item.name}</td>
-                                <td>{item.gender}</td>
-                                <td>{item.dept_name}</td>
-                                <td>{item.lv_name}</td>
-                                <td>{item.email}</td>
-                                <td>{item.hire_date}</td>
-                                <td>
-                                    <button
-                                        className="board_btn board_btn_small"
-                                        onClick={() => openModal(item)}
-                                    >
-                                        권한 관리
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                            {members.length === 0 && (
+                                <tr>
+                                    <td colSpan={9} style={{textAlign: "center", color: "#aaa"}}>직원 정보가 없습니다.</td>
+                                </tr>
+                            )}
+                            {members.map(item => (
+                                <tr key={item.user_id} id={item.user_id}>
+                                    <td className="board_title">{item.user_id}</td>
+                                    <td>{item.name}</td>
+                                    <td>{item.gender}</td>
+                                    <td>{item.dept_name}</td>
+                                    <td>{item.lv_name}</td>
+                                    <td>{item.email}</td>
+                                    <td>{item.hire_date}</td>
+                                    <td>
+                                        <button
+                                            className="board_btn board_btn_small"
+                                            onClick={() => openModal(item)}
+                                        >
+                                            권한 관리
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 <PermissionModal
                     open={modalOpen}

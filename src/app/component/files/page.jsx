@@ -765,7 +765,6 @@ export default function FileSystem() {
             flexDirection: 'column',
             border: '1px solid #ddd',
             borderRadius: '8px',
-            overflow: 'hidden'
         }}>
             <div className="fs_filelist_head" style={{
                 display: 'flex',

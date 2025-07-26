@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import ChatbotWidget from './component/chatbot/Chatbot';
 import Chatbot from './component/chatbot/Chatbot';
 import AdminPaeneol from './component/adminpaeneol/AdminPaeneol';
 import { Client } from '@stomp/stompjs';
@@ -25,12 +24,17 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/ws';
 
 export default function Header() {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [showNotificationModal, setShowNotificationModal] = useState(false);
     const [connected, setConnected] = useState(false);
     const stompClientRef = useRef(null);
     const subscriptionRef = useRef(null);
+
+    const toggleMenu = () => {
+        setIsMenuOpen(!isMenuOpen);
+    };
 
     /* ----------권한부분 ----------*/
     const block = checkAuthStore();
@@ -47,29 +51,16 @@ export default function Header() {
         let {data} = await axios.get(`${apiUrl}/mypage/info`, {headers: {Authorization: sessionStorage.getItem('token')}});
         userLevelRef.current = data.data.lv_idx;
         visibleRef.current = block.checkUserLv({user_lv: userLevelRef.current, authLevel: 5});
-        // 팀장레벨이몇이었죠?
     }
 
-
-
-
-    // 로그아웃 핸들러
     const handleLogout = async (e) => {
         e.preventDefault();
         try {
-            // 백엔드 로그아웃 API 호출
             await fetch(`${apiUrl}/member/logout`, {
                 method: 'POST',
-                credentials: 'include', // 세션 기반이면 필요
+                credentials: 'include',
             });
-            // 로컬스토리지/세션스토리지 토큰 삭제
-            // sessionStorage.removeItem('token');
-            // sessionStorage.removeItem('userId');
-
             sessionStorage.clear();
-
-
-            // 메인 또는 로그인 페이지로 이동
             window.location.href = '/';
             alert('로그아웃 되었습니다.')
         } catch (error) {
@@ -77,7 +68,6 @@ export default function Header() {
         }
     };
 
-    // 알림 목록 가져오기
     const fetchNotifications = async () => {
         try {
             const userId = sessionStorage.getItem('userId');
@@ -93,7 +83,6 @@ export default function Header() {
         }
     };
 
-    // 알림 읽음 처리
     const markAsRead = async (notificationId) => {
         try {
             const userId = sessionStorage.getItem('userId');
@@ -104,7 +93,6 @@ export default function Header() {
             });
             
             if (response.data.success) {
-                // 로컬 상태 업데이트
                 setNotifications(prev => 
                     prev.map(n => 
                         n.notification_id === notificationId 
@@ -119,7 +107,6 @@ export default function Header() {
         }
     };
 
-    // WebSocket 연결
     useEffect(() => {
         const userId = sessionStorage.getItem('userId');
         if (!userId) return;
@@ -147,7 +134,6 @@ export default function Header() {
         };
     }, []);
 
-    // 알림 구독
     useEffect(() => {
         const userId = sessionStorage.getItem('userId');
         if (!connected || !userId || !stompClientRef.current) return;
@@ -159,7 +145,6 @@ export default function Header() {
                 setNotifications(prev => [notification, ...prev]);
                 setUnreadCount(prev => prev + 1);
                 
-                // 브라우저 알림 표시
                 if (Notification.permission === 'granted') {
                     new Notification(notification.title, {
                         body: notification.content,
@@ -174,28 +159,23 @@ export default function Header() {
         };
     }, [connected]);
 
-    // 컴포넌트 마운트 시 알림 조회
     useEffect(() => {
         fetchNotifications();
         
-        // 브라우저 알림 권한 요청
         if (Notification.permission === 'default') {
             Notification.requestPermission();
         }
     }, []);
 
-    // 알림 모달 토글
     const toggleNotificationModal = () => {
         setShowNotificationModal(!showNotificationModal);
     };
 
-    // 모든 알림 읽음 처리
     const markAllAsRead = async () => {
         try {
             const userId = sessionStorage.getItem('userId');
             if (!userId) return;
 
-            // 각 알림을 읽음 처리
             for (const notification of notifications) {
                 if (!notification.read) {
                     await markAsRead(notification.notification_id);
@@ -213,10 +193,10 @@ export default function Header() {
         <div className='header'>
             <div>
                 <Link href={"/component/main"}>
-                    <img style={{width: "200px"}} src="/logo.png" alt="logo"/>
+                    <img style={{width: "150px"}} src="/logo.png" alt="logo"/>
                 </Link>
             </div>
-            <ul className='flex gap_10'>
+            <ul className='flex gap_10 desktop_menu'>
                 {menuItems.map(item => {
                         if (item.name === '비상연락망') {
                             return visibleRef.current ? <li className='su_small_text font_500 links' key={item.href}>
@@ -231,16 +211,18 @@ export default function Header() {
                     }
                 )}
             </ul>
-            <ul className='flex gap_10'>
+            {/* 데스크톱 메뉴에서 알림 아이콘 분리 */}
+            <div className='flex gap_10 desktop_menu_right'> {/* 새로운 div 추가 */}
               <li className='su_small_text font_500 links'>
                 <a href="#" onClick={handleLogout}>로그아웃</a>
               </li>
               <li className='su_small_text font_500 links'>
                 <Link href={"/component/mypage"}>마이페이지</Link>
               </li>
-              <li className='su_small_text font_500 links'>
-                <a 
-                  href="#" 
+              {/* 알림 아이콘을 이 div 안으로 이동 */}
+              <li className='su_small_text font_500 links header_notification_icon'> {/* 새로운 클래스 추가 */}
+                <a
+                  href="#"
                   onClick={(e) => {
                     e.preventDefault();
                     toggleNotificationModal();
@@ -275,13 +257,74 @@ export default function Header() {
                   )}
                 </a>
               </li>
-            </ul>
+            </div>
+            {/* 모바일에서만 보일 알림 아이콘과 햄버거 버튼을 감싸는 div 추가 */}
+            <div className="mobile_header_icons">
+              <li className='su_small_text font_500 links header_notification_icon_mobile'> {/* 새로운 클래스 추가 */}
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggleNotificationModal();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '2px',
+                    position: 'relative'
+                  }}
+                >
+                  <span style={{fontSize: '14px'}}>🔔</span>
+                  {unreadCount > 0 && (
+                    <span style={{
+                      position: 'absolute',
+                      top: '-8px',
+                      right: '-8px',
+                      background: '#ff4757',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: '18px',
+                      height: '18px',
+                      fontSize: '11px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 'bold'
+                    }}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </a>
+              </li>
+              <button className="mobile_menu_icon" onClick={toggleMenu}>☰</button>
+            </div>
         </div>
+        </div>
+        <div className={`mobile_menu ${isMenuOpen ? 'active' : ''}`}>
+          <ul>
+            {menuItems.map(item => {
+                if (item.name === '비상연락망') {
+                    return visibleRef.current ? <li className='su_small_text font_500 links' key={item.href}>
+                        <Link href={item.href}>{item.name}</Link>
+                    </li> : null;
+                }
+                return (
+                    <li className='su_small_text font_500 links' key={item.href}>
+                        <Link href={item.href}>{item.name}</Link>
+                    </li>
+                );
+            })}
+             <li className='su_small_text font_500 links'>
+                <a href="#" onClick={handleLogout}>로그아웃</a>
+              </li>
+              <li className='su_small_text font_500 links'>
+                <Link href={"/component/mypage"}>마이페이지</Link>
+              </li>
+          </ul>
         </div>
         <AdminPaeneol/>
         <Chatbot/>
 
-        {/* 알림 모달 */}
         {showNotificationModal && (
           <div style={{
             position: 'fixed',
@@ -304,7 +347,6 @@ export default function Header() {
               overflow: 'hidden',
               boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
             }}>
-              {/* 모달 헤더 */}
               <div style={{
                 padding: '16px 20px',
                 borderBottom: '1px solid #eee',
@@ -347,7 +389,6 @@ export default function Header() {
                 </div>
               </div>
 
-              {/* 알림 목록 */}
               <div style={{
                 maxHeight: '400px',
                 overflowY: 'auto'

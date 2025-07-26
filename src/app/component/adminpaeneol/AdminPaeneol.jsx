@@ -2,6 +2,7 @@
 import React, {useRef, useEffect, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import { checkAuthStore } from "@/app/zustand/store";
+import styles from './AdminPaeneol.module.css';
 
 const links = [
     {
@@ -65,72 +66,46 @@ export default function AdminPaeneol() {
 
     // 바깥 클릭 시 패널 닫기
     useEffect(() => {
-        if (!open) 
+        if (!open)
             return;
         const handler = (e) => {
             if (panelRef.current && !panelRef.current.contains(e.target)){
                 setOpen(false);
             }
         };
+        // Add touch event listeners for mobile compatibility
         document.addEventListener('mousedown', handler);
-        return() => document.removeEventListener('mousedown', handler);
+        document.addEventListener('touchstart', handler);
+        return() => {
+            document.removeEventListener('mousedown', handler);
+            document.removeEventListener('touchstart', handler);
+        };
     }, [open]);
 
     return (
-        visible ? <div
-                style={{
-                    position: 'relative',
-                    zIndex: 100
-                }}>
+        visible ? (
+            <div className={styles.adminPanelContainer}>
+                {open && (
+                    <div
+                        className={styles.adminPanelOverlay}
+                        onClick={() => setOpen(false)}
+                    ></div>
+                )}
                 {/* 왼쪽 상단 버튼 */}
                 <button className="admin-panel-btn" onClick={() => setOpen(v => !v)}>
-                    관리패널
+                    관리 <br /> 패널
                 </button>
 
                 {/* 버튼 바로 오른쪽에 패널 */}
                 <div
                     ref={panelRef}
-                    className="admin-panel-side"
-                    style={{
-                        position: 'fixed',
-                        top: 32,
-                        left: open
-                            ? 172
-                            : -340,
-                        width: 340,
-                        minHeight: 420,
-                        maxHeight: '80vh',
-                        background: '#fff',
-                        boxShadow: open
-                            ? '4px 4px 24px rgba(67,56,120,0.13)'
-                            : 'none',
-                        borderRadius: '14px',
-                        border: '2px solid #ece6fa',
-                        padding: '36px 30px 24px 30px',
-                        transition: 'left 0.32s cubic-bezier(.4,0,.2,1), box-shadow 0.18s',
-                        zIndex: 130,
-                        display: 'flex',
-                        flexDirection: 'column'
-                    }}>
+                    className={`${styles.adminPanelSide} ${open ? styles.open : ''}`}
+                >
                     <div className='flex align_center mb_20'>
-                    <span
-                        style={{
-                            fontWeight: 800,
-                            fontSize: '1.27rem',
-                            color: '#433878',
-                            letterSpacing: '-1px'
-                        }}>관리패널</span>
+                        <span className="admin-panel-header-title">관리패널</span>
                         <button
                             onClick={() => setOpen(false)}
-                            style={{
-                                marginLeft: 'auto',
-                                background: 'none',
-                                border: 'none',
-                                fontSize: '2rem',
-                                color: '#bbb',
-                                cursor: 'pointer',
-                                transition: 'color 0.18s'
-                            }}
+                            className="admin-panel-close-btn"
                             title="닫기">×</button>
                     </div>
                     <ul className='flex flex_1 flex_column gap_10'>
@@ -139,19 +114,6 @@ export default function AdminPaeneol() {
                                 <li key={item.id}>
                                     <button
                                         className="admin-panel-link"
-                                        style={{
-                                            width: '100%',
-                                            textAlign: 'left',
-                                            background: '#faf8ff',
-                                            color: '#433878',
-                                            border: 'none',
-                                            borderRadius: '7px',
-                                            padding: '13px 18px',
-                                            fontSize: '1.07rem',
-                                            fontWeight: 600,
-                                            cursor: 'pointer',
-                                            transition: 'background 0.16s, color 0.16s'
-                                        }}
                                         onClick={() => {
                                             setOpen(false);
                                             router.push(item.link);
@@ -163,6 +125,7 @@ export default function AdminPaeneol() {
                         }
                     </ul>
                 </div>
-            </div> : null
+            </div>
+        ) : null
     );
 }

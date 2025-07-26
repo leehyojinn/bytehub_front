@@ -200,45 +200,47 @@ export default function MeetingList() {
               </svg>
             </button>
           </div>
-          <table className="board_table">
-            <thead>
-              <tr>
-                <th className="small_text">번호</th>
-                <th className="small_text">제목</th>
-                <th className="small_text">작성자</th>
-                <th className="small_text">참가자</th>
-                <th className="small_text">등록일</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentUserId === null ? (
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="board_table">
+              <thead>
                 <tr>
-                  <td colSpan={6} style={{ color: "#aaa", padding: "32px 0" }}>로그인이 필요합니다.</td>
+                  <th className="small_text">번호</th>
+                  <th className="small_text">제목</th>
+                  <th className="small_text">작성자</th>
+                  <th className="small_text">참가자</th>
+                  <th className="small_text">등록일</th>
                 </tr>
-              ) : currentPosts.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ color: "#aaa", padding: "32px 0" }}>
-                    {search ? "검색 결과가 없습니다." : 
-                     hasFullAccess() ? "회의록이 없습니다." : "작성하거나 참가자로 등록된 회의록이 없습니다."}
-                  </td>
-                </tr>
-              ) : (
-                currentPosts.map((post) => (
-                    <tr key={post.post_idx}>
-                      <td>{post.post_idx}</td>
-                      <td className="board_title">
-                        <Link href={`/component/meeting/meeting_detail/${post.post_idx}`}>
-                          {post.subject}
-                        </Link>
-                      </td>
-                      <td>{post.user_id}</td>
-                      <td>{formatAttendees(post.attendees)}</td>
-                      <td>{formatDate(post.reg_date)}</td>
-                    </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {currentUserId === null ? (
+                  <tr>
+                    <td colSpan={6} style={{ color: "#aaa", padding: "32px 0" }}>로그인이 필요합니다.</td>
+                  </tr>
+                ) : currentPosts.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ color: "#aaa", padding: "32px 0" }}>
+                      {search ? "검색 결과가 없습니다." : 
+                       hasFullAccess() ? "회의록이 없습니다." : "작성하거나 참가자로 등록된 회의록이 없습니다."}
+                    </td>
+                  </tr>
+                ) : (
+                  currentPosts.map((post) => (
+                      <tr key={post.post_idx}>
+                        <td>{post.post_idx}</td>
+                        <td className="board_title">
+                          <Link href={`/component/meeting/meeting_detail/${post.post_idx}`}>
+                            {post.subject}
+                          </Link>
+                        </td>
+                        <td>{post.user_id}</td>
+                        <td>{formatAttendees(post.attendees)}</td>
+                        <td>{formatDate(post.reg_date)}</td>
+                      </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
           {/* 페이지네이션 */}
           <div className="board_pagination">
             <button

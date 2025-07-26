@@ -143,23 +143,24 @@ export default function MemberManagePage() {
             </form>
             <span className="su_small_text">회원 리스트에서 정보 확인, 수정, 퇴사처리가 가능합니다.</span>
           </div>
-          <table className="member_table">
-            <thead>
-              <tr>
-                <th>아이디</th>
-                <th>이름</th>
-                <th>이메일</th>
-                <th>성별</th>
-                <th>부서</th>
-                <th>부서 근무기간</th>
-                <th>직급</th>
-                <th>입사일</th>
-                <th>퇴사일</th>
-                <th>재직상태</th>
-                <th>관리</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="member_table">
+              <thead>
+                <tr>
+                  <th>아이디</th>
+                  <th>이름</th>
+                  <th>이메일</th>
+                  <th>성별</th>
+                  <th>부서</th>
+                  <th>부서 근무기간</th>
+                  <th>직급</th>
+                  <th>입사일</th>
+                  <th>퇴사일</th>
+                  <th>재직상태</th>
+                  <th>관리</th>
+                </tr>
+              </thead>
+              <tbody>
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={12} style={{textAlign: 'center', color: '#aaa'}}>검색 결과가 없습니다.</td>
@@ -177,12 +178,11 @@ export default function MemberManagePage() {
                   <td>{formatDate(m.hire_date,"ko-KR")}</td>
                   <td>{m.hire_end_date == null ? "-" : formatDate(m.hire_end_date,"ko-KR")}</td>
                   <td>{m.status}</td>
-                  <td>
+                  <td className="keyword_manage_actions">
                     <button className="board_btn board_btn_small" onClick={() => openEdit(m)}>수정</button>
                     {m.status !== "퇴사" && (
                       <button
                         className="board_btn board_btn_small board_btn_cancel"
-                        style={{marginLeft: 8}}
                         onClick={() => handleBlind(m.user_id)}
                       >퇴사처리</button>
                     )}
@@ -190,7 +190,8 @@ export default function MemberManagePage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
 
         {/* 수정 모달 */}

@@ -1,5 +1,100 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
+/* Responsive Header Styles */
+@media (max-width: 1400px) {
+  .desktop_menu {
+    display: none !important;
+  }
+  .desktop_menu_right { /* Hide desktop right menu */
+    display: none !important;
+  }
+  .mobile_header_icons { /* Show mobile icons */
+    display: flex !important;
+    align-items: center;
+    gap: 15px; /* Space between notification and hamburger */
+  }
+  .mobile_menu_icon {
+    display: block !important;
+  }
+  .header_notification_icon { /* Hide desktop notification icon */
+    display: none !important;
+  }
+  .header_notification_icon_mobile { /* Show mobile notification icon */
+    display: block !important;
+  }
+  .gradient{
+    transform: translate(0) !important;
+  }
+  .profile_img{
+    margin-top: 0 !important;
+  }
+  .admin-panel-btn{
+    top : 100px !important
+  }
+}
+
+.mobile_menu_icon {
+  display: none; /* Hidden by default */
+  font-size: 2.5rem;
+  cursor: pointer;
+  color: var(--primary-color1);
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.mobile_header_icons {
+  display: none; /* Hidden by default */
+}
+
+.header_notification_icon_mobile {
+  display: none; /* Hidden by default */
+}
+
+.mobile_menu {
+  display: none;
+  position: absolute;
+  top: 70px;
+  right: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  padding: 15px;
+  z-index: 1100;
+  border: 1px solid #eee;
+}
+
+.mobile_menu.active {
+  display: block;
+}
+
+.mobile_menu ul {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+.keyword_manage_actions{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.mobile_menu li a {
+    padding: 8px 12px;
+    display: block;
+    width: 100%;
+    border-radius: 6px;
+    box-sizing: border-box;
+    transition: background-color 0.2s;
+}
+
+.mobile_menu li a:hover {
+    background-color: #f4f1ff;
+}
+
+
 :root {
   --primary-color1: #433878;
   --primary-color2: #7e60bf;
@@ -116,9 +211,27 @@ a:hover {
 }
 
 .module {
-  width: 1400px;
+  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 60px 0;
+  padding: 60px 20px; /* Add horizontal padding for smaller screens */
+}
+
+@media (max-width: 1440px) {
+  .module {
+    padding: 40px 50px;
+  }
+}
+
+@media (max-width: 768px) {
+  .module {
+    padding: 20px 50px;
+  }
+  .chatbot_modal{
+    width: 100% !important;
+    max-width: 400px !important;
+    margin:0 !important;
+  }
 }
 
 .flex { display: flex; }
@@ -138,11 +251,59 @@ a:hover {
 .gap_20 { gap: 2rem; }
 .gap_30 { gap: 3rem; }
 
+/* Main content responsiveness */
+@media (max-width: 1024px) {
+  .module > .flex {
+    flex-direction: column;
+  }
+  .module > .flex > .flex_1 {
+    width: 100%;
+  }
+  .main_box {
+    min-height: unset;
+  }
+}
+
+@media (max-width: 768px) {
+  .flex_column.flex_1.module.gap_10 > .flex {
+    flex-direction: column;
+    gap: 15px;
+  }
+  .main_box {
+    width: 100%;
+  }
+  .profile_stats {
+    font-size: 1.2rem;
+  }
+  .attendance_chart_wrap {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .attendance_info {
+    flex-direction: column;
+    gap: 5px;
+  }
+  .notice_list li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  .notice_list li span.su_small_text:last-child {
+    align-self: flex-end;
+  }
+}
+
 .padding_120_0{
   padding: 120px 0;
 }
 .padding_60_0{
   padding: 60px 0 !important;
+}
+
+@media (max-width: 768px) {
+  .padding_60_0 {
+    padding: 60px 15px !important; /* Add horizontal padding for mobile */
+  }
 }
 .padding_40{
   padding: 40px !important;
@@ -159,6 +320,112 @@ a:hover {
   box-sizing: border-box;
   background : var(--primary-color3);
   color: #000;
+}
+
+/* Admin Panel Styles */
+.admin-panel-btn {
+  background: var(--primary-color1);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, box-shadow 0.18s;
+  box-shadow: 0 2px 8px rgba(67,56,120,0.1);
+}
+
+.admin-panel-btn:hover {
+  background: var(--primary-color2);
+  box-shadow: 0 4px 12px rgba(67,56,120,0.15);
+}
+
+.admin-panel-side {
+  position: absolute;
+  top: 0;
+  left: 100%; /* Initially off-screen to the right of the button */
+  width: 280px;
+  height: 100vh; /* Full height */
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  border-left: 1px solid #eee;
+  padding: 20px;
+  box-sizing: border-box;
+  transition: left 0.3s ease-in-out;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(0); /* Ensure no initial transform */
+}
+
+.admin-panel-side.open {
+  left: calc(100% - 280px); /* Slide in from the right */
+}
+
+.admin-panel-header-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color1);
+  flex-grow: 1;
+}
+
+.admin-panel-close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #bdbdbd;
+  cursor: pointer;
+  transition: color 0.18s;
+}
+
+.admin-panel-close-btn:hover {
+  color: var(--primary-color2);
+}
+
+
+.chat_room_item {
+    display: flex;  
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #ece6fa;
+}
+
+.admin-panel-link {
+  display: block;
+  width: 100%;
+  padding: 10px 15px;
+  border-radius: 8px;
+  background: #f8f4ff;
+  color: var(--primary-color1);
+  font-size: 1.1rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+}
+
+.admin-panel-link:hover {
+  background: var(--primary-color2);
+  color: #fff;
+}
+
+/* Responsive adjustments for Admin Panel */
+@media (max-width: 768px) {
+  .admin-panel-side {
+    position: fixed; /* Fixed position for full overlay */
+    top: 0;
+    left: 100%; /* Start off-screen */
+    width: 100%; /* Full width on small screens */
+    max-width: 300px; /* Max width for panel on small screens */
+    height: 100vh;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.15); /* Shadow on the left */
+    border-left: none; /* No left border */
+  }
+
+  .admin-panel-side.open {
+    left: calc(100% - min(100%, 300px)); /* Adjust for max-width */
+  }
 }
 
 .main_box {
@@ -365,9 +632,25 @@ a:hover {
   max-width: 95vw;
   margin: 0 auto;
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* Default for larger screens */
+  justify-content: space-between; /* Distribute items */
   align-items: center;
-  gap: 10px;
+  gap: 20px; /* Adjust gap for better spacing */
+}
+
+@media (max-width: 768px) {
+  .footer_inner {
+    flex-direction: column; /* Stack on smaller screens */
+    align-items: center;
+    gap: 10px; /* Smaller gap when stacked */
+  }
+  .links {
+    flex-direction: column; /* Stack links */
+    gap: 5px; /* Smaller gap for stacked links */
+  }
+  .footer_divider {
+    display: none; /* Hide divider when links are stacked */
+  }
 }
 
 .footer_logo img {
@@ -556,6 +839,28 @@ a:hover {
   position: relative;
 }
 
+@media (max-width: 768px) {
+  .board_search_wrap {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .board_search_wrap label {
+    margin-right: 0;
+  }
+  .board_search_wrap select {
+    width: 100%;
+    min-width: unset !important;
+  }
+  .board_search_wrap .my_checkbox_label {
+    margin-left: 0;
+  }
+  .board_search_wrap .board_btn {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+}
+
 .board_search_input {
   width: 300px;
   height: 38px;
@@ -569,6 +874,58 @@ a:hover {
   outline: none;
   font-family: inherit;
   box-sizing: border-box;
+}
+
+.project_card_list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .project_card_list {
+    grid-template-columns: 1fr;
+  }
+  .project_card {
+    width: 100%;
+  }
+  .project_card_btns {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .project_card_btns button {
+    width: 100%;
+  }
+  .project_detail_row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  .project_detail_row b {
+    min-width: unset;
+  }
+  .modal_buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .modal_buttons button {
+    width: 100%;
+  }
+  .board_write_row {
+    flex-direction: column;
+    gap: 5px;
+  }
+  .board_write_label {
+    margin-bottom: 0;
+  }
+  .project_files_preview {
+    flex-direction: column;
+    gap: 5px;
+  }
+  .project_files_preview span, .project_files_preview a {
+    display: block;
+  }
 }
 
 .board_search_input:focus {
@@ -817,6 +1174,41 @@ a:hover {
   text-align: center;
   border-bottom: 1px solid #ece6fa;
 }
+
+@media (max-width: 768px) {
+  .attendance_log_wrap {
+    overflow-x: auto;
+  }
+  .attendance_log_table {
+    min-width: 500px; /* Ensure table is scrollable if content is too wide */
+  }
+  .modal_content {
+    min-width: unset;
+    width: 90%;
+    padding: 20px;
+    max-height: 90vh; /* Limit height to 90% of viewport height */
+    overflow-y: auto; /* Enable vertical scrolling if content exceeds max-height */
+  }
+  .otp_box {
+    min-width: unset;
+    padding: 15px;
+  }
+  .att_btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+  }
+  .otp_input {
+    width: 100%;
+  }
+  .flex.gap_10.align_center {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .flex.gap_20 {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
 .attendance_log_table th {
   background: var(--primary-color3);
   color: var(--primary-color1);
@@ -908,6 +1300,7 @@ a:hover {
   align-items: center;
   justify-content: center;
   animation: modal-fadein 0.2s;
+  overflow-y: auto; /* Allow scrolling if content exceeds viewport height */
 }
 @keyframes modal-fadein {
   from { opacity: 0; }
@@ -918,7 +1311,7 @@ a:hover {
   border-radius: 18px;
   box-shadow: 0 4px 32px rgba(67,56,120,0.18);
   padding: 36px 30px 28px 30px;
-  min-width: 500px;
+  min-width: 400px;
   max-width: 95vw;
   position: relative;
   animation: modal-pop 0.2s;
@@ -1098,6 +1491,81 @@ a:hover {
   box-shadow: -8px 0 36px rgba(67,56,120,0.06);
 }
 
+/* Responsive adjustments for login page */
+@media (max-width: 768px) {
+  .login_page {
+    flex-direction: column; /* Stack sections vertically */
+    min-height: auto; /* Allow height to adjust */
+  }
+
+  .login_left, .login_right {
+    width: 100%; /* Take full width */
+    min-width: unset; /* Remove min-width constraint */
+    padding: 30px 20px; /* Adjust padding */
+    box-shadow: none; /* Remove shadow for stacked layout */
+  }
+
+  .login_left {
+    padding-bottom: 20px; /* Smaller padding at the bottom */
+  }
+
+  .login_right {
+    padding-top: 20px; /* Smaller padding at the top */
+  }
+
+  .login_visual_container {
+    width: 280px; /* Smaller image container */
+    margin-bottom: 20px; /* Adjust margin */
+  }
+
+  .login_visual_img {
+    width: 100%; /* Image takes full width of its container */
+    max-width: 280px; /* Limit max width */
+    margin-bottom: 0; /* Remove bottom margin */
+  }
+
+  .login_left_text h2 {
+    font-size: 2.2rem; /* Smaller font size for heading */
+    line-height: 1.3;
+  }
+
+  .login_left_text p {
+    font-size: 1.1rem; /* Smaller font size for paragraph */
+    line-height: 1.6;
+  }
+
+  .login_form {
+    width: 90%; /* Adjust form width */
+    max-width: 350px; /* Limit max width */
+    padding: 20px 0; /* Adjust padding */
+  }
+
+  .login_title {
+    font-size: 1.8rem; /* Smaller title font size */
+    margin-bottom: 15px;
+  }
+
+  .login_input {
+    padding: 10px 12px; /* Adjust input padding */
+    font-size: 1rem; /* Smaller input font size */
+  }
+
+  .login_btn {
+    padding: 12px 0; /* Adjust button padding */
+    font-size: 1.05rem; /* Smaller button font size */
+  }
+
+  .login_links {
+    flex-direction: column; /* Stack links vertically */
+    gap: 5px; /* Smaller gap for stacked links */
+    margin-top: 15px;
+  }
+
+  .login_link_divider {
+    display: none; /* Hide divider when links are stacked */
+  }
+}
+
 .login_form {
   width: 330px;
   display: flex;
@@ -1256,7 +1724,7 @@ a:hover {
 .approval_approver_chip { display: inline-block; background: #faf8ff; border-radius: 6px; padding: 4px 10px; margin-right: 5px; font-size: 1rem; color: var(--primary-color1); }
 .approval_rank { color: #888; font-size: 0.98em; margin-left: 2px; }
 .approval_sign { color: var(--primary-color2); font-weight: 700; margin-left: 4px; }
-.approval_table { width: 100%; border-collapse: collapse; font-size: 1.1rem; margin-top: 10px; }
+.approval_table { width: 100%; min-width: 800px; border-collapse: collapse; font-size: 1.1rem; margin-top: 10px; }
 .approval_table th, .approval_table td { border-bottom: 1px solid #ece6fa; padding: 10px 6px; text-align: center; }
 .approval_link { color: var(--primary-color2); text-decoration: underline; background: none; border: none; cursor: pointer; font-weight: 500; }
 .approval_modal_overlay { position: fixed; inset: 0; background: rgba(30,20,60,0.27); display: flex; align-items: center; justify-content: center; z-index: 1000; }
@@ -1265,7 +1733,10 @@ a:hover {
 .approval_modal_content { margin: 18px 0 10px 0; display: flex; flex-direction: column; gap: 10px; }
 .approval_history_row { margin-bottom: 4px; font-size: 1.05rem; }
 .approval_modal_footer { display: flex; gap: 10px; margin-top: 18px; }
-
+.approval_table_container {
+  overflow-x: auto;      /* 가로 스크롤 활성화 */
+  max-width: 100%;       /* 부모 너비에 맞춤 */
+}
 .approval_status_badge {
   display: inline-block;
   padding: 5px 10px;
@@ -1941,7 +2412,107 @@ a:hover {
 .modal_buttons{
   display: flex;
   gap: 10px;
-  justify-content: end;
+}
+
+/* Admin Panel Styles */
+.admin-panel-btn {
+  background: var(--primary-color1);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s;
+  box-shadow: 0 2px 8px rgba(67,56,120,0.08);
+}
+.admin-panel-btn:hover {
+  background: var(--primary-color2);
+}
+
+.admin-panel-side {
+  position: fixed;
+  top: 32px;
+  left: -340px; /* Hidden by default */
+  width: 340px;
+  min-height: 420px;
+  max-height: 80vh;
+  background: #fff;
+  box-shadow: none;
+  border-radius: 14px;
+  border: 2px solid #ece6fa;
+  padding: 36px 30px 24px 30px;
+  transition: left 0.32s cubic-bezier(.4,0,.2,1), box-shadow 0.18s;
+  z-index: 130;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-panel-side.open {
+  left: 172px; /* Visible position */
+  box-shadow: 4px 4px 24px rgba(67,56,120,0.13);
+}
+
+.admin-panel-header-title {
+  font-weight: 800;
+  font-size: 1.27rem;
+  color: #433878;
+  letter-spacing: -1px;
+}
+
+.admin-panel-close-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #bbb;
+  cursor: pointer;
+  transition: color 0.18s;
+}
+.admin-panel-close-btn:hover {
+  color: var(--primary-color2);
+}
+
+.admin-panel-link {
+  width: 100%;
+  text-align: left;
+  background: #faf8ff;
+  color: #433878;
+  border: none;
+  border-radius: 7px;
+  padding: 13px 18px;
+  font-size: 1.07rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.16s, color 0.16s;
+}
+.admin-panel-link:hover {
+  background: #f0eaff;
+  color: var(--primary-color2);
+}
+
+/* Responsive adjustments for admin panel */
+@media (max-width: 768px) {
+  .admin-panel-side {
+    width: 90%; /* Adjust width for smaller screens */
+    left: 5%; /* Center the panel */
+    top: 50%; /* Center vertically */
+    transform: translateY(-50%); /* Adjust for vertical centering */
+    max-height: 90vh; /* Allow more height */
+    padding: 25px 20px; /* Adjust padding */
+  }
+
+  .admin-panel-side.open {
+    left: 5%; /* Keep centered when open */
+  }
+
+  .admin-panel-btn {
+    position: fixed; /* Keep button fixed */
+    top: 20px;
+    left: 20px;
+    z-index: 140; /* Ensure button is above panel */
+  }
 }
 .my_checkbox_label {
   display: flex;
@@ -2215,93 +2786,998 @@ a:hover {
 }
 .chat_wrap {
   display: flex;
-  min-height: 600px;
-  border-radius: 18px;
-  box-shadow: 0 8px 32px rgba(67,56,120,0.14);
-  background: #fff;
+  width: 100%;
+  max-width: 1200px; /* 예시: 최대 너비 설정 */
+  margin: 0 auto;
+  border-radius: 15px;
   overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  height: calc(100vh - 120px); /* 헤더/푸터 제외 높이 */
 }
 
-.chat_room_list {
-  width: 320px;
-  background: #faf8ff;
-  border-right: 2px solid #ece6fa;
-  display: flex;
-  flex-direction: column;
-}
-.chat_room_list_head {
-  display: flex;
-  justify-content: space-between;
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #433878;
-  padding: 24px 24px 14px 24px;
-  border-bottom: 1.5px solid #ece6fa;
-}
-.chat_room_item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 18px 24px;
-  cursor: pointer;
-  border-bottom: 1px solid #ece6fa;
-  transition: background 0.13s;
-}
-.chat_room_item.active,
-.chat_room_item:hover {
-  background: #ece6fa;
-}
-.chat_room_avatar {
-  width: 48px; height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-.chat_room_info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.chat_room_name {
-  font-weight: 700;
-  color: #433878;
-  font-size: 1.09rem;
-}
-.chat_room_last {
-  color: #888;
-  font-size: 0.98rem;
-}
-.chat_room_meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 5px;
-  min-width: 44px;
-}
-.chat_room_time {
-  font-size: 0.93rem;
-  color: #bbb;
-}
-.chat_room_unread {
-  background: #ff6f61;
-  color: #fff;
-  width: 30px;
+.chat_room_list img {
+  width: 100px;
   aspect-ratio: 1/1;
-  display: flex;
-  line-height: 30px;
-  justify-content: center;
-  align-items: center;
-  border-radius: 50%;
-  font-size: 0.9rem;
-  font-weight: 700;
 }
 
+.chat_room_list_head{
+  display: flex;
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+/* chat_room_list */
+.chat_room_list {
+  flex-basis: 300px; /* 기본 너비 */
+  flex-shrink: 0;
+  background: #f8f4ff;
+  border-right: 1px solid #eee;
+  padding: 20px 0;
+  overflow-y: auto;
+}
+
+/* chat_main_box */
 .chat_main_box {
-  flex: 1;
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
   background: #fff;
-  min-width: 0;
+}
+
+/* Responsive adjustments for chat */
+@media (max-width: 1024px) {
+  .chat_wrap {
+    flex-direction: column; /* Stack on smaller screens */
+    height: auto; /* Allow height to adjust */
+    max-width: 100%; /* Use full width */
+    border-radius: 0; /* Remove border-radius for full width */
+    box-shadow: none; /* Remove shadow */
+  }
+
+  .chat_room_list {
+    flex-basis: auto; /* Remove fixed basis */
+    width: 100%; /* Take full width */
+    height: 250px; /* Fixed height for room list on mobile */
+    border-right: none;
+    border-bottom: 1px solid #eee; /* Add bottom border */
+    padding: 15px 0;
+  }
+
+  .chat_main_box {
+    width: 100%; /* Take full width */
+    min-height: calc(100vh - 250px - 120px); /* Adjust min-height */
+  }
+
+  .chat_main_head {
+    flex-direction: column; /* Stack header elements */
+    align-items: flex-start;
+    gap: 10px;
+    padding: 15px;
+  }
+
+  .chat_search_row {
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 15px;
+  }
+
+  .chat_search_input {
+    width: 100%;
+  }
+
+  .chat_search_btn {
+    width: 100%;
+  }
+
+  .chat_main_messages {
+    padding: 15px;
+  }
+
+  .chat_input_row {
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 15px;
+  }
+
+  .chat_input {
+    width: 100%;
+  }
+
+  .chat_file_label {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .chat_send_btn {
+    width: 100%;
+  }
+
+  .chat_filelist_box {
+    padding: 15px;
+  }
+
+  .chat_filelist_row {
+    grid-template-columns: 1fr auto auto; /* Adjust grid for smaller screens */
+    gap: 5px;
+    font-size: 0.9rem;
+  }
+
+  .chat_filelist_name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chat_filelist_download {
+    padding: 5px 10px;
+    font-size: 0.85rem;
+  }
+
+  .chat_room_item {
+    padding: 10px 15px;
+    border: 1px solid #ece6fa;
+  }
+
+  .chat_room_name {
+    font-size: 1.1rem;
+  }
+
+  .chat_room_last {
+    font-size: 0.9rem;
+  }
+
+  .chat_room_time, .chat_room_unread, .chat_room_archived {
+    font-size: 0.8rem;
+  }
+
+  .chat_msg_row {
+    padding: 8px 0;
+  }
+
+  .chat_bubble {
+    padding: 10px 12px;
+    font-size: 0.95rem;
+  }
+
+  .chat_msg_time {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .chat_room_list {
+    height: 200px; /* Even smaller height for very small screens */
+  }
+
+  .chat_main_box {
+    min-height: calc(100vh - 200px - 120px);
+  }
+}
+
+/* Responsive adjustments for calendar - min-width 800px with scroll */
+@media (max-width: 800px) {
+  .calendar_card {
+    overflow-x: auto; /* Enable horizontal scrolling for the card */
+    padding: 15px; /* Adjust padding for smaller screens */
+  }
+
+  /* Target the FullCalendar root element */
+  .fc {
+    min-width: 800px; /* Ensure calendar content is at least 800px wide */
+  }
+
+  /* Adjust button layout for smaller screens */
+  .flex.gap_10.align_center.mb_20.justify_between {
+    flex-direction: column; /* Stack elements vertically */
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .caleandar_btn {
+    width: 100%; /* Full width buttons */
+    padding: 10px 15px;
+    font-size: 1rem;
+  }
+
+  /* FullCalendar header toolbar adjustments for smaller screens */
+  .fc .fc-toolbar-chunk:nth-child(2) { /* center chunk */
+    display: none; /* Hide center part (empty in page.jsx) */
+  }
+
+  .fc .fc-toolbar-chunk:nth-child(3) { /* right chunk (prev,next,today) */
+    display: flex;
+    flex-direction: column; /* Stack buttons */
+    gap: 5px;
+    align-items: flex-end;
+  }
+
+  .fc .fc-button-group {
+    flex-direction: column; /* Stack prev/next buttons */
+    width: 100%;
+  }
+
+  .fc .fc-button {
+    width: 100%; /* Full width for buttons */
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1.5rem; /* Adjust title font size */
+  }
+
+  .fc-daygrid-day-events {
+    /* Removed max-height and overflow-y to ensure all events are visible without vertical scroll */
+  }
+
+  .calendar_events {
+    grid-template-columns: 1fr; /* Stack events on smaller screens */
+    gap: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .calendar_card {
+    padding: 10px;
+  }
+
+  .flex.gap_10.align_center.mb_20.justify_between {
+    gap: 10px;
+  }
+
+  .caleandar_btn {
+    font-size: 0.9rem;
+    padding: 8px 12px;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1.2rem;
+  }
+
+  .fc-daygrid-day-events {
+    /* Removed max-height and overflow-y to ensure all events are visible without vertical scroll */
+  }
+}
+
+/* Responsive adjustments for emergency component */
+@media (max-width: 768px) {
+  .emergency_form {
+    padding: 20px; /* Adjust padding for smaller screens */
+  }
+
+  .emergency_row {
+    flex-direction: column; /* Stack label and input vertically */
+    gap: 5px;
+  }
+
+  .emergency_label {
+    margin-bottom: 0; /* Remove bottom margin */
+  }
+
+  .emergency_input {
+    width: 100%; /* Full width for inputs */
+    padding: 10px 12px;
+    font-size: 1rem;
+  }
+
+  .emergency_receivers_list {
+    flex-wrap: wrap; /* Allow chips to wrap to next line */
+    gap: 8px; /* Adjust gap between chips */
+  }
+
+  .emergency_receiver_chip {
+    padding: 5px 10px;
+    font-size: 0.9rem;
+  }
+
+  .emergency_remove_btn {
+    font-size: 1rem;
+  }
+
+  .emergency_add_form {
+    flex-direction: column; /* Stack add form elements vertically */
+    align-items: stretch; /* Stretch items to full width */
+    gap: 10px; /* Adjust gap */
+  }
+
+  .emergency_add_form input {
+    width: 100% !important; /* Full width for add form inputs */
+    margin-right: 0 !important; /* Remove right margin */
+  }
+
+  .emergency_add_btn {
+    width: 100%; /* Full width for add button */
+    padding: 10px 15px;
+    font-size: 1rem;
+  }
+
+  .emergency_send_btn {
+    width: 100%; /* Full width for send button */
+    padding: 12px 0;
+    font-size: 1.05rem;
+  }
+}
+
+/* Responsive adjustments for file system component */
+@media (max-width: 800px) {
+  .fs_dept_tabs {
+    padding: 0 10px 10px 10px; /* Add horizontal padding for tabs */
+  }
+
+  .fs_upload_form,
+  .fs_link_add_form {
+    padding: 0 10px; /* Add horizontal padding for forms */
+  }
+
+  .fs_upload_row {
+    flex-direction: column; /* Stack elements vertically */
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .fs_upload_row .board_file_label,
+  .fs_upload_row .upload-name,
+  .fs_upload_row .fs_btn {
+    width: 100%; /* Full width for upload elements */
+  }
+
+  .fs_filelist_box,
+  .fs_link_list {
+    overflow-x: auto; /* Enable horizontal scrolling for tables */
+    border-radius: 0; /* Remove border-radius for full width */
+  }
+
+  .fs_filelist_head,
+  .fs_filelist_row {
+    min-width: 800px; /* Ensure table content is at least 800px wide */
+    padding: 10px; /* Adjust padding */
+    font-size: 0.9rem; /* Adjust font size */
+  }
+
+  .fs_filelist_head span,
+  .fs_filelist_row span {
+    white-space: nowrap; /* Prevent text wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .fs_download_btn,
+  .fs_delete_btn {
+    font-size: 0.9rem; /* Adjust button font size */
+    padding: 4px 8px;
+  }
+
+  .fs_link_add_form {
+    flex-direction: column; /* Stack link add form elements vertically */
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .fs_link_add_form .fs_input {
+    width: 100% !important; /* Full width for link inputs */
+    flex-shrink: unset;
+  }
+
+  .fs_link_add_form .fs_btn {
+    width: 100%; /* Full width for link add button */
+  }
+
+  .fs_link_row {
+    flex-direction: column; /* Stack link row elements vertically */
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+    min-width: 800px; /* Ensure link row content is at least 800px wide */
+  }
+
+  .fs_link_row > div:first-child {
+    width: 100%; /* Full width for link title/uploader */
+  }
+
+  .fs_link_row > div:last-child {
+    width: 100%; /* Full width for edit/delete buttons */
+    justify-content: flex-end; /* Align buttons to the right */
+  }
+
+  .fs_link_title {
+    font-size: 1rem; /* Adjust link title font size */
+  }
+
+  .fs_link_uploader {
+    font-size: 0.85rem; /* Adjust uploader font size */
+  }
+
+  /* Link Edit Modal */
+  .fs_link_edit_modal_content { /* Assuming a class for the modal content */
+    min-width: unset !important;
+    width: 90% !important;
+    max-width: 400px !important;
+    padding: 20px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .member_table {
+    min-width: 600px; /* Further reduce min-width for very small screens if needed */
+  }
+}
+
+/* Responsive adjustments for leaveedit component */
+@media (max-width: 800px) {
+  .vacation_policy_box {
+    overflow-x: auto; /* Enable horizontal scrolling for the box containing the tables */
+    padding: 20px; /* Adjust padding for smaller screens */
+  }
+
+  .vacation_policy_table,
+  .vacation_member_table {
+    min-width: 800px; /* Ensure table content is at least 800px wide */
+  }
+
+  .vacation_policy_table th,
+  .vacation_policy_table td,
+  .vacation_member_table th,
+  .vacation_member_table td {
+    padding: 10px 8px; /* Adjust padding for table cells */
+    font-size: 0.9rem; /* Adjust font size */
+  }
+
+  .flex.justify_between.align_center.mb_20 {
+    flex-direction: column; /* Stack search form and button vertically */
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .flex.gap_10 { /* Search form */
+    width: 100%;
+  }
+
+  .board_write_input[style*="width: 220px"] { /* Search input */
+    width: 100% !important;
+  }
+
+  .board_btn {
+    width: 100%; /* Full width for button */
+    max-width: 200px; /* Limit max width */
+  }
+
+  /* Modal adjustments (already handled by general modal styles, but ensuring consistency) */
+  .modal_content {
+    min-width: unset;
+    width: 90%;
+    padding: 20px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .vacation_policy_table,
+  .vacation_member_table {
+    min-width: 600px; /* Further reduce min-width for very small screens if needed */
+  }
+}
+
+/* Responsive adjustments for attendanceedit component */
+@media (max-width: 800px) {
+  .attendance_manage_box {
+    overflow-x: auto; /* Enable horizontal scrolling for the box containing the table */
+    padding: 20px; /* Adjust padding for smaller screens */
+  }
+
+  .attendance_table {
+    min-width: 800px; /* Ensure table content is at least 800px wide */
+  }
+
+  .attendance_table th,
+  .attendance_table td {
+    padding: 10px 8px; /* Adjust padding for table cells */
+    font-size: 0.9rem; /* Adjust font size */
+  }
+
+  .flex.justify_between.align_center.mb_20 {
+    flex-direction: column; /* Stack search form and button vertically */
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .flex.gap_10 { /* Search form */
+    width: 100%;
+    flex-wrap: wrap; /* Allow search inputs to wrap */
+  }
+
+  .board_write_input[style*="width: 120px"], /* Search inputs */
+  .board_write_input[type="date"][style*="width: 140px"] {
+    width: 100% !important; /* Full width for search inputs */
+  }
+
+  .board_btn {
+    width: 100%; /* Full width for button */
+    max-width: 200px; /* Limit max width */
+  }
+
+  /* Modal adjustments (already handled by general modal styles, but ensuring consistency) */
+  .modal_content {
+    min-width: unset;
+    width: 90%;
+    padding: 20px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .attendance_table {
+    min-width: 600px; /* Further reduce min-width for very small screens if needed */
+  }
+}
+
+/* Responsive adjustments for deptcreate component */
+@media (max-width: 800px) {
+  .department_manage_box {
+    overflow-x: auto; /* Enable horizontal scrolling for the box containing the table */
+    padding: 20px; /* Adjust padding for smaller screens */
+  }
+
+  .department_table {
+    min-width: 800px; /* Ensure table content is at least 800px wide */
+  }
+
+  .department_table th,
+  .department_table td {
+    padding: 10px 8px; /* Adjust padding for table cells */
+    font-size: 0.9rem; /* Adjust font size */
+  }
+
+  .flex.justify_between.align_center.mb_20 {
+    flex-direction: column; /* Stack text and button vertically */
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .su_small_text {
+    width: 100%; /* Full width for text */
+    text-align: center;
+  }
+
+  .board_btn {
+    width: 100%; /* Full width for button */
+    max-width: 200px; /* Limit max width */
+  }
+
+  /* Modal adjustments (already handled by general modal styles, but ensuring consistency) */
+  .modal_content {
+    min-width: unset;
+    width: 90%;
+    padding: 20px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .department_table {
+    min-width: 600px; /* Further reduce min-width for very small screens if needed */
+  }
+}
+
+/* Responsive adjustments for permission component */
+@media (max-width: 800px) {
+  .main_box { /* Assuming main_box is the container for the table */
+    overflow-x: auto; /* Enable horizontal scrolling for the box containing the table */
+    padding: 20px; /* Adjust padding for smaller screens */
+  }
+
+  .custom_permission_table {
+    min-width: 1000px; /* Ensure table content is at least 800px wide */
+  }
+
+  .custom_permission_table th,
+  .custom_permission_table td {
+    padding: 10px 8px; /* Adjust padding for table cells */
+    font-size: 0.9rem; /* Adjust font size */
+  }
+
+  .grid_permission {
+    grid-template-columns: 1fr; /* Stack permission checkboxes vertically */
+    gap: 10px;
+  }
+
+  .custom-checkbox-label {
+    font-size: 0.95rem; /* Adjust checkbox label font size */
+  }
+
+  .board_btn_small {
+    padding: 6px 10px; /* Adjust small button padding */
+    font-size: 0.85rem; /* Adjust small button font size */
+  }
+
+  /* Modal adjustments (already handled by general modal styles, but ensuring consistency) */
+  .modal_content {
+    min-width: unset;
+    width: 90%;
+    padding: 20px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .custom_permission_table {
+    min-width: 1000px; /* Further reduce min-width for very small screens if needed */
+  }
+}
+
+/* Responsive adjustments for gradecreate component */
+@media (max-width: 800px) {
+  .level_manage_box {
+    overflow-x: auto; /* Enable horizontal scrolling for the box containing the table */
+    padding: 20px; /* Adjust padding for smaller screens */
+  }
+
+  .level_table {
+    min-width: 800px; /* Ensure table content is at least 800px wide */
+  }
+
+  .level_table th,
+  .level_table td {
+    padding: 10px 8px; /* Adjust padding for table cells */
+    font-size: 0.9rem; /* Adjust font size */
+  }
+
+  .flex.justify_between.align_center.mb_20 {
+    flex-direction: column; /* Stack text and button vertically */
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .su_small_text {
+    width: 100%; /* Full width for text */
+    text-align: center;
+  }
+
+  .board_btn {
+    width: 100%; /* Full width for button */
+    max-width: 200px; /* Limit max width */
+  }
+
+  /* Modal adjustments (already handled by general modal styles, but ensuring consistency) */
+  .modal_content {
+    min-width: unset;
+    width: 90%;
+    padding: 20px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .level_table {
+    min-width: 600px; /* Further reduce min-width for very small screens if needed */
+  }
+}
+
+/* Responsive adjustments for stat component */
+@media (max-width: 800px) {
+  .stat_box {
+    overflow-x: auto; /* Enable horizontal scrolling for the box containing the tables */
+    padding: 20px; /* Adjust padding for smaller screens */
+  }
+
+  .stat_tab_row {
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .stat_tab_btn {
+    width: 100%; /* Full width for tab buttons */
+    max-width: 250px; /* Limit max width */
+  }
+
+  .flex.gap_10.align_center.mb_20 { /* Search form and text */
+    flex-direction: column; /* Stack search form and text vertically */
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .board_write_input[style*="width: 220px"] { /* Search input */
+    width: 100% !important;
+  }
+
+  .su_small_text {
+    width: 100%; /* Full width for text */
+    text-align: center;
+  }
+
+  .stat_table {
+    min-width: 800px; /* Ensure table content is at least 800px wide */
+  }
+
+  .stat_table th,
+  .stat_table td {
+    padding: 10px 8px; /* Adjust padding for table cells */
+    font-size: 0.9rem; /* Adjust font size */
+  }
+
+  /* Chart adjustments */
+  .stat_box > div > div[style*="max-width: 760px"] { /* Target chart container */
+    max-width: 100% !important; /* Allow chart to take full width */
+    margin: 0 auto 20px !important; /* Center chart and adjust margin */
+  }
+}
+
+@media (max-width: 480px) {
+  .stat_table {
+    min-width: 600px; /* Further reduce min-width for very small screens if needed */
+  }
+}
+
+/* Responsive adjustments for meeting component (board_table) */
+@media (max-width: 800px) {
+  .board_card {
+    padding: 20px; /* Adjust padding for smaller screens */
+    overflow-x: auto; /* Enable horizontal scrolling for the card */
+  }
+
+  .board_search_wrap {
+    flex-direction: column; /* Stack search elements vertically */
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .board_search_input {
+    width: 100%; /* Full width for search input */
+    border-radius: 8px; /* Remove specific border-radius for combined input/button */
+  }
+
+  .board_search_btn {
+    width: 100%; /* Full width for search button */
+    border-radius: 8px; /* Remove specific border-radius */
+    border-left: 1.5px solid var(--primary-color2); /* Add left border back */
+  }
+
+  .board_table {
+    min-width: 800px; /* Ensure table content is at least 800px wide */
+  }
+
+  .board_pagination {
+    flex-wrap: wrap; /* Allow pagination buttons to wrap */
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .board_pagination .board_btn {
+    flex-basis: calc(50% - 4px); /* Two buttons per row */
+    font-size: 0.9rem;
+    padding: 8px 12px;
+  }
+
+  .board_pagination .board_page_btn {
+    flex-basis: unset; /* Reset flex-basis for page number buttons */
+    width: 36px; /* Fixed width for page number buttons */
+  }
+
+  .board_footer {
+    justify-content: center; /* Center the write button */
+  }
+
+  .board_footer .board_btn {
+    width: 100%; /* Full width for write button */
+    max-width: 200px; /* Limit max width */
+  }
+}
+
+@media (max-width: 480px) {
+  .board_table {
+    min-width: 600px; /* Further reduce min-width for very small screens if needed */
+  }
+}
+
+/* Responsive adjustments for keyword component */
+@media (max-width: 800px) {
+  .keyword_manage_box {
+    overflow-x: auto; /* Enable horizontal scrolling for the box containing the table */
+    padding: 20px; /* Adjust padding for smaller screens */
+  }
+
+  .flex.justify_between.align_center.mb_20 {
+    flex-direction: column; /* Stack elements vertically */
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .su_small_text {
+    width: 100%; /* Full width for text */
+    text-align: center;
+  }
+
+  .board_btn {
+    width: 100%; /* Full width for button */
+    max-width: 200px; /* Limit max width */
+  }
+
+  .keyword_table {
+    min-width: 800px; /* Ensure table content is at least 800px wide */
+  }
+
+  .keyword_table th,
+  .keyword_table td {
+    padding: 10px 8px; /* Adjust padding for table cells */
+    font-size: 0.9rem; /* Adjust font size */
+  }
+
+  .keyword_table td b {
+    font-size: 0.95rem; /* Adjust keyword font size */
+  }
+
+  .board_btn_small {
+    padding: 6px 10px; /* Adjust small button padding */
+    font-size: 0.85rem; /* Adjust small button font size */
+  }
+
+  /* Modal adjustments (already handled by general modal styles, but ensuring consistency) */
+  .modal_content {
+    min-width: unset;
+    width: 90%;
+    padding: 20px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .keyword_table {
+    min-width: 600px; /* Further reduce min-width for very small screens if needed */
+  }
+  .keyword_manage_actions{
+    flex-direction: column; /* Stack actions vertically */
+    gap: 10px; /* Adjust gap between buttons */
+  }
+}
+
+/* Responsive adjustments for mypage component */
+@media (max-width: 768px) {
+  .mypage_card_v2 {
+    flex-direction: column; /* Stack profile and info columns vertically */
+    padding: 20px; /* Adjust padding */
+  }
+
+  .mypage_profile_col {
+    width: 100%; /* Full width for profile column */
+    margin-bottom: 20px; /* Add space below profile */
+  }
+
+  .mypage_info_col {
+    width: 100%; /* Full width for info column */
+  }
+
+  .mypage_info_grid {
+    grid-template-columns: 1fr; /* Stack info items vertically */
+    gap: 10px; /* Adjust gap */
+  }
+
+  .mypage_leave_grid {
+    flex-direction: column;
+    gap: 10px; /* Adjust gap */
+  }
+
+  .mypage_leave_item {
+    padding: 15px; /* Adjust padding for leave items */
+    box-sizing: border-box;
+    flex: 1;
+    width: 100%;
+  }
+
+  /* 연차 상세 내역 모달 내 테이블 */
+  .modal_content .board_table {
+    min-width: 800px; /* Ensure table content is at least 800px wide */
+  }
+
+  .modal_content > div[style*="maxHeight: 500px"] { /* Targeting the div wrapping the table */
+    overflow-x: auto; /* Enable horizontal scrolling for the table container */
+  }
+
+  /* General modal adjustments (already present, but ensuring consistency) */
+  .modal_content {
+    min-width: unset;
+    width: 90%;
+    padding: 20px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .mypage_profile_imgbox {
+    width: 100px; /* Smaller profile image */
+    height: 100px;
+  }
+
+  .mypage_profile_name {
+    font-size: 1.8rem; /* Smaller name font size */
+  }
+
+  .mypage_profile_position {
+    font-size: 1rem; /* Smaller position font size */
+  }
+
+  .mypage_title_v2 {
+    font-size: 1.2rem; /* Smaller section title font size */
+  }
+
+  .mypage_info_label,
+  .mypage_info_value,
+  .leave_title {
+    font-size: 0.9rem; /* Smaller font size for info and leave labels */
+  }
+
+  .mypage_leave_item b {
+    font-size: 1.8rem; /* Smaller leave count font size */
+  }
+}
+
+/* Responsive adjustments for memberedit component */
+@media (max-width: 800px) {
+  .member_manage_box {
+    overflow-x: auto; /* Enable horizontal scrolling for the box containing the table */
+    padding: 20px; /* Adjust padding for smaller screens */
+  }
+
+  .flex.justify_between.align_center.mb_20 {
+    flex-direction: column; /* Stack search form and text vertically */
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .flex.gap_10 { /* Search form */
+    width: 100%;
+  }
+
+  .board_write_input[style*="width: 220px"] { /* Search input */
+    width: 100% !important;
+  }
+
+  .su_small_text {
+    width: 100%; /* Full width for text */
+    text-align: center;
+  }
+
+  .member_table {
+    min-width: 1200px; /* Ensure table content is at least 800px wide */
+  }
+
+  .member_table th,
+  .member_table td {
+    padding: 10px 8px; /* Adjust padding for table cells */
+    font-size: 0.9rem; /* Adjust font size */
+  }
+
+  .board_btn_small {
+    padding: 6px 10px; /* Adjust small button padding */
+    font-size: 0.85rem; /* Adjust small button font size */
+  }
+
+  /* Modal adjustments (already handled by general modal styles, but ensuring consistency) */
+  .modal_content {
+    min-width: unset;
+    width: 90%;
+    padding: 20px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .member_table {
+    min-width: 1200px; /* Further reduce min-width for very small screens if needed */
+  }
 }
 .chat_main_head {
   display: flex;
@@ -2353,7 +3829,7 @@ a:hover {
 .chat_msg_row.left { flex-direction: row; }
 .chat_msg_row.right { flex-direction: row-reverse; }
 .chat_msg_avatar {
-  width: 36px; height: 36px;
+  width: 36px;
   border-radius: 50%;
   margin-right: 5px;
 }
@@ -2806,6 +4282,7 @@ a:hover {
   border-collapse: collapse;
   background: #fff;
   margin-bottom: 12px;
+  min-width: 1200px; /* Ensure table content is at least 1200px wide */
 }
 .member_table th, .member_table td {
   border: 1px solid #ece6fa;
@@ -3048,6 +4525,7 @@ a:hover {
   width: 100%;
   border-collapse: collapse;
   background: #fff;
+  min-width: 1000px;
   margin-bottom: 12px;
 }
 .custom_permission_table th, .custom_permission_table td {
@@ -3144,5 +4622,39 @@ a:hover {
   }
   100%{
     transform: rotate(360deg);
+  }
+}
+@media (max-width: 1399px) {
+  .approval_table {
+    display: block;          /* table을 block으로 변경하여 가로 스크롤 활성화 */
+    width: 100%;             /* 테이블 너비는 100% */
+    overflow-x: auto;        /* 가로 스크롤 나타나게 */
+    -webkit-overflow-scrolling: touch; /* iOS 부드러운 스크롤 */
+    white-space: nowrap;     /* 컬럼 줄바꿈 방지 */
+  }
+
+  .chat_wrap img {
+    width: 50px;
+    aspect-ratio: 1/1;
+  }
+  .chat_room_list_head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+
+  .approval_table thead,
+  .approval_table tbody,
+  .approval_table tr {
+    display: table;          /* 구조 유지를 위해 table 표준 display 유지 */
+    width: 100%;             /* 각각 너비 100% 유지 */
+    table-layout: fixed;     /* 고정레이아웃 유지(필요 시 제거) */
+  }
+
+  /* td, th 너비 등을 조절하고 싶으면 여기에 추가 */
+  .approval_table th,
+  .approval_table td {
+    padding: 8px 6px;        /* 패딩 약간 줄임 */
+    white-space: nowrap;     /* 셀 내 텍스트 줄바꿈 방지 */
   }
 }

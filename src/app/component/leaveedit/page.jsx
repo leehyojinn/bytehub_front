@@ -553,43 +553,45 @@ export default function VacationEditPage() {
               <div></div>
               <button className="board_btn" onClick={() => setEditPolicy(true)}>규칙 추가</button>
             </div>
-            <table className="vacation_policy_table">
-              <thead>
-              <tr>
-                <th>년도</th>
-                <th>연차(개)</th>
-                <th>월차(개)</th>
-                <th>비고</th>
-              </tr>
-              </thead>
-              <tbody>
-              {rulesLoading && (
+            <div style={{ overflowX: 'auto', width: '100%' }}>
+              <table className="vacation_policy_table">
+                <thead>
                 <tr>
-                  <td colSpan={4} style={{textAlign: 'center', color: '#aaa'}}>연차 규칙을 불러오는 중입니다...</td>
+                  <th>년도</th>
+                  <th>연차(개)</th>
+                  <th>월차(개)</th>
+                  <th>비고</th>
                 </tr>
-              )}
-              {rulesError && (
-                <tr>
-                  <td colSpan={4} style={{textAlign: 'center', color: 'red'}}>{rulesError}</td>
-                </tr>
-              )}
-              {!rulesLoading && !rulesError && displayRules.length === 0 && (
-                <tr>
-                  <td colSpan={4} style={{textAlign: 'center', color: '#aaa'}}>등록된 규칙이 없습니다.</td>
-                </tr>
-              )}
-              {!rulesLoading && !rulesError && displayRules.length > 0 && (
-                displayRules.map(rule => (
-                  <tr key={rule.id}>
-                    <td>{rule.year}</td>
-                    <td>{rule.annual}</td>
-                    <td>{rule.monthly}</td>
-                    <td>{rule.note}</td>
+                </thead>
+                <tbody>
+                {rulesLoading && (
+                  <tr>
+                    <td colSpan={4} style={{textAlign: 'center', color: '#aaa'}}>연차 규칙을 불러오는 중입니다...</td>
                   </tr>
-                ))
-              )}
-              </tbody>
-            </table>
+                )}
+                {rulesError && (
+                  <tr>
+                    <td colSpan={4} style={{textAlign: 'center', color: 'red'}}>{rulesError}</td>
+                  </tr>
+                )}
+                {!rulesLoading && !rulesError && displayRules.length === 0 && (
+                  <tr>
+                    <td colSpan={4} style={{textAlign: 'center', color: '#aaa'}}>등록된 규칙이 없습니다.</td>
+                  </tr>
+                )}
+                {!rulesLoading && !rulesError && displayRules.length > 0 && (
+                  displayRules.map(rule => (
+                    <tr key={rule.id}>
+                      <td>{rule.year}</td>
+                      <td>{rule.annual}</td>
+                      <td>{rule.monthly}</td>
+                      <td>{rule.note}</td>
+                    </tr>
+                  ))
+                )}
+                </tbody>
+              </table>
+            </div>
             <div className="card_title font_700 mt_30 mb_20">사원별 연차/월차 현황</div>
             <div className="flex justify_between align_center mb_20">
               <form onSubmit={e => e.preventDefault()} className="flex gap_10">
@@ -603,67 +605,69 @@ export default function VacationEditPage() {
               </form>
               <button className="board_btn" onClick={openGrantLeaveModalForSelected}>연차 부여</button>
             </div>
-            <table className="vacation_member_table">
-              <thead>
-              <tr>
-                <th>
-                  <label className="my_checkbox_label" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', margin: 0}}>
-                    <input
-                      type="checkbox"
-                      className="my_checkbox_input"
-                      checked={selectAll}
-                      onChange={handleSelectAll}
-                    />
-                    <span className="my_checkbox_box"></span>
-                  </label>
-                </th>
-                <th>이름</th>
-                <th>부서</th>
-                <th>직급</th>
-                <th>입사일</th>
-                <th>총 연차</th>
-                <th>사용 연차</th>
-                <th>잔여 연차</th>
-                {/* <th>수정</th> */}
-              </tr>
-              </thead>
-              <tbody>
-              {loading && <tr><td colSpan={8} style={{textAlign: 'center', color: '#aaa'}}>데이터를 불러오는 중입니다...</td></tr>}
-              {error && <tr><td colSpan={8} style={{textAlign: 'center', color: 'red'}}>{error}</td></tr>}
-              {filtered.length === 0 && !loading && !error && (
-                  <tr>
-                    <td colSpan={8} style={{textAlign: 'center', color: '#aaa'}}>검색 결과가 없습니다.</td>
+            <div style={{ overflowX: 'auto', width: '100%' }}>
+              <table className="vacation_member_table">
+                <thead>
+                <tr>
+                  <th>
+                    <label className="my_checkbox_label" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', margin: 0}}>
+                      <input
+                        type="checkbox"
+                        className="my_checkbox_input"
+                        checked={selectAll}
+                        onChange={handleSelectAll}
+                      />
+                      <span className="my_checkbox_box"></span>
+                    </label>
+                  </th>
+                  <th>이름</th>
+                  <th>부서</th>
+                  <th>직급</th>
+                  <th>입사일</th>
+                  <th>총 연차</th>
+                  <th>사용 연차</th>
+                  <th>잔여 연차</th>
+                  {/* <th>수정</th> */}
+                </tr>
+                </thead>
+                <tbody>
+                {loading && <tr><td colSpan={8} style={{textAlign: 'center', color: '#aaa'}}>데이터를 불러오는 중입니다...</td></tr>}
+                {error && <tr><td colSpan={8} style={{textAlign: 'center', color: 'red'}}>{error}</td></tr>}
+                {filtered.length === 0 && !loading && !error && (
+                    <tr>
+                      <td colSpan={8} style={{textAlign: 'center', color: '#aaa'}}>검색 결과가 없습니다.</td>
                   </tr>
-              )}
-              {currentPageMembers.map(m => {
-                return (
-                    <tr key={m.id}>
-                      <td>
-                        <label className="my_checkbox_label" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', margin: 0}}>
-                          <input
-                            type="checkbox"
-                            className="my_checkbox_input"
-                            checked={selectedMembers.includes(m.id)}
-                            onChange={() => handleMemberCheck(m.id)}
-                          />
-                          <span className="my_checkbox_box"></span>
-                        </label>
-                      </td>
-                      <td>{m.name}</td>
-                      <td>{m.dept_name || '-'}</td>
-                      <td>{m.level_name || '-'}</td>
-                      <td>{m.join_date}</td>
-                      <td><b>{m.total_leave}</b></td>
-                      <td><b>{m.used_leave}</b></td>
-                      <td><b style={{color: '#f44336'}}>{m.remain_days}</b></td>
-                      {/* <td>
-                        <button className="board_btn board_btn_small" onClick={() => openEditModal(m)}>직접수정</button>
-                      </td> */}
-                    </tr>
-                );
-              })}
-              </tbody>
-            </table>
+                )}
+                {currentPageMembers.map(m => {
+                  return (
+                      <tr key={m.id}>
+                        <td>
+                          <label className="my_checkbox_label" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', margin: 0}}>
+                            <input
+                              type="checkbox"
+                              className="my_checkbox_input"
+                              checked={selectedMembers.includes(m.id)}
+                              onChange={() => handleMemberCheck(m.id)}
+                            />
+                            <span className="my_checkbox_box"></span>
+                          </label>
+                        </td>
+                        <td>{m.name}</td>
+                        <td>{m.dept_name || '-'}</td>
+                        <td>{m.level_name || '-'}</td>
+                        <td>{m.join_date}</td>
+                        <td><b>{m.total_leave}</b></td>
+                        <td><b>{m.used_leave}</b></td>
+                        <td><b style={{color: '#f44336'}}>{m.remain_days}</b></td>
+                        {/* <td>
+                          <button className="board_btn board_btn_small" onClick={() => openEditModal(m)}>직접수정</button>
+                        </td> */}
+                      </tr>
+                  );
+                })}
+                </tbody>
+              </table>
+            </div>
             
             {/* 페이징 정보 및 UI */}
             {filtered.length > 0 && (
