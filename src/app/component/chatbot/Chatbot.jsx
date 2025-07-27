@@ -48,7 +48,7 @@ export default function Chatbot() {
         'Content-Type': 'application/json',
         'Authorization': token
       }});
-      setMyInfo(data.data);
+      setMyInfo(data.data)
   }
 
   async function cloudList() {

@@ -2,7 +2,7 @@
 
 import Header from "@/app/Header";
 import Footer from "@/app/Footer";
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useRef} from "react";
 import {useAlertModalStore} from "@/app/zustand/store";
 import AlertModal from "../alertmodal/page";
 import CountUp from 'react-countup';
@@ -86,7 +86,8 @@ export default function MyPage() {
         email: "",
         dept_name: "",
         lv_name: "",
-        hire_date: ""
+        hire_date: "",
+        auth: [],
     });
 
     // 로딩 상태
@@ -124,6 +125,67 @@ export default function MyPage() {
     // zustand alert modal
     const alertModal = useAlertModalStore();
 
+
+
+    // 권한 가져오는거
+    const authRef=useRef([]);
+    const userIdRef=useRef('');
+    const getAuth = async () => {
+        let {data} = await axios.get(`${apiUrl}/auth/grant/${userIdRef.current}`);
+        // console.log(data.auth_list);
+        let palette = data.auth_list.map((item) => {
+            return item.access_type;
+        });
+        const removeDup=(palette)=>{
+            return [...new Set(palette)];
+        }
+        authRef.current = removeDup(palette);
+    }
+    useEffect(() => {
+        fetchUserInfo().then(data => {
+            getAuth().then(data => {
+                authHTML();
+            })
+        })
+    }, [userIdRef.current]);
+
+    const auth_palette=[
+        {access_type: 'board', content: '회의록 작성'},
+        {access_type: 'chat', content: '채팅 채널 개설'},
+        {access_type: 'project', content: '프로젝트 생성'},
+        {access_type: 'leave', content: '연차 정보 확인'},
+        {access_type: 'attendance', content: '근태 정보 확인'},
+        {access_type: 'paeneol', content: '관리 패널 접근'},
+    ];
+
+    const authHTML =()=>{
+        const list = auth_palette.map((item) => {
+            if(authRef.current.includes(item.access_type)){
+                // console.log('checked!');
+                return item.content;
+            };
+        });
+        const htmlList = (
+            <ul className="auth-list">
+                {list.map(item => {
+                    if (item && item !== '') {
+                        return (
+                            <li className="auth-item" key={item}>
+                                <div className="auth-title">{item}</div>
+                            </li>
+                        );
+                    } else {
+                        return null;
+                    }
+                })}
+            </ul>
+        );
+        setShowAuth(htmlList);
+    }
+    const [showAuth, setShowAuth] = useState(null);
+
+
+
     // 토큰 가져오기
     const getToken = () => {
         return sessionStorage.getItem('token');
@@ -159,12 +221,13 @@ export default function MyPage() {
             }
         });
         
-        console.log(data);
+        // console.log(data);
     }
 
     // 컴포넌트 마운트 시 사용자 정보 가져오기
     useEffect(() => {
-        fetchUserInfo();
+        fetchUserInfo().then((res) => {
+        })
         leaveDetail();
         leaveMy();
     }, []);
@@ -203,6 +266,7 @@ export default function MyPage() {
 
             if (data.success) {
                 const userInfo = data.data;
+                userIdRef.current = userInfo.id || userInfo.user_id;
                 setMemberData({
                     id: userInfo.id || userInfo.user_id || "",
                     name: userInfo.name,
@@ -480,6 +544,7 @@ export default function MyPage() {
                             </div>
                             <div className="mypage_profile_name">{memberData.name}</div>
                             <div className="mypage_profile_position">{memberData.dept_name} / {memberData.lv_name}</div>
+                            <div>{showAuth}</div>
                         </div>
                         <div className="mypage_info_col">
                             <div className="mypage_section_v2">
