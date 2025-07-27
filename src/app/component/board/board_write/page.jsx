@@ -233,7 +233,7 @@ export default function BoardWrite() {
 
             {/* 이미지 업로드 */}
             <div className="board_write_row">
-              <label className="board_write_label small_text font_600">이미지 첨부</label>
+              <label className="board_write_label small_text font_600">파일 첨부</label>
               <label htmlFor="imageUpload" className="board_file_label">
                 파일 선택
               </label>

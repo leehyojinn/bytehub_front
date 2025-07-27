@@ -181,9 +181,16 @@ export default function VacationEditPage() {
       const transformedMembers = Array.from(memberMap.values()).map(member => {
         const remainDays = member.remain_days ?? 0; // null, undefined 모두 0으로 처리
         const joinDate = member.hire_date ? member.hire_date.split('T')[0] : '';
-        const totalLeave = calcTotalLeave(joinDate, currentPolicy); // 정책 기반 총연차 계산
-        const usedLeave = Math.max(0, totalLeave - remainDays); // 사용연차 = 총연차 - 잔여연차
         const userId = member.mem_idx || member.user_id;
+        
+        let totalLeave = 0;
+        let usedLeave = 0;
+        
+        // 연차 부여 전에는 총연차와 사용연차를 0으로 표시
+        if (remainDays > 0) {
+          totalLeave = calcTotalLeave(joinDate, currentPolicy); // 정책 기반 총연차 계산
+          usedLeave = Math.max(0, totalLeave - remainDays); // 사용연차 = 총연차 - 잔여연차
+        }
         
         return {
           id: userId,
@@ -192,8 +199,8 @@ export default function VacationEditPage() {
           level_name: member.level_name || '미배정',
           email: member.email || '',
           join_date: joinDate, 
-          total_leave: totalLeave,        // 정책 기반 계산된 총연차
-          used_leave: usedLeave,          // 총연차 - 잔여연차  
+          total_leave: totalLeave,        // 연차 부여 전에는 0, 부여 후에는 정책 기반 계산
+          used_leave: usedLeave,          // 연차 부여 전에는 0, 부여 후에는 계산된 값
           remain_days: remainDays,        // 백엔드에서 가져온 잔여연차
           // 기존 구조 호환을 위한 필드들
           annual_used: usedLeave,

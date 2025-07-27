@@ -248,8 +248,19 @@ export default function Attendance() {
             date: date.toISOString().slice(0, 10),
             type: isInRecord ? "출근" : "퇴근", // 출근/퇴근 구분
             time: time.getHours().toString().padStart(2, "0") + ":" + time.getMinutes().toString().padStart(2, "0"),
-            status: att.att_type // 백엔드에서 계산한 상태 그대로 사용
+            status: att.att_type, // 백엔드에서 계산한 상태 그대로 사용
+            originalTime: time // 정렬을 위한 원본 시간
           };
+        });
+        
+        // 날짜와 시간순으로 정렬 (최신순)
+        formattedLogs.sort((a, b) => {
+          // 먼저 날짜로 정렬
+          if (a.date !== b.date) {
+            return new Date(b.date) - new Date(a.date);
+          }
+          // 같은 날짜면 시간으로 정렬
+          return b.originalTime - a.originalTime;
         });
         
         setLogs(formattedLogs);

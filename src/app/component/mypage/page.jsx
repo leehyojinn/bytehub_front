@@ -232,12 +232,34 @@ export default function MyPage() {
         leaveMy();
     }, []);
 
-    // 사용자 정보가 로드된 후 연차 정보 가져오기
+    // 사용자 정보가 로드된 후 연차 정책 가져오기
     useEffect(() => {
         if (memberData.hire_date) {
-            fetchLeaveInfo();
+            // 연차 정책 가져오기
+            const loadLeaveData = async () => {
+                try {
+                    const token = getToken();
+                    if (token) {
+                        const rules = await fetchLeaveRules(apiUrl, token);
+                        setLeaveRules(rules);
+                        setRulesLoading(false);
+                    }
+                } catch (error) {
+                    console.error('연차 정책 로드 실패:', error);
+                    setRulesLoading(false);
+                }
+            };
+            
+            loadLeaveData();
         }
     }, [memberData.hire_date]);
+
+    // leaveRules가 로드된 후 연차 정보 가져오기
+    useEffect(() => {
+        if (memberData.hire_date && leaveRules.length > 0) {
+            fetchLeaveInfo();
+        }
+    }, [memberData.hire_date, leaveRules]);
 
     // 사용자 정보 가져오기
     const fetchUserInfo = async () => {
@@ -303,7 +325,7 @@ export default function MyPage() {
         }
     };
 
-    // 연차 정보 가져오기 (정책 기반으로만 동작, 불필요한 옛날 코드/주석 삭제)
+    // 연차 정보 가져오기 (leaveedit과 동일한 로직)
     const fetchLeaveInfo = async () => {
         try {
             const token = getToken();
@@ -319,25 +341,55 @@ export default function MyPage() {
                 }
             });
             const data = await response.json();
+            
+            console.log('연차 데이터 응답:', data); // 디버깅용
+            
+            // leaveedit과 동일한 로직: 연차 부여 안 했으면 0, 했으면 실제 값
             let remainDays = 0;
+            let totalDays = 0;
+            let usedDays = 0;
+            
             if (data.success && data.data) {
                 const leaveData = Array.isArray(data.data) ? data.data[0] : data.data;
-                remainDays = leaveData?.remain_days || 0;
+                console.log('연차 데이터:', leaveData); // 디버깅용
+                remainDays = leaveData?.remain_days ?? 0; // null, undefined 모두 0으로 처리
+                console.log('잔여 연차:', remainDays); // 디버깅용
+                
+                // 연차 부여 전에는 총연차와 사용연차를 0으로 표시
+                if (remainDays > 0) {
+                    // 정책 기반 총연차 계산 (연차가 부여된 경우에만)
+                    console.log('memberData.hire_date:', memberData.hire_date); // 디버깅용
+                    console.log('leaveRules:', leaveRules); // 디버깅용
+                    console.log('leaveRules.length:', leaveRules.length); // 디버깅용
+                    
+                    if (memberData.hire_date && leaveRules.length > 0) {
+                        const currentYear = new Date().getFullYear();
+                        const currentRule = leaveRules.find(rule => rule.year === currentYear);
+                        console.log('currentRule:', currentRule); // 디버깅용
+                        
+                        const currentPolicy = currentRule ? {
+                            newEmpBase: currentRule.originalData?.newEmpBase || 1,
+                            existingEmpBase: currentRule.originalData?.existingEmpBase || 15,
+                            annualIncrement: currentRule.originalData?.annualIncrement || 1,
+                            maxAnnual: currentRule.originalData?.maxAnnual || 25
+                        } : null;
+                        console.log('currentPolicy:', currentPolicy); // 디버깅용
+                        
+                        totalDays = calcTotalLeave(memberData.hire_date, currentPolicy);
+                        console.log('총 연차:', totalDays); // 디버깅용
+                    } else {
+                        console.log('조건 불충족: hire_date 또는 leaveRules 없음'); // 디버깅용
+                    }
+                    
+                    usedDays = Math.max(0, totalDays - remainDays);
+                    console.log('사용 연차:', usedDays); // 디버깅용
+                } else {
+                    console.log('연차 부여 전: 총연차와 사용연차를 0으로 설정'); // 디버깅용
+                    totalDays = 0;
+                    usedDays = 0;
+                }
             }
-            // 정책 기반 총연차 계산
-            let totalDays = 15; // 정책이 없을 때 fallback
-            if (memberData.hire_date && leaveRules.length > 0) {
-                const currentYear = new Date().getFullYear();
-                const currentRule = leaveRules.find(rule => rule.year === currentYear);
-                const currentPolicy = currentRule ? {
-                    newEmpBase: currentRule.originalData?.newEmpBase || 1,
-                    existingEmpBase: currentRule.originalData?.existingEmpBase || 15,
-                    annualIncrement: currentRule.originalData?.annualIncrement || 1,
-                    maxAnnual: currentRule.originalData?.maxAnnual || 25
-                } : null;
-                totalDays = calcTotalLeave(memberData.hire_date, currentPolicy);
-            }
-            const usedDays = Math.max(0, totalDays - remainDays);
+            
             setLeaveInfo({
                 totalLeave: totalDays,
                 usedLeave: usedDays,
@@ -345,10 +397,11 @@ export default function MyPage() {
                 isLoading: false
             });
         } catch (error) {
+            console.error('연차 정보 가져오기 실패:', error); // 디버깅용
             setLeaveInfo({
-                totalLeave: 15,
+                totalLeave: 0,
                 usedLeave: 0,
-                remainLeave: 15,
+                remainLeave: 0,
                 isLoading: false
             });
         }
