@@ -214,7 +214,7 @@ export default function CalendarPage() {
                 eventObj.user_id = scd.user_id;
                 break;
             case "project":
-                console.log('scd?: ', scd);
+                // console.log('scd?: ', scd);
                 eventObj.user_id = scd.user_id;
                 break;
             default:
