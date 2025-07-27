@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Chatbot from './component/chatbot/Chatbot';
 import AdminPaeneol from './component/adminpaeneol/AdminPaeneol';
 import { Client } from '@stomp/stompjs';
@@ -24,6 +25,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/ws';
 
 export default function Header() {
+    const router = useRouter();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -186,6 +188,80 @@ export default function Header() {
         }
     };
 
+    // 알림 클릭 시 페이지 이동 처리
+    const handleNotificationClick = async (notification) => {
+        try {
+            const userId = sessionStorage.getItem('userId');
+            if (!userId) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            // 백엔드 API 호출하여 알림 클릭 처리
+            const requestUrl = `${apiUrl}/click/${notification.notification_id}`;
+            console.log('API 호출 URL:', requestUrl);
+            console.log('API 호출 데이터:', { user_id: userId });
+            
+            const response = await fetch(requestUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_id: userId
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                // 알림을 읽음 처리 (로컬 상태 업데이트)
+                setNotifications(prev => 
+                    prev.map(n => 
+                        n.notification_id === notification.notification_id 
+                            ? { ...n, read: true }
+                            : n
+                    )
+                );
+                setUnreadCount(prev => Math.max(0, prev - 1));
+                
+                // 타겟 URL로 이동
+                if (result.target_url) {
+                    // 백엔드에서 받은 URL을 올바른 경로로 매핑
+                    let targetUrl = result.target_url;
+                    
+                    // 잘못된 경로들을 올바른 경로로 수정
+                    if (targetUrl === "/chat") {
+                        targetUrl = "/component/chating";
+                    } else if (targetUrl === "/approval") {
+                        targetUrl = "/component/approval";
+                    } else if (targetUrl === "/files") {
+                        targetUrl = "/component/files";
+                    } else if (targetUrl === "/board") {
+                        targetUrl = "/component/board";
+                    } else if (targetUrl === "/mypage") {
+                        targetUrl = "/component/mypage";
+                    } else if (targetUrl === "/project") {
+                        targetUrl = "/component/project";
+                    } else if (targetUrl === "/meeting") {
+                        targetUrl = "/component/meeting";
+                    }
+                    
+                    // 페이지 이동
+                    router.push(targetUrl);
+                }
+                
+                // 모달 닫기
+                setShowNotificationModal(false);
+            } else {
+                alert('알림 처리 실패: ' + result.message);
+            }
+        } catch (error) {
+            console.error('알림 클릭 처리 실패:', error);
+            alert('알림 처리 중 오류가 발생했습니다.');
+        }
+    };
+
 
   return (
     <div className='bg_tertiary widht_100'>
@@ -234,7 +310,6 @@ export default function Header() {
                     position: 'relative'
                   }}
                 >
-                  <span style={{fontSize: '14px'}}>🔔</span>
                   <span>알림</span>
                   {unreadCount > 0 && (
                     <span style={{
@@ -274,7 +349,6 @@ export default function Header() {
                     position: 'relative'
                   }}
                 >
-                  <span style={{fontSize: '14px'}}>🔔</span>
                   {unreadCount > 0 && (
                     <span style={{
                       position: 'absolute',
@@ -319,6 +393,14 @@ export default function Header() {
               </li>
               <li className='su_small_text font_500 links'>
                 <Link href={"/component/mypage"}>마이페이지</Link>
+              </li>
+              <li className='su_small_text font_500 links'>
+                <a href="#" onClick={(e) => {
+                  e.preventDefault();
+                  toggleNotificationModal();
+                }}>
+                  알림 {unreadCount > 0 && `(${unreadCount})`}
+                </a>
               </li>
           </ul>
         </div>
@@ -412,7 +494,7 @@ export default function Header() {
                         cursor: 'pointer',
                         transition: 'background-color 0.2s'
                       }}
-                      onClick={() => markAsRead(notification.notification_id)}
+                      onClick={() => handleNotificationClick(notification)}
                     >
                       <div style={{
                         display: 'flex',
