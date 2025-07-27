@@ -73,7 +73,7 @@ function getVisibleEvents(events, user) {
         if (ev.type === "company") return ev.visible_to_all;
         if (ev.type === "team") return ev.team_id === user.team_id && ev.allowed_grades.includes(user.grade);
         if (ev.type === "personal") return ev.user_id === user.id;
-        if (ev.type === "project") return ev.user_id === user.id;
+        if (ev.type === "project") return ev.user_id === user.id;   // 플젝에 포함되는 사람이 나와야함
         if (ev.type === 'leave') return ev.id === user.team_id;
         return false;
     });
@@ -173,6 +173,11 @@ export default function CalendarPage() {
         }
     }
 
+    // 플젝 팀 가져오는거 아제발요...진짜 아
+    const getProfileUsers = async () => {
+        let {data} = await axios.get(`${apiUrl}/project/detail/${idx}`);
+    }
+
 
     // 일정 가져올때 쓰는 매핑함수
     const mappingScd = ({scd}) => {
@@ -209,6 +214,7 @@ export default function CalendarPage() {
                 eventObj.user_id = scd.user_id;
                 break;
             case "project":
+                console.log('scd?: ', scd);
                 eventObj.user_id = scd.user_id;
                 break;
             default:
