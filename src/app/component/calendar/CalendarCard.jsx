@@ -3,7 +3,7 @@
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import Link from 'next/link';
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
 import interactionPlugin from '@fullcalendar/interaction';
 
@@ -38,7 +38,7 @@ export default function CalendarCard({ onTodayCountChange }) {
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(dayfomatted());
-  const currentUser = useRef({ id: null, team_id: null });
+  const [currentUser, setCurrentUser] = useState({ id: null, team_id: null });
   const [userReady, setUserReady] = useState(false);
 
   const fetchUserInfo = async () => {
@@ -46,12 +46,12 @@ export default function CalendarCard({ onTodayCountChange }) {
       const { data } = await axios.get(`${apiUrl}/mypage/info`, {
         headers: { Authorization: sessionStorage.getItem('token') },
       });
-      currentUser.current = {
+      setCurrentUser({
         id: data.data.user_id,
         team_id: data.data.dept_idx,
-      };
+      });
     } catch {
-      currentUser.current = { id: null, team_id: null };
+      setCurrentUser({ id: null, team_id: null });
     } finally {
       setUserReady(true);
     }
@@ -67,7 +67,7 @@ export default function CalendarCard({ onTodayCountChange }) {
       title: `${scd.name} : ${scd.subject}`,
       type: 'leave',
       user_id: scd.writer_id,
-      team_id: currentUser.current.team_id,
+      team_id: currentUser.team_id,
     };
 
     if (scd.vac_start === scd.vac_end) {
@@ -80,7 +80,7 @@ export default function CalendarCard({ onTodayCountChange }) {
   };
 
   const callEvents = async () => {
-    if (!currentUser.current.team_id) {
+    if (!currentUser.team_id) {
       setCalendarEvents([]);
       return;
     }
@@ -105,7 +105,7 @@ export default function CalendarCard({ onTodayCountChange }) {
         return event;
       });
 
-      const leaveRes = await axios.get(`${apiUrl}/leave/team/${currentUser.current.team_id}`);
+      const leaveRes = await axios.get(`${apiUrl}/leave/team/${currentUser.team_id}`);
       const leaveEvents = leaveRes.data.list.map(item => mappingLeave(item));
 
       setCalendarEvents([...generalEvents, ...leaveEvents]);
@@ -136,24 +136,22 @@ export default function CalendarCard({ onTodayCountChange }) {
     });
   };
 
-  // userReady가 true가 된 후에 이벤트 호출
   useEffect(() => {
     fetchUserInfo();
   }, []);
 
   useEffect(() => {
-    if (userReady) {
+    if (userReady && currentUser.team_id) {
       callEvents();
     }
-  }, [userReady]);
+  }, [userReady, currentUser.team_id]);
 
-  // calendarEvents가 바뀌면 필터링
   useEffect(() => {
-    if (currentUser.current.id && calendarEvents.length > 0) {
-      const filtered = filterEvents(calendarEvents, currentUser.current);
+    if (currentUser.id && calendarEvents.length > 0) {
+      const filtered = filterEvents(calendarEvents, currentUser);
       setFilteredEvents(filtered);
     }
-  }, [calendarEvents]);
+  }, [calendarEvents, currentUser]);
 
   const calendarEventsFormatted = filteredEvents.map(ev => {
     if (ev.start && ev.end) {
@@ -177,7 +175,7 @@ export default function CalendarCard({ onTodayCountChange }) {
 
   const today = useMemo(() => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() +1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   }, []);
 
   const countTodayEvents = (events) => {
@@ -228,7 +226,7 @@ export default function CalendarCard({ onTodayCountChange }) {
             const mm = String(cellDate.getMonth() + 1).padStart(2, '0');
             const dd = String(cellDate.getDate()).padStart(2, '0');
             const cellDateStr = `${yyyy}-${mm}-${dd}`;
-          
+
             return cellDateStr === selectedDate ? ['selected-day'] : [];
           }}
         />
