@@ -178,13 +178,31 @@ export default function Header() {
             const userId = sessionStorage.getItem('userId');
             if (!userId) return;
 
-            for (const notification of notifications) {
-                if (!notification.read) {
-                    await markAsRead(notification.notification_id);
+            // 모든 알림을 삭제 (로컬 상태에서 제거)
+            setNotifications([]);
+            setUnreadCount(0);
+            
+            // 백엔드에 모든 알림 삭제 요청 (선택사항)
+            try {
+                const response = await fetch(`${apiUrl}/notification/delete-all`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_id: userId
+                    })
+                });
+                
+                if (!response.ok) {
+                    console.error('백엔드 알림 삭제 실패:', response.status);
                 }
+            } catch (backendError) {
+                console.error('백엔드 알림 삭제 오류:', backendError);
+                // 백엔드 오류가 있어도 프론트엔드에서는 삭제됨
             }
         } catch (error) {
-            console.error('모든 알림 읽음 처리 실패:', error);
+            console.error('모든 알림 삭제 실패:', error);
         }
     };
 
@@ -526,7 +544,16 @@ export default function Header() {
                             color: '#999',
                             marginTop: '4px'
                           }}>
-                            {new Date(notification.created_at).toLocaleString('ko-KR')}
+                            {notification.created_at ? 
+                              (() => {
+                                try {
+                                  return new Date(notification.created_at).toLocaleString('ko-KR');
+                                } catch (error) {
+                                  return new Date().toLocaleString('ko-KR');
+                                }
+                              })() : 
+                              new Date().toLocaleString('ko-KR')
+                            }
                           </div>
                         </div>
                         {!notification.read && (
