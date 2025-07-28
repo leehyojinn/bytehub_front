@@ -762,7 +762,6 @@ export default function ApprovalSystem() {
                       <th>상태</th>
                       <th>종류</th>
                       <th>기안일</th>
-                      <th>연차 기간</th>
                       <th>첨부파일</th>
                     </tr>
                   </thead>
@@ -788,15 +787,6 @@ export default function ApprovalSystem() {
                           </td>
                           <td>{doc.appr_type}</td>
                           <td>{doc.appr_date ? new Date(doc.appr_date).toLocaleDateString() : '-'}</td>
-                          <td>
-                            {vacationDates ? (
-                              <span style={{ fontSize: '12px', color: '#433878' }}>
-                                {vacationDates.startDate} ~ {vacationDates.endDate}
-                              </span>
-                            ) : (
-                              <span style={{ color: '#999' }}>-</span>
-                            )}
-                          </td>
                           <td>
                             <span style={{ textAlign: "center" }}>
                               {doc.has_files === "있음" ? "O" : "-"}
@@ -861,7 +851,6 @@ export default function ApprovalSystem() {
                       <th>상태</th>
                       <th>종류</th>
                       <th>기안일</th>
-                      <th>연차 기간</th> 
                       <th>첨부파일</th>
                     </tr>
                   </thead>
@@ -885,15 +874,6 @@ export default function ApprovalSystem() {
                           </td>
                           <td>{doc.appr_type}</td>
                           <td>{doc.appr_date ? new Date(doc.appr_date).toLocaleDateString() : '-'}</td>
-                          <td>
-                            {vacationDates ? (
-                              <span style={{ fontSize: '12px', color: '#433878' }}>
-                                {vacationDates.startDate} ~ {vacationDates.endDate}
-                              </span>
-                            ) : (
-                              <span style={{ color: '#999' }}>-</span>
-                            )}
-                          </td>
                           <td>
                             {doc.files && doc.files.length > 0 ? (
                               <div className="file_list">
@@ -971,7 +951,6 @@ export default function ApprovalSystem() {
                         <th>상태</th>
                         <th>종류</th>
                         <th>기안일</th>
-                        <th>연차 기간</th>
                         <th>첨부파일</th>
                       </tr>
                       </thead>
@@ -995,15 +974,6 @@ export default function ApprovalSystem() {
                             </td>
                             <td>{doc.appr_type}</td>
                             <td>{doc.appr_date ? new Date(doc.appr_date).toLocaleDateString() : '-'}</td>
-                            <td>
-                              {vacationDates ? (
-                                <span style={{ fontSize: '12px', color: '#433878' }}>
-                                  {vacationDates.startDate} ~ {vacationDates.endDate}
-                                </span>
-                              ) : (
-                                <span style={{ color: '#999' }}>-</span>
-                              )}
-                            </td>
                             <td>
                               {doc.files && doc.files.length > 0 ? (
                                 <div className="file_list">
