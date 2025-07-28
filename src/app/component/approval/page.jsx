@@ -1200,7 +1200,7 @@ export default function ApprovalSystem() {
                       {/* 결재자이면서 대기중인 경우에만 승인/반려 버튼 노출 */}
                       {selectedDoc.history && selectedDoc.history.length > 0 && userId && (
                         selectedDoc.history
-                          .filter(h => h.checker_id === userId && h.status === '상신')
+                          .filter(h => h.checker_id === userId && (h.status === '상신' || h.status === '대기중'))
                           .map((myHistory, idx) => (
                             <React.Fragment key={idx}>
                               <button
@@ -1221,6 +1221,7 @@ export default function ApprovalSystem() {
                             </React.Fragment>
                           ))
                       )}
+                      {/* 디버깅용: 조건이 맞지 않을 때도 닫기 버튼은 항상 표시 */}
                       <button
                         className="approval_btn approval_btn_secondary"
                         onClick={() => setSelectedDoc(null)}
