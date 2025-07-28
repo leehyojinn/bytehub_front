@@ -4693,3 +4693,11 @@ a:hover {
   font-weight: 500;
   color: #1a202c;
 }
+
+.main_link{
+  width: fit-content;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 2;
+}

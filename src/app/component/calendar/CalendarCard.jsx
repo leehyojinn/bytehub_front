@@ -2,6 +2,7 @@
 
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
+import Link from 'next/link';
 
 const calendarEvents = [
   { id: '1', title: '회의실 예약', date: '24-07-15' },
@@ -10,6 +11,9 @@ const calendarEvents = [
 export default function CalendarCard() {
   return (
     <div className="main_box calendar_card flex_1" id='main_calendar'>
+      <Link href="/component/calendar">
+        <img src="/link.png" alt="link" className="main_link"/>
+      </Link>
       <div className="card_title font_700">캘린더</div>
       <FullCalendar
         plugins={[dayGridPlugin]}
