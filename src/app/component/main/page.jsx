@@ -82,9 +82,10 @@ export default function Home() {
       const userId = sessionStorage.getItem('userId');
       if (!userId) return;
       const response = await axios.get(`${apiUrl}/notification/unread?user_id=${userId}`);
+      console.log(response);
       if (response.data.success) {
-        setNotifications(response.data.data);
-        setUnreadCount(response.data.count);
+        setNotifications(response.data.data.filter(d=> d.type == 'CHAT_MESSAGE'));
+        setUnreadCount(notifications.length);
       }
     } catch (error) {
       console.error('알림 조회 실패:', error);
