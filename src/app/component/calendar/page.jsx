@@ -128,6 +128,11 @@ export default function CalendarPage() {
 
     // useMemo 병나발쇼
     const [currentUser, setCurrentUser] = useState({});
+
+
+    
+
+
     const visibleEvents = useMemo(() => {
         if (!currentUser.id) return [];
         return getVisibleEvents(events, currentUser);
@@ -145,9 +150,6 @@ export default function CalendarPage() {
         }
     }, [showModal]);
 
-    useEffect(() => {
-        if (currentUser.id) callEvents();
-    }, [currentUser]);
 
     const userId = useRef('');
     useEffect(() => {
@@ -157,7 +159,7 @@ export default function CalendarPage() {
         callUserInfo().then(async () => {
             await callEvents();
         })
-    }, []);
+    }, [currentUser.team_id]);
 
     // 남의꺼 함부로 수정 못하게 하는거
     const edit_filter = (type) => {
@@ -262,6 +264,7 @@ export default function CalendarPage() {
     const callLeaves = async () => {
         // 으윽 트라이캐치 쓰기싫어
         try{
+            console.log('currentUser?: ', currentUser);
             let {data} = await axios.get(`${apiUrl}/leave/team/${currentUser.team_id}`);
             const team_leave_list = data.list.map((item) => {
                 return mappingLeave({scd: item});

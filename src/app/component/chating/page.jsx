@@ -65,6 +65,11 @@ export default function ChatPage() {
     }
   }
 
+  // 채팅방의 member가 내가 아닐시 컷하는거
+  const blockOtherRoom = () =>{
+    console.log('user and Room info?: ', rooms);
+  }
+
   // 채팅방 목록 불러오기
   async function fetchRooms() {
     try {
@@ -468,6 +473,7 @@ const handleSend = (e) => {
               .map(room => (
               <div
                 key={room.id}
+                style={{cursor:'pointer'}}
                 className={`chat_room_item${selectedRoomId === room.id ? " active" : ""}${room.archived ? " archived" : ""}`}
                 onClick={() => handleSelectRoom(room.id)}
               >
