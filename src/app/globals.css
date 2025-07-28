@@ -2803,6 +2803,7 @@ a:hover {
 .chat_room_list_head{
   display: flex;
   gap: 20px;
+  justify-content: center;
   margin-bottom: 40px;
 }
 
@@ -4639,7 +4640,6 @@ a:hover {
   }
   .chat_room_list_head {
     display: flex;
-    justify-content: space-between;
     margin-bottom: 2rem;
   }
 
