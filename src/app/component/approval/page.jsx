@@ -935,7 +935,7 @@ export default function ApprovalSystem() {
                 <h3 className="card_title font_600 mb_10">결재 목록 리스트</h3>
                 <div className="approval_status_legend mb_16 flex gap_10">
                   <span className="approval_status_badge status_rejected">반려</span>
-                  <span className="approval_status_badge status_progress">결재중</span>
+                  <span className="approval_status_badge status_progress">상신</span>
                   <span className="approval_status_badge status_approved">승인</span>
                 </div>
                 {loading ? (
@@ -1200,7 +1200,7 @@ export default function ApprovalSystem() {
                       {/* 결재자이면서 대기중인 경우에만 승인/반려 버튼 노출 */}
                       {selectedDoc.history && selectedDoc.history.length > 0 && userId && (
                         selectedDoc.history
-                          .filter(h => h.checker_id === userId && h.status === '대기중')
+                          .filter(h => h.checker_id === userId && h.status === '상신')
                           .map((myHistory, idx) => (
                             <React.Fragment key={idx}>
                               <button
