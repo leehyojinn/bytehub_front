@@ -37,8 +37,9 @@ const dayfomatted = () => {
 
 // --- 새로 추가하는 mappingScd 함수 ---
 const mappingScd = ({ scd }) => {
+  const id = `scd-${scd.scd_idx || Math.random().toString()}`;
   let eventObj = {
-    id: scd.scd_idx,
+    id,
     title: scd.subject,
     type: scd.scd_type,
     type_idx: scd.type_idx,
@@ -105,12 +106,13 @@ export default function CalendarCard({ onTodayCountChange }) {
   };
 
   const mappingLeave = (scd, teamId) => {
+    const id = `leave-${scd.appr_idx || scd.vac_idx || scd.scd_idx || Math.random().toString()}`;
     const endPlusOne = new Date(scd.vac_end);
     endPlusOne.setDate(endPlusOne.getDate() + 1);
     const endStr = endPlusOne.toISOString().slice(0, 10);
 
     let eventObj = {
-      id: scd.appr_idx || scd.vac_idx || scd.scd_idx || Math.random().toString(),
+      id,
       title: `${scd.name} : ${scd.subject}`,
       type: 'leave',
       user_id: scd.writer_id,
