@@ -646,7 +646,7 @@ const handleSend = (e) => {
               </div>
               <div className="board_write_row">
                 <label className="board_write_label">멤버 선택</label>
-                <div className="member_checkbox_group" style={{display:"flex", flexWrap:"wrap", gap:8}}>
+                <div className="member_checkbox_group" style={{display:"flex", flexWrap:"wrap", gap:8, alignItems:"center"}}>
                   {newRoomMembers.map(user_id => {
                     const m = memberList.find(m => m.user_id === user_id);
                     return m ? (
