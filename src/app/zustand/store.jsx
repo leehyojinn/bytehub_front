@@ -100,6 +100,12 @@ export const checkAuthStore = create((set, get) => ({
                 }
             }
         }
+    },
+    visibleChatRoom: ({user_id, room}) => {
+        if (room.members.includes(user_id)) {
+            return true;
+        }
+        return false;
     }
 }));
 

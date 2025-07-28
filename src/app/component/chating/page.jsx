@@ -65,10 +65,6 @@ export default function ChatPage() {
     }
   }
 
-  // 채팅방의 member가 내가 아닐시 컷하는거
-  const blockOtherRoom = () =>{
-    console.log('user and Room info?: ', rooms);
-  }
 
   // 채팅방 목록 불러오기
   async function fetchRooms() {
@@ -111,7 +107,16 @@ export default function ChatPage() {
         }))
       })));
       if (selectedRoomId === null && res.data.length > 0) {
-        setSelectedRoomId(res.data[0].chat_idx);
+        // 채팅방 권한 없으면 다른채팅방으로 자동이동
+
+        for(let i = 0 ; i < res.data.length; i++){
+          console.log('for-rooms?: ', i,rooms[i].members);
+          if(block.visibleChatRoom({user_id:getCurrentUser(), room:rooms[i]})){
+            setSelectedRoomId(res.data[i].chat_idx);
+            break;
+          }
+        }
+        // setSelectedRoomId(res.data[0].chat_idx);
       }
     } catch (e) {
       setRooms([]);
@@ -119,8 +124,10 @@ export default function ChatPage() {
   }
 
   useEffect(() => {
+    createAuthRef.current = block.callAuths({session:sessionStorage, type:'chat'});
     fetchMemberList();
-    fetchRooms();
+    fetchRooms().then((res) => {
+    })
   }, []);
 
 
@@ -128,9 +135,9 @@ export default function ChatPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       createAuthRef.current = block.callAuths({session:sessionStorage, type:'chat'});
-      // console.log('auths from sessionStorage:', createAuthRef.current);
+      console.log('user and Room info? : ', getCurrentUser(), rooms);
     }
-  }, []);
+  }, [rooms.length]);
 
 
 
@@ -397,7 +404,7 @@ const handleSend = (e) => {
     setSelectedMembers(prev =>
       prev.includes(user_id)
         ? prev.filter(n => n !== user_id)
-        : [...prev, user_id]
+             : [...prev, user_id]
     );
   };
   const handleMemberConfirm = async () => {
@@ -471,25 +478,30 @@ const handleSend = (e) => {
             )}
             {rooms
               .filter(room => showArchived ? room.archived : true)
-              .map(room => (
-              <div
-                key={room.id}
-                style={{cursor:'pointer'}}
-                className={`chat_room_item${selectedRoomId === room.id ? " active" : ""}${room.archived ? " archived" : ""}`}
-                onClick={() => handleSelectRoom(room.id)}
-              >
-                <img src={room.avatar} alt="방아바타" className="chat_room_avatar" />
-                <div className="chat_room_info">
-                  <div className="chat_room_name">{room.name}</div>
-                  <div className="chat_room_last">{room.lastMsg}</div>
-                </div>
-                <div className="chat_room_meta">
-                  <span className="chat_room_time">{formatTime(room.lastTime)}</span>
-                  {room.unread > 0 && <span className="chat_room_unread">{room.unread}</span>}
-                  {room.archived && <span className="chat_room_archived">보관됨</span>}
-                </div>
-              </div>
-            ))}
+              .map(room => {
+                if (block.visibleChatRoom({user_id: getCurrentUser(), room: room})) {
+
+                  return (
+                      <div
+                          key={room.id}
+                          style={{cursor: 'pointer'}}
+                          className={`chat_room_item${selectedRoomId === room.id ? " active" : ""}${room.archived ? " archived" : ""}`}
+                          onClick={() => handleSelectRoom(room.id)}
+                      >
+                        <img src={room.avatar} alt="방아바타" className="chat_room_avatar"/>
+                        <div className="chat_room_info">
+                          <div className="chat_room_name">{room.name}</div>
+                          <div className="chat_room_last">{room.lastMsg}</div>
+                        </div>
+                        <div className="chat_room_meta">
+                          <span className="chat_room_time">{formatTime(room.lastTime)}</span>
+                          {room.unread > 0 && <span className="chat_room_unread">{room.unread}</span>}
+                          {room.archived && <span className="chat_room_archived">보관됨</span>}
+                        </div>
+                      </div>
+                  );
+                  }
+              })}
           </div>
           {/* 오른쪽: 채팅창 */}
           <div className="chat_main_box">

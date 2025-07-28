@@ -28,7 +28,18 @@ const typeLabels = {
     project: "프로젝트",
 };
 // initial today
-let today = '2025-07-24';
+
+const dayfomatted=()=>{
+    const today = new Date();
+
+    const year = today.getFullYear(); // 예: 2025
+    const month = String(today.getMonth() + 1).padStart(2, '0'); // 01 ~ 12
+    const day = String(today.getDate()).padStart(2, '0'); // 01 ~ 31
+
+    return `${year}-${month}-${day}`;
+}
+
+let today = dayfomatted();
 
 // initial events
 const calendar_events = [
@@ -106,6 +117,7 @@ function flattenEventsForCalendar(events) {
 }
 
 function countTodayEvents(events, today) {
+    console.log(today);
     return events.filter(ev => {
         if (ev.date === today) return true;
         if (ev.start && ev.end) {
@@ -260,8 +272,10 @@ export default function CalendarPage() {
     const callLeaves = async () => {
         // 으윽 트라이캐치 쓰기싫어
         try{
-            console.log('currentUser.current?: ', currentUser.current);
+            // console.log('currentUser.current?: ', currentUser.current);
+
             let {data} = await axios.get(`${apiUrl}/leave/team/${currentUser.current.team_id}`);
+            console.log('leave data?: ', data.list);
             const team_leave_list = data.list.map((item) => {
                 return mappingLeave({scd: item});
             });
@@ -269,6 +283,7 @@ export default function CalendarPage() {
         }catch (error) {
             console.log('UserInfo loading…')
         }
+        // console.log(events);
     }
 
 
