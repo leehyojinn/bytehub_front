@@ -129,6 +129,7 @@ export default function ProjectManagement() {
   const totalPages = Math.ceil(filteredProjects.length / PAGE_SIZE);
   const pagedProjects = filteredProjects.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  console.log(pagedProjects);
   const isNearDeadline = (endDate) => {
     const now = new Date();
     const end = new Date(endDate);
@@ -385,7 +386,7 @@ export default function ProjectManagement() {
                 >
                   <div className="project_card_head">
                     <span className="project_priority">우선순위 {p.priority}</span>
-                    <span className="project_status">{p.status ? "삭제됨" : "진행중"}</span>
+                    <span className="project_status">{p.progress == 100 ? "완료" : "진행중"}</span>
                     {isNearDeadline(p.end_date) && (
                       <span className="project_deadline_badge">마감일 임박</span>
                     )}

@@ -4701,3 +4701,7 @@ a:hover {
   top: 10px;
   z-index: 2;
 }
+
+.fc-daygrid-body, .fc-daygrid-body-unbalanced, .fc-daygrid-body-natural {
+  width: 100% !important;
+}
