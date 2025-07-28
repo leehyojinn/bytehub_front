@@ -134,16 +134,19 @@ export default function CalendarCard({ onTodayCountChange }) {
     }
     try {
       const { data } = await axios.get(`${apiUrl}/scd/total`);
-
+      console.log('scd/total 응답:', data);
       // mappingScd 함수로 일정 데이터 변환 (방어코드 포함)
       const generalEvents = Array.isArray(data.scd_list)
         ? data.scd_list.map(scdItem => mappingScd({ scd: scdItem }))
         : [];
 
       const leaveRes = await axios.get(`${apiUrl}/leave/team/${currentUser.team_id}`);
-      const leaveEvents = Array.isArray(leaveRes.data.list)
-        ? leaveRes.data.list.map(item => mappingLeave(item, currentUser.team_id))
-        : [];
+      const filteredLeaveList = Array.isArray(leaveRes.data.list)
+      ? leaveRes.data.list.filter(item => item.appr_type === '연차')
+      : [];
+      console.log('leave/team 응답:', leaveRes.data);
+
+      const leaveEvents = filteredLeaveList.map(item => mappingLeave(item, currentUser.team_id));
 
       setCalendarEvents([...generalEvents, ...leaveEvents]);
     } catch (err) {
