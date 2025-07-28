@@ -87,6 +87,19 @@ export const checkAuthStore = create((set, get) => ({
                 }
             });
         }
+    },
+    // sessionstorage에서 auth 불러오는 코드 (json parse)
+    callAuths:({session, type})=>{
+        for (let i = 0; i < session.length; i++) {
+            const key = session.key(i);
+            if (key && key !== 'token' && key !== 'userId') {
+                const value = JSON.parse(session.getItem(key));
+                // console.log('auth for value: ', value);
+                if(value.access_type===type){
+                    return true;
+                }
+            }
+        }
     }
 }));
 

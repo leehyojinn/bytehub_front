@@ -4,10 +4,11 @@ import Header from "@/app/Header";
 import Footer from "@/app/Footer";
 import React, { useState, useRef, useEffect } from "react";
 import AlertModal from "../alertmodal/page";
-import { useAlertModalStore } from "@/app/zustand/store";
+import {checkAuthStore, useAlertModalStore} from "@/app/zustand/store";
 import { Client } from '@stomp/stompjs';
 import SockJS from "sockjs-client";
 import axios from "axios";
+import {create} from "zustand";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const wsUrl = process.env.NEXT_PUBLIC_WS_URL;
@@ -50,6 +51,9 @@ export default function ChatPage() {
   const stompClientRef = useRef(null);
   const subscriptionRef = useRef(null);
   const [connected, setConnected] = useState(false);
+
+  const block = checkAuthStore();
+  const createAuthRef=useRef(true);
 
   // 멤버리스트 불러오기
   async function fetchMemberList() {
@@ -114,6 +118,17 @@ export default function ChatPage() {
     fetchRooms();
   }, []);
 
+
+  // 세션스토리지에서 auth들을 불러오는 코드
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      createAuthRef.current = block.callAuths({session:sessionStorage, type:'chat'});
+      // console.log('auths from sessionStorage:', createAuthRef.current);
+    }
+  }, []);
+
+
+
   // WebSocket 연결
   useEffect(() => {
     const client = new Client({
@@ -135,36 +150,43 @@ export default function ChatPage() {
   useEffect(() => {
     if (!connected || !selectedRoomId || !stompClientRef.current) return;
     if (subscriptionRef.current) subscriptionRef.current.unsubscribe();
-    subscriptionRef.current = stompClientRef.current.subscribe(
-      `/topic/chat/${selectedRoomId}`,
-      (message) => {
-        const msg = JSON.parse(message.body);
-        setRooms(prev =>
-          prev.map(r =>
-            r.id === selectedRoomId
-              ? {
-                  ...r,
-                  messages: [...r.messages, {
-                    id: msg.msg_idx,
-                    from: msg.user_id,
-                    text: msg.content,
-                    time: msg.reg_date,
-                    me: msg.user_id === getCurrentUser(),
-                    files: msg.files ? msg.files.map(f => ({
-                      id: f.file_idx,
-                      name: f.name,
-                      saveName: f.saveName || (f.url ? f.url.split('/').pop() : f.name),
-                      size: f.size,
-                      uploadedAt: f.uploaded_at,
-                      expireAt: f.expire_at
-                    })) : []
-                  }]
-                }
-              : r
-          )
-        );
-      }
-    );
+
+    try {
+      subscriptionRef.current = stompClientRef.current.subscribe(
+          `/topic/chat/${selectedRoomId}`,
+          (message) => {
+            const msg = JSON.parse(message.body);
+            setRooms(prev =>
+                prev.map(r =>
+                    r.id === selectedRoomId
+                        ? {
+                          ...r,
+                          messages: [...r.messages, {
+                            id: msg.msg_idx,
+                            from: msg.user_id,
+                            text: msg.content,
+                            time: msg.reg_date,
+                            me: msg.user_id === getCurrentUser(),
+                            files: msg.files ? msg.files.map(f => ({
+                              id: f.file_idx,
+                              name: f.name,
+                              saveName: f.saveName || (f.url ? f.url.split('/').pop() : f.name),
+                              size: f.size,
+                              uploadedAt: f.uploaded_at,
+                              expireAt: f.expire_at
+                            })) : []
+                          }]
+                        }
+                        : r
+                )
+            );
+          }
+      );
+    } catch{
+      console.log('websocket load failed');
+    }
+
+
     return () => {
       if (subscriptionRef.current) subscriptionRef.current.unsubscribe();
     };
@@ -422,7 +444,7 @@ const handleSend = (e) => {
     
   }
 
-  console.log(selectedRoom);
+  // console.log(selectedRoom);
 
   return (
     <div>
@@ -433,7 +455,7 @@ const handleSend = (e) => {
           <div className="chat_room_list">
             <div className="chat_room_list_head">
               <p className="chat_newroom_btn2" style={{cursor:"auto"}}>채팅방</p>
-              <button className="chat_newroom_btn" onClick={() => setCreateModal(true)}>+ 새 채팅방</button>
+              {createAuthRef.current ? <button className="chat_newroom_btn" onClick={() => setCreateModal(true)}>+ 새 채팅방</button>: null}
               <button className="chat_archive_toggle" onClick={() => setShowArchived(v => !v)}>
                 {showArchived ? "모든방" : "보관만"}
               </button>
