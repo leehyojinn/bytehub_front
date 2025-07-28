@@ -314,8 +314,10 @@ export default function Attendance() {
 
       // 발송 성공 시 인증번호와 만료 시간 설정
       if (result.msg && result.msg.includes("발송")) {
+        // 이메일로 받은 인증번호는 출근용으로 사용
         setOtpIn(result.authCode);
-        setOtpOut(result.authCode);
+        // 퇴근용은 별도로 생성
+        setOtpOut(generateOtp());
         const now = new Date();
         const expire = new Date(now.getTime() + OTP_VALID_MINUTES * 60000);
         setExpireIn(expire);
@@ -344,8 +346,13 @@ export default function Attendance() {
   function createOtps() {
     const now = new Date();
     const expire = new Date(now.getTime() + OTP_VALID_MINUTES * 60000);
-    setOtpIn(generateOtp());
-    setOtpOut(generateOtp());
+    const otpInValue = generateOtp();
+    const otpOutValue = generateOtp();
+    
+    console.log('생성된 인증번호 - 출근용:', otpInValue, '퇴근용:', otpOutValue);
+    
+    setOtpIn(otpInValue);
+    setOtpOut(otpOutValue);
     setExpireIn(expire);
     setExpireOut(expire);
     setUsedOtpIn(false);
@@ -373,6 +380,9 @@ export default function Attendance() {
     if (now > expire) return alert("인증번호가 만료되었습니다. 새로고침 후 시도하세요.");
     if (!userId) return alert('로그인 정보가 없습니다. 다시 로그인 해주세요.');
 
+    // 디버깅용 로그
+    console.log('인증 시도 - 모드:', mode, '입력:', input, '예상:', expectedCode);
+    
     // 백엔드에 인증번호 검증 및 기록 요청
     const result = await verifyOtp(userId, input, expectedCode, mode);
     
