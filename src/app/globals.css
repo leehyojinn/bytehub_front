@@ -3015,13 +3015,11 @@ a:hover {
 
   .fc .fc-toolbar-chunk:nth-child(3) { /* right chunk (prev,next,today) */
     display: flex;
-    flex-direction: column; /* Stack buttons */
     gap: 5px;
     align-items: flex-end;
   }
 
   .fc .fc-button-group {
-    flex-direction: column; /* Stack prev/next buttons */
     width: 100%;
   }
 
