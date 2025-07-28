@@ -70,7 +70,8 @@ export default function ChatPage() {
   async function fetchRooms() {
     try {
       const res = await axios.get(`${apiUrl}/chat/rooms?user_id=${getCurrentUser()}`);
-      setRooms(res.data.map(room => ({
+
+      const parsedRooms = res.data.map(room => ({
         ...room,
         id: room.chat_idx,
         name: room.chat_name,
@@ -90,7 +91,6 @@ export default function ChatPage() {
           files: (msg.files || []).map(f => ({
             id: f.file_idx,
             name: f.name,
-            // saveName 필드가 없다면 아래에서 추가 필요
             saveName: f.saveName || (f.url ? f.url.split('/').pop() : f.name),
             size: f.size,
             uploadedAt: f.uploaded_at,
@@ -105,20 +105,28 @@ export default function ChatPage() {
           uploadedAt: f.uploaded_at,
           expireAt: f.expire_at
         }))
-      })));
-      if (selectedRoomId === null && res.data.length > 0) {
-        // 채팅방 권한 없으면 다른채팅방으로 자동이동
+      }));
 
-        for(let i = 0 ; i < res.data.length; i++){
-          console.log('for-rooms?: ', i,rooms[i].members);
-          if(block.visibleChatRoom({user_id:getCurrentUser(), room:rooms[i]})){
-            setSelectedRoomId(res.data[i].chat_idx);
+      setRooms(parsedRooms); // 상태 업데이트
+
+      // selectedRoomId가 없을 경우, 접근 가능한 방을 찾아서 선택
+      if (selectedRoomId === null && parsedRooms.length > 0) {
+        let fallbackRoomId = parsedRooms[0].id;
+
+        for (let i = 0; i < parsedRooms.length; i++) {
+          const room = parsedRooms[i];
+          console.log('checking room:', i, room.members);
+          if (block.visibleChatRoom({ user_id: getCurrentUser(), room })) {
+            fallbackRoomId = room.id;
             break;
           }
         }
-        // setSelectedRoomId(res.data[0].chat_idx);
+
+        setSelectedRoomId(fallbackRoomId);
       }
+
     } catch (e) {
+      console.error('Error fetching chat rooms:', e);
       setRooms([]);
     }
   }
@@ -126,8 +134,7 @@ export default function ChatPage() {
   useEffect(() => {
     createAuthRef.current = block.callAuths({session:sessionStorage, type:'chat'});
     fetchMemberList();
-    fetchRooms().then((res) => {
-    })
+    fetchRooms();
   }, []);
 
 
