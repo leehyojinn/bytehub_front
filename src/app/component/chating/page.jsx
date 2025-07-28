@@ -446,6 +446,7 @@ const handleSend = (e) => {
     let {data} = await axios.post(`${apiUrl}/chat/archived`,roomIdx);
 
     console.log(data);
+    fetchRooms();
     
   }
 
