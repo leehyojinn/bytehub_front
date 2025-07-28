@@ -586,7 +586,7 @@ const handleSend = (e) => {
                 onChange={e => setInput(e.target.value)}
               />
               <label className="chat_file_label flex">
-                <img src="/folder.png" alt="폴더" />
+                <img src="/folder.png" alt="폴더" style={{width:"fit-content"}} />
                 <input
                   type="file"
                   style={{ display: "none" }}
