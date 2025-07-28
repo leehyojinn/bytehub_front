@@ -4,21 +4,23 @@ import Header from "@/app/Header";
 import Footer from "@/app/Footer";
 import CalendarCard from "../calendar/CalendarCard";
 import axios from "axios";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "@/app/zustand/store";
+import Link from "next/link";
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/ws';
 const MAX_LENGTH = 15;
 
 function ellipsis(str, maxLength = MAX_LENGTH) {
   if (!str) return "";
   return str.length > maxLength ? str.slice(0, maxLength) + "..." : str;
 }
-
 function formatDate(dateString) {
   return dateString?.slice(0, 10);
 }
-
 function getCurrentDate() {
   const date = new Date();
   const year = date.getFullYear();
@@ -26,13 +28,10 @@ function getCurrentDate() {
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
-
 function getHourAndMinute(datetimeStr) {
   if (!datetimeStr) return "-";
   return datetimeStr.slice(11, 13) + "시 " + datetimeStr.slice(14, 16) + "분";
 }
-
-// 근태통계 계산 함수 (출근, 연장근무, 지각/조퇴, 결석, 기타)
 function getAttendanceStats(attList) {
   const stats = {
     출근: 0,
@@ -70,7 +69,70 @@ export default function Home() {
     setLoading,
   } = useAppStore();
 
-  // 내 정보 가져오기
+  // --------- 실시간 알림(채팅) 상태 ---------
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const stompClientRef = useRef(null);
+  const subscriptionRef = useRef(null);
+
+  // 알림 목록 서버에서 불러오기
+  const fetchNotifications = async () => {
+    try {
+      const userId = sessionStorage.getItem('userId');
+      if (!userId) return;
+      const response = await axios.get(`${apiUrl}/notification/unread?user_id=${userId}`);
+      if (response.data.success) {
+        setNotifications(response.data.data);
+        setUnreadCount(response.data.count);
+      }
+    } catch (error) {
+      console.error('알림 조회 실패:', error);
+    }
+  };
+
+  // WebSocket 연결 및 subscribe
+  useEffect(() => {
+    const userId = sessionStorage.getItem('userId');
+    if (!userId) return;
+
+    const client = new Client({
+      webSocketFactory: () => new SockJS(wsUrl),
+      reconnectDelay: 5000,
+      debug: () => {},
+      onConnect: () => {
+        subscriptionRef.current = client.subscribe(`/topic/notification/${userId}`, (message) => {
+          const notification = JSON.parse(message.body);
+          setNotifications(prev => [notification, ...prev]);
+          setUnreadCount(prev => prev + 1);
+          // 필요시 Notification API 호출 가능
+        });
+      },
+      onDisconnect: () => {
+        if(subscriptionRef.current){
+          subscriptionRef.current.unsubscribe();
+          subscriptionRef.current = null;
+        }
+      }
+    });
+
+    client.activate();
+    stompClientRef.current = client;
+
+    return () => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
+      client.deactivate();
+    };
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    if (Notification.permission === 'default') Notification.requestPermission();
+  }, []);
+
+  // ------- 기존 데이터 및 함수 -------
   async function myInfoList() {
     setLoading(true);
     const token = sessionStorage.getItem("token");
@@ -87,8 +149,6 @@ export default function Home() {
     }
     setLoading(false);
   }
-
-  // 게시판 리스트
   async function boardList() {
     setLoading(true);
     try {
@@ -101,8 +161,6 @@ export default function Home() {
     }
     setLoading(false);
   }
-
-  // 클라우드 목록
   async function cloudList() {
     if (!myInfo.dept_idx) return;
     setLoading(true);
@@ -117,8 +175,6 @@ export default function Home() {
     }
     setLoading(false);
   }
-
-  // 결재 문서 조회
   async function fetchApprovals() {
     if (!myInfo.user_id) return;
     setLoading(true);
@@ -133,8 +189,6 @@ export default function Home() {
     }
     setLoading(false);
   }
-
-  // 근태 리스트 월별 조회 - 현재 월 기준
   async function attList() {
     if (!myInfo.user_id) return;
     setLoading(true);
@@ -147,7 +201,6 @@ export default function Home() {
           yearMonth,
         },
       });
-      console.log(data.data)
       if (data.success) setAtt(data.data);
       else setAtt([]);
     } catch {
@@ -160,58 +213,29 @@ export default function Home() {
     boardList();
     myInfoList();
   }, []);
-
-  useEffect(() => {
-    if (myInfo.dept_idx) cloudList();
-  }, [myInfo.dept_idx]);
-
-  useEffect(() => {
-    if (myInfo.user_id) {
-      fetchApprovals();
-      attList();
-    }
-  }, [myInfo.user_id]);
+  useEffect(() => { if (myInfo.dept_idx) cloudList(); }, [myInfo.dept_idx]);
+  useEffect(() => { if (myInfo.user_id) { fetchApprovals(); attList(); } }, [myInfo.user_id]);
 
   const today = getCurrentDate();
-
-  // 오늘날짜 해당 근태 데이터 필터링
   const todayAttendance = att.filter((item) => item.att_date === today);
-
-  // 오늘 출근(in_time) 중 가장 빠른 시간
-  const inTimes = todayAttendance
-    .filter((i) => i.in_time)
-    .map((i) => new Date(i.in_time));
+  const inTimes = todayAttendance.filter((i) => i.in_time).map((i) => new Date(i.in_time));
   const earliestInTime = inTimes.length > 0 ? new Date(Math.min(...inTimes)) : null;
-  const earliestInTimeStr = earliestInTime
-    ? earliestInTime.toISOString()
-    : null;
-
-  // 오늘 퇴근(out_time) 중 가장 늦은 시간
-  const outTimes = todayAttendance
-    .filter((i) => i.out_time)
-    .map((i) => new Date(i.out_time));
+  const earliestInTimeStr = earliestInTime ? earliestInTime.toISOString() : null;
+  const outTimes = todayAttendance.filter((i) => i.out_time).map((i) => new Date(i.out_time));
   const latestOutTime = outTimes.length > 0 ? new Date(Math.max(...outTimes)) : null;
   const latestOutTimeStr = latestOutTime ? latestOutTime.toISOString() : null;
-
-  // 출근, 연장근무, 지각/조퇴, 결석 통계 계산
   const attendanceCount = getAttendanceStats(att);
-
   const attendanceStats = [
     { label: "출근", value: attendanceCount.출근, color: "#4f8cff" },
     { label: "연장근무", value: attendanceCount.연장근무, color: "#34c759" },
     { label: "지각/조퇴", value: attendanceCount["지각/조퇴"], color: "#ff3b30" },
     { label: "결석", value: attendanceCount.결석, color: "#ff9500" },
   ];
-
   const totalAttendance = attendanceStats.reduce((sum, item) => sum + item.value, 0) || 1;
-
-  // 공지사항 정렬
   const sortedList = [
     ...noticeList.filter((n) => n.pinned).sort((a, b) => a.post_idx - b.post_idx),
     ...noticeList.filter((n) => !n.pinned).sort((a, b) => new Date(b.reg_date) - new Date(a.reg_date)),
-  ].slice(0, 5);
-
-  // 회의록 필터링
+  ].slice(0, 4);
   const filteredList = meetingList
     .filter((n) => (n.attendees && n.attendees.includes(myInfo.name)) || n.user_id === myInfo.user_id)
     .sort((a, b) => new Date(b.reg_date) - new Date(a.reg_date))
@@ -246,7 +270,10 @@ export default function Home() {
       <div className="flex flex_column module gap_10">
         <div className="flex gap_10">
           {/* 프로필 카드 */}
-          <div className="main_box flex_1">
+          <div className="main_box flex_1 position_rel">
+            <Link href="/component/mypage">
+              <img src="/link.png" alt="link" className="main_link" />
+            </Link>
             <div className="width_100 flex flex_column gap_10 align_center justify_center position_rel">
               <div className="gradient"></div>
               <div className="profile_img"></div>
@@ -255,13 +282,17 @@ export default function Home() {
               <div className="small_text">{myInfo.email}</div>
               <ul className="profile_stats">
                 <li>
-                  결재처리함<span className="font_700">0</span>
-                </li>
-                <li>
                   오늘의 일정<span className="font_700">1</span>
                 </li>
                 <li>
-                  채팅<span className="font_700">0</span>
+                  {/* 채팅 + 알림 숫자 링크 */}
+                    채팅
+                    <Link
+                      href="/component/chating"
+                      title="채팅방 바로가기"
+                    >
+                    <span className="font_700">{unreadCount}</span>
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -272,26 +303,33 @@ export default function Home() {
           <div className="flex flex_column gap_10 flex_1">
             {/* 공지사항 카드 */}
             <div className="main_box notice_card flex_1">
+              <Link href="/component/board">
+                <img src="/link.png" alt="link" className="main_link" />
+              </Link>
               <div className="card_title font_700">공지사항</div>
               <ul className="notice_list">
                 {sortedList.length === 0 ? (
                   <li>리스트가 없습니다.</li>
                 ) : (
                   sortedList.map((n) => (
-                    <li key={n.post_idx}>
-                      <span className="su_small_text">
-                        {n.pinned && <strong>[중요]</strong>}
-                        {ellipsis(n.subject)}
-                      </span>
-                      <span className="su_small_text">{formatDate(n.reg_date)}</span>
-                    </li>
+                    <Link key={n.post_idx} href={`/component/board/board_detail/${n.post_idx}`}>
+                      <li>
+                        <span className="su_small_text">
+                          {n.pinned && <strong>[중요]</strong>}
+                          {ellipsis(n.subject)}
+                        </span>
+                        <span className="su_small_text">{formatDate(n.reg_date)}</span>
+                      </li>
+                    </Link>
                   ))
                 )}
               </ul>
             </div>
-
             {/* 내 근태현황 카드 */}
             <div className="main_box attendance_card flex_1">
+              <Link href="/component/attendance">
+                <img src="/link.png" alt="link" className="main_link" />
+              </Link>
               <div className="card_title font_700">내 근태현황</div>
               <div className="attendance_chart_wrap">
                 <svg width="90" height="90" viewBox="0 0 90 90">
@@ -351,6 +389,9 @@ export default function Home() {
         <div className="flex gap_10 flex_1">
           {/* 결재 시스템 카드 */}
           <div className="main_box notice_card flex_1">
+            <Link href="/component/approval">
+              <img src="/link.png" alt="link" className="main_link" />
+            </Link>
             <div className="card_title font_700">결재 시스템</div>
             <ul className="notice_list">
               {approvals.length === 0 ? (
@@ -392,6 +433,9 @@ export default function Home() {
 
           {/* 파일 관리 카드 */}
           <div className="main_box notice_card flex_1">
+            <Link href="/component/files">
+              <img src="/link.png" alt="link" className="main_link" />
+            </Link>
             <div className="card_title font_700">파일 관리</div>
             <ul className="notice_list">
               {cloud.length === 0 ? (
@@ -411,16 +455,21 @@ export default function Home() {
         <div className="flex gap_10 flex_1">
           {/* 회의록 카드 */}
           <div className="main_box notice_card flex_1">
+            <Link href="/component/meeting">
+              <img src="/link.png" alt="link" className="main_link" />
+            </Link>
             <div className="card_title font_700">회의록</div>
             <ul className="notice_list">
               {filteredList.length === 0 ? (
                 <li>리스트가 없습니다.</li>
               ) : (
                 filteredList.map((n) => (
-                  <li key={n.post_idx}>
-                    <span className="su_small_text">{ellipsis(n.subject)}</span>
-                    <span className="su_small_text">{formatDate(n.reg_date)}</span>
-                  </li>
+                  <Link key={n.post_idx} href={`/component/meeting/meeting_detail/${n.post_idx}`}>
+                    <li>
+                      <span className="su_small_text">{ellipsis(n.subject)}</span>
+                      <span className="su_small_text">{formatDate(n.reg_date)}</span>
+                    </li>
+                  </Link>
                 ))
               )}
             </ul>
