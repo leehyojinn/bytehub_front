@@ -86,7 +86,8 @@ export default function CalendarCard({ onTodayCountChange }) {
     }
     try {
       const { data } = await axios.get(`${apiUrl}/scd/total`);
-      const generalEvents = data.scd_list.map(item => {
+      // 방어코드: 배열인지 체크 후 map 호출
+      const generalEvents = Array.isArray(data.scd_list) ? data.scd_list.map(item => {
         let event = {
           id: item.scd_idx,
           title: item.subject,
@@ -103,11 +104,11 @@ export default function CalendarCard({ onTodayCountChange }) {
           event.end = item.end_date;
         }
         return event;
-      });
-
+      }) : [];
+  
       const leaveRes = await axios.get(`${apiUrl}/leave/team/${currentUser.team_id}`);
-      const leaveEvents = leaveRes.data.list.map(item => mappingLeave(item));
-
+      const leaveEvents = Array.isArray(leaveRes.data.list) ? leaveRes.data.list.map(item => mappingLeave(item)) : [];
+  
       setCalendarEvents([...generalEvents, ...leaveEvents]);
     } catch (err) {
       setCalendarEvents([]);
