@@ -4275,9 +4275,10 @@ a:hover {
   width: 100% !important;
 }
 
-#main_calendar{
+.calendar_scroll{
   height: 610px;
   overflow-y: auto;
+  width: 100%;
 }
 
 #main_calendar .fc-daygrid-day-events {

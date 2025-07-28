@@ -193,70 +193,72 @@ export default function CalendarCard({ onTodayCountChange }) {
 
   return (
     <div className="main_box calendar_card flex_1" id="main_calendar">
-      <Link href="/component/calendar">
-        <img src="/link.png" alt="link" className="main_link" />
-      </Link>
-      <div className="card_title font_700">캘린더</div>
-      <FullCalendar
-        plugins={[dayGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        locale="ko"
-        height="auto"
-        headerToolbar={{
-          left: 'title',
-          center: '',
-          right: 'prev,next today',
-        }}
-        dayMaxEvents={2}
-        events={calendarEventsFormatted}
-        dateClick={info => {
-          setSelectedDate(info.dateStr);
-        }}
-        dayCellClassNames={(arg) => {
-          const cellDate = arg.date;
-          const yyyy = cellDate.getFullYear();
-          const mm = String(cellDate.getMonth() + 1).padStart(2, '0');
-          const dd = String(cellDate.getDate()).padStart(2, '0');
-          const cellDateStr = `${yyyy}-${mm}-${dd}`;
-        
-          return cellDateStr === selectedDate ? ['selected-day'] : [];
-        }}
-      />
-      <div className="mt_10">
-        <strong>{selectedDate} 일정</strong>
-        <ul className="calendar_events mt_10" style={{ listStyle: 'none', paddingLeft: 0 }}>
-          {selectedDateEvents.length === 0 ? (
-            <li className="su_small_text">해당 날짜에 일정이 없습니다.</li>
-          ) : (
-            selectedDateEvents.map(ev => (
-              <li
-                className="su_small_text"
-                key={ev.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginBottom: '6px',
-                  gap: '8px',
-                  color: typeColors[ev.type] || '#000',
-                }}
-              >
-                {/* 색상 박스 */}
-                <span
-                  className='su_label_text'
+      <div className='calendar_scroll'>
+        <Link href="/component/calendar">
+          <img src="/link.png" alt="link" className="main_link" />
+        </Link>
+        <div className="card_title font_700">캘린더</div>
+        <FullCalendar
+          plugins={[dayGridPlugin, interactionPlugin]}
+          initialView="dayGridMonth"
+          locale="ko"
+          height="auto"
+          headerToolbar={{
+            left: 'title',
+            center: '',
+            right: 'prev,next today',
+          }}
+          dayMaxEvents={2}
+          events={calendarEventsFormatted}
+          dateClick={info => {
+            setSelectedDate(info.dateStr);
+          }}
+          dayCellClassNames={(arg) => {
+            const cellDate = arg.date;
+            const yyyy = cellDate.getFullYear();
+            const mm = String(cellDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(cellDate.getDate()).padStart(2, '0');
+            const cellDateStr = `${yyyy}-${mm}-${dd}`;
+          
+            return cellDateStr === selectedDate ? ['selected-day'] : [];
+          }}
+        />
+        <div className="mt_10">
+          <strong>{selectedDate} 일정</strong>
+          <ul className="calendar_events mt_10" style={{ listStyle: 'none', paddingLeft: 0 }}>
+            {selectedDateEvents.length === 0 ? (
+              <li className="su_small_text">해당 날짜에 일정이 없습니다.</li>
+            ) : (
+              selectedDateEvents.map(ev => (
+                <li
+                  className="su_small_text"
+                  key={ev.id}
                   style={{
-                    display: 'inline-block',
-                    width: '12px',
-                    height: '12px',
-                    backgroundColor: typeColors[ev.type] || '#ccc',
-                    borderRadius: '3px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    marginBottom: '6px',
+                    gap: '8px',
+                    color: typeColors[ev.type] || '#000',
                   }}
-                />
-                {/* 일정 텍스트 */}
-                <span className='su_label_text'>[{typeLabels[ev.type] || '기타'}] {ev.title}</span>
-              </li>
-            ))
-          )}
-        </ul>
+                >
+                  {/* 색상 박스 */}
+                  <span
+                    className='su_label_text'
+                    style={{
+                      display: 'inline-block',
+                      width: '12px',
+                      height: '12px',
+                      backgroundColor: typeColors[ev.type] || '#ccc',
+                      borderRadius: '3px',
+                    }}
+                  />
+                  {/* 일정 텍스트 */}
+                  <span className='su_label_text'>[{typeLabels[ev.type] || '기타'}] {ev.title}</span>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
       </div>
     </div>
   );
