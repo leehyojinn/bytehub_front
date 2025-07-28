@@ -11,7 +11,7 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080/ws';
+const wsUrl = process.env.NEXT_PUBLIC_WS_URL;
 const MAX_LENGTH = 15;
 
 function ellipsis(str, maxLength = MAX_LENGTH) {
@@ -74,6 +74,7 @@ export default function Home() {
   const [unreadCount, setUnreadCount] = useState(0);
   const stompClientRef = useRef(null);
   const subscriptionRef = useRef(null);
+  const [todayScheduleCount, setTodayScheduleCount] = useState(0);
 
   // 알림 목록 서버에서 불러오기
   const fetchNotifications = async () => {
@@ -282,7 +283,7 @@ export default function Home() {
               <div className="small_text">{myInfo.email}</div>
               <ul className="profile_stats">
                 <li>
-                  오늘의 일정<span className="font_700">1</span>
+                  오늘의 일정<span className="font_700">{todayScheduleCount}</span>
                 </li>
                 <li>
                   {/* 채팅 + 알림 숫자 링크 */}
@@ -298,7 +299,7 @@ export default function Home() {
             </div>
           </div>
 
-          <CalendarCard />
+          <CalendarCard onTodayCountChange={setTodayScheduleCount} />
 
           <div className="flex flex_column gap_10 flex_1">
             {/* 공지사항 카드 */}

@@ -33,6 +33,32 @@
   }
 }
 
+body {
+  overflow-y: overlay !important; /* 반드시 overlay 처리 */
+}
+
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+::-webkit-scrollbar-thumb {
+  outline: none;
+  border-radius: 10px;
+  border: 4px solid transparent;
+  box-shadow: inset 6px 6px 0 rgba(34, 34, 34, 0.15);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  border: 4px solid transparent;
+  box-shadow: inset 6px 6px 0 rgba(34, 34, 34, 0.3);
+}
+
+::-webkit-scrollbar-track {
+  box-shadow: none;
+  background-color: transparent;
+}
+
 .mobile_menu_icon {
   display: none; /* Hidden by default */
   font-size: 2.5rem;
@@ -203,6 +229,7 @@ a:hover {
 .small_sub_title { font-size: 1.6rem; line-height: 2.1rem; word-break: keep-all; }
 .small_text { font-size: 1.4rem; line-height: 1.9rem; word-break: keep-all; }
 .su_small_text { font-size: 1.2rem; line-height: 1.7rem; word-break: keep-all; }
+.su_label_text { font-size: 0.9rem; line-height: 1.5rem; word-break: keep-all; }
 
 .wrap{
   width: 100%;
@@ -4248,6 +4275,11 @@ a:hover {
   width: 100% !important;
 }
 
+#main_calendar{
+  height: 610px;
+  overflow-y: auto;
+}
+
 #main_calendar .fc-daygrid-day-events {
   display: none;
 }
@@ -4704,4 +4736,15 @@ a:hover {
 
 .fc-daygrid-body, .fc-daygrid-body-unbalanced, .fc-daygrid-body-natural {
   width: 100% !important;
+}
+
+.selected-day {
+  background-color: var(--primary-color3) !important;  /* 원하는 색상으로 변경 */
+  color: #000 !important;
+}
+
+/* 선택된 날짜 hover 효과 등 추가 가능 */
+.selected-day:hover {
+  background-color: var(--primary-color2) !important;
+  color: #fff !important;
 }
