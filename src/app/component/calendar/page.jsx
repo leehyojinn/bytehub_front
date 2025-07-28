@@ -127,16 +127,12 @@ export default function CalendarPage() {
     const type = useRef('');  // 지금 선택한 놈이 팀이냐...회사냐...개인이냐
 
     // useMemo 병나발쇼
-    const [currentUser, setCurrentUser] = useState({});
-
-
-    
-
+    const currentUser = useRef({});
 
     const visibleEvents = useMemo(() => {
-        if (!currentUser.id) return [];
-        return getVisibleEvents(events, currentUser);
-    }, [events, currentUser]);
+        if (!currentUser.current.id) return [];
+        return getVisibleEvents(events, currentUser.current);
+    }, [events, currentUser.current]);
     const calendarData = useMemo(() => {
         return flattenEventsForCalendar(visibleEvents);
     }, [visibleEvents]);
@@ -159,14 +155,14 @@ export default function CalendarPage() {
         callUserInfo().then(async () => {
             await callEvents();
         })
-    }, [currentUser.team_id]);
+    }, [currentUser.current.team_id]);
 
     // 남의꺼 함부로 수정 못하게 하는거
     const edit_filter = (type) => {
-        // console.log(currentUser.grade, type);
-        if (currentUser.grade < 3 && type === 'company') {
+        // console.log(currentUser.current.grade, type);
+        if (currentUser.current.grade < 3 && type === 'company') {
             editFilter.current=true;
-        } else if (currentUser.grade < 4 && type === 'team') {
+        } else if (currentUser.current.grade < 4 && type === 'team') {
             editFilter.current=true;
         } else if (type === 'personal') {
             editFilter.current=true;
@@ -229,7 +225,7 @@ export default function CalendarPage() {
     // 연차전용매핑함수(살려줘...)
     const mappingLeave = ({scd}) => {
         let eventObj = {
-            id: currentUser.team_id,
+            id: currentUser.current.team_id,
             user_id: scd.writer_id,
             title: scd.name+' : '+scd.subject,
             type: 'leave',
@@ -258,14 +254,14 @@ export default function CalendarPage() {
             return mappingScd({scd: item});
         });
         setEvents(scd_list);
-        await callLeaves(currentUser.team_id);
+        await callLeaves(currentUser.current.team_id);
     }
     // 일정+연차 어캐든 합치는 함수
     const callLeaves = async () => {
         // 으윽 트라이캐치 쓰기싫어
         try{
-            console.log('currentUser?: ', currentUser);
-            let {data} = await axios.get(`${apiUrl}/leave/team/${currentUser.team_id}`);
+            console.log('currentUser.current?: ', currentUser.current);
+            let {data} = await axios.get(`${apiUrl}/leave/team/${currentUser.current.team_id}`);
             const team_leave_list = data.list.map((item) => {
                 return mappingLeave({scd: item});
             });
@@ -279,13 +275,13 @@ export default function CalendarPage() {
     // 일단 유저정보를 긁어오는 함수
     const callUserInfo = async () => {
         let {data} = await axios.get(`${apiUrl}/mypage/info`, {headers: {Authorization: sessionStorage.getItem('token')}});
-        setCurrentUser({
+        currentUser.current = {
             id: data.data.user_id,
             name: data.data.name,
             team_id: data.data.dept_idx,
             grade: data.data.lv_idx,
             position: data.data.lv_name
-        });
+        };
     }
 
     // 일정 1개의 정보를 불러오는 함수(수정할때 사용)
@@ -295,7 +291,7 @@ export default function CalendarPage() {
 
         beforeEvent.current = {
             scd_idx: info.event._def.extendedProps.id,
-            user_id: currentUser.id,
+            user_id: currentUser.current.id,
             scd_type: info.event._def.extendedProps.type,
             type_idx: info.event._def.extendedProps.type_idx,
             subject: info.event._def.extendedProps.title,
@@ -324,9 +320,9 @@ export default function CalendarPage() {
         }
         // 단일 일정이면 start==end, 기간 일정이면 다르게
         let eventObj = {
-            user_id: currentUser.id,
+            user_id: currentUser.current.id,
             scd_type: type.current,
-            type_idx: type.current === 'team' ? currentUser.team_id : 0,    // ★leave, project의 경우 일정에서 안 다룸
+            type_idx: type.current === 'team' ? currentUser.current.team_id : 0,    // ★leave, project의 경우 일정에서 안 다룸
             subject: modalTitle.trim(),
             start_date: startDate,
             end_date: endDate,
@@ -408,14 +404,14 @@ export default function CalendarPage() {
                         </div>
                         {/*일정등록버튼*/}
                         <div className="flex gap_10 align_center">
-                            {currentUser.grade < 3 ?
+                            {currentUser.current.grade < 3 ?
                                 <button className="caleandar_btn" style={{backgroundColor: typeColors.company}}
                                         onClick={() => {
                                             type.current = 'company'
                                             setShowModal(true);
                                         }}>+ 회사 일정 등록</button> : null}
 
-                            {currentUser.grade < 4 ?
+                            {currentUser.current.grade < 4 ?
                                 <button className="caleandar_btn" style={{backgroundColor: typeColors.team}}
                                         onClick={() => {
                                             type.current = 'team'
