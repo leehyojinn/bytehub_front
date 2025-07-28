@@ -191,8 +191,20 @@ export default function MyPage() {
         return sessionStorage.getItem('token');
     };
 
-    async function leaveDetail() {
+        async function leaveDetail() {
         const token = getToken();
+        console.log("연차 상세 내역 조회 시작 - 토큰:", token);
+        
+        // JWT 토큰에서 사용자 ID 추출
+        let currentUserId = '';
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            currentUserId = payload.id;
+            console.log("JWT에서 추출한 사용자 ID:", currentUserId);
+        } catch (error) {
+            console.error("JWT 파싱 실패:", error);
+        }
+        
         try {
             let {data} = await axios.get(`${apiUrl}/leave/detail`,{
                 headers: {
@@ -200,9 +212,32 @@ export default function MyPage() {
                     'Authorization': token
                 }
             });
+            console.log("연차 상세 내역 응답:", data);
             if (data.success && Array.isArray(data.data)) {
-                setLeaveDetails(data.data);
+                console.log("연차 상세 내역 데이터:", data.data);
+                
+                // 각 연차 데이터의 상세 정보 로그
+                data.data.forEach((leave, index) => {
+                    console.log(`연차 ${index + 1}:`, {
+                        appr_idx: leave.appr_idx,
+                        writer_id: leave.writer_id,
+                        appr_date: leave.appr_date,
+                        appr_type: leave.appr_type,
+                        vac_start: leave.vac_start,
+                        vac_end: leave.vac_end,
+                        final_status: leave.final_status
+                    });
+                });
+                
+                // appr_idx 기준으로 중복 제거
+                const uniqueLeaves = data.data.filter((leave, index, self) => 
+                    index === self.findIndex(l => l.appr_idx === leave.appr_idx)
+                );
+                
+                console.log("중복 제거 후 연차 데이터:", uniqueLeaves);
+                setLeaveDetails(uniqueLeaves);
             } else {
+                console.log("연차 상세 내역 데이터 없음");
                 setLeaveDetails([]);
             }
         } catch (err) {
@@ -227,9 +262,10 @@ export default function MyPage() {
     // 컴포넌트 마운트 시 사용자 정보 가져오기
     useEffect(() => {
         fetchUserInfo().then((res) => {
+            // 사용자 정보 로드 완료 후 연차 상세 내역 조회
+            leaveDetail();
+            leaveMy();
         })
-        leaveDetail();
-        leaveMy();
     }, []);
 
     // 사용자 정보가 로드된 후 연차 정책 가져오기
@@ -752,20 +788,48 @@ export default function MyPage() {
                     <div className="modal_overlay" onClick={() => setLeaveDetailModalOpen(false)}>
                         <div className="modal_content" style={{width: "800px"}} onClick={e => e.stopPropagation()}>
                             <h3 className="card_title font_700 mb_20">연차 상세 내역</h3>
-                            <div style={{maxHeight: '500px', overflowY: 'auto', border: '1px solid #e0e0e0', borderRadius: '8px'}}>
-                                <table className="board_table" style={{margin: 0}}>
+                            <div style={{maxHeight: '600px', overflowY: 'auto', border: '1px solid #e0e0e0', borderRadius: '8px'}}>
+                                <table className="board_table" style={{margin: 0, width: '100%'}}>
                                     <thead>
                                         <tr>
-                                            <th>신청일</th>
-                                            <th>연차 종류</th>
-                                            <th>시작일</th>
-                                            <th>종료일</th>
-                                            <th>사용일수</th>
-                                            <th>상태</th>
+                                            <th style={{width: '15%'}}>신청일</th>
+                                            <th style={{width: '15%'}}>연차 종류</th>
+                                            <th style={{width: '20%'}}>시작일</th>
+                                            <th style={{width: '20%'}}>종료일</th>
+                                            <th style={{width: '15%'}}>사용일수</th>
+                                            <th style={{width: '15%'}}>상태</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {leaveDetails.length > 0 ? leaveDetails.map((leave, index) => {
+                                        {(() => {
+                                            // JWT 토큰에서 사용자 ID 추출
+                                            let currentUserId = '';
+                                            try {
+                                                const token = getToken();
+                                                const payload = JSON.parse(atob(token.split('.')[1]));
+                                                currentUserId = payload.id;
+                                            } catch (error) {
+                                                console.error("JWT 파싱 실패:", error);
+                                            }
+                                            
+                                            // 현재 사용자의 연차 데이터만 필터링
+                                            const filteredLeaves = leaveDetails.filter(leave => leave.writer_id === currentUserId);
+                                            
+                                            console.log("모달에서 필터링된 연차 데이터:", filteredLeaves);
+                                            filteredLeaves.forEach((leave, index) => {
+                                                console.log(`모달 연차 ${index + 1}:`, {
+                                                    appr_idx: leave.appr_idx,
+                                                    writer_id: leave.writer_id,
+                                                    appr_date: leave.appr_date,
+                                                    appr_type: leave.appr_type,
+                                                    vac_start: leave.vac_start,
+                                                    vac_end: leave.vac_end,
+                                                    final_status: leave.final_status
+                                                });
+                                            });
+                                            
+                                            return filteredLeaves.length > 0 ? filteredLeaves
+                                            .map((leave, index) => {
                                             // 사용일수 계산
                                             let usedDays = 0;
                                             if (leave.vac_start && leave.vac_end) {
@@ -781,14 +845,20 @@ export default function MyPage() {
                                                     <td>{leave.vac_start ? new Date(leave.vac_start).toLocaleDateString() : '-'}</td>
                                                     <td>{leave.vac_end ? new Date(leave.vac_end).toLocaleDateString() : '-'}</td>
                                                     <td>{usedDays > 0 ? `${usedDays}일` : '-'}</td>
-                                                    <td>{leave.appr_status === '승인완료' ? '승인' : leave.appr_status === '반려' ? '반려' : '대기'}</td>
+                                                    <td>
+                                                        {leave.final_status === '승인완료' ? '승인' : 
+                                                         leave.final_status === '반려' ? '반려' : 
+                                                         leave.final_status === '대기중' ? '대기' : 
+                                                         leave.final_status || '대기'}
+                                                    </td>
                                                 </tr>
                                             );
                                         }) : (
                                             <tr>
                                                 <td colSpan="6" style={{textAlign: 'center'}}>연차 사용 내역이 없습니다.</td>
                                             </tr>
-                                        )}
+                                        );
+                                        })()}
                                     </tbody>
                                 </table>
                             </div>
