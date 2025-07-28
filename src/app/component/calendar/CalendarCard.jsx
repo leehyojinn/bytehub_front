@@ -39,6 +39,7 @@ export default function CalendarCard({ onTodayCountChange }) {
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(dayfomatted());
   const currentUser = useRef({ id: null, team_id: null });
+  const [userReady, setUserReady] = useState(false);
 
   const fetchUserInfo = async () => {
     try {
@@ -51,6 +52,8 @@ export default function CalendarCard({ onTodayCountChange }) {
       };
     } catch {
       currentUser.current = { id: null, team_id: null };
+    } finally {
+      setUserReady(true);
     }
   };
 
@@ -77,6 +80,10 @@ export default function CalendarCard({ onTodayCountChange }) {
   };
 
   const callEvents = async () => {
+    if (!currentUser.current.team_id) {
+      setCalendarEvents([]);
+      return;
+    }
     try {
       const { data } = await axios.get(`${apiUrl}/scd/total`);
       const generalEvents = data.scd_list.map(item => {
@@ -129,14 +136,18 @@ export default function CalendarCard({ onTodayCountChange }) {
     });
   };
 
+  // userReady가 true가 된 후에 이벤트 호출
   useEffect(() => {
-    const initialize = async () => {
-      await fetchUserInfo();
-      await callEvents();
-    };
-    initialize();
+    fetchUserInfo();
   }, []);
 
+  useEffect(() => {
+    if (userReady) {
+      callEvents();
+    }
+  }, [userReady]);
+
+  // calendarEvents가 바뀌면 필터링
   useEffect(() => {
     if (currentUser.current.id && calendarEvents.length > 0) {
       const filtered = filterEvents(calendarEvents, currentUser.current);
@@ -169,7 +180,6 @@ export default function CalendarCard({ onTodayCountChange }) {
     return `${now.getFullYear()}-${String(now.getMonth() +1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   }, []);
 
-  // 오늘 일정 개수 계산 함수
   const countTodayEvents = (events) => {
     return events.filter(ev => {
       if (ev.date === today) return true;
@@ -180,7 +190,6 @@ export default function CalendarCard({ onTodayCountChange }) {
     }).length;
   };
 
-  // filteredEvents가 바뀔 때마다 오늘 일정 개수 콜백 실행
   useEffect(() => {
     if (onTodayCountChange) {
       const count = countTodayEvents(filteredEvents);
@@ -241,7 +250,6 @@ export default function CalendarCard({ onTodayCountChange }) {
                     color: typeColors[ev.type] || '#000',
                   }}
                 >
-                  {/* 색상 박스 */}
                   <span
                     className='su_label_text'
                     style={{
@@ -252,7 +260,6 @@ export default function CalendarCard({ onTodayCountChange }) {
                       borderRadius: '3px',
                     }}
                   />
-                  {/* 일정 텍스트 */}
                   <span className='su_label_text'>[{typeLabels[ev.type] || '기타'}] {ev.title}</span>
                 </li>
               ))
