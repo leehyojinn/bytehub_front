@@ -91,6 +91,9 @@ export default function VacationEditPage() {
   // 연차 부여
   const [grantLeaveModal, setGrantLeaveModal] = useState(false);
   
+  // 연차 삭제
+  const [deleteLeaveModal, setDeleteLeaveModal] = useState(false);
+  
   // 체크박스 관련 상태
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
@@ -452,6 +455,63 @@ export default function VacationEditPage() {
     setGrantLeaveModal(false);
   };
 
+  // 연차 삭제 처리
+  const handleDeleteLeave = async (e) => {
+    e.preventDefault();
+    
+    if (selectedMembers.length === 0) {
+      alert("연차를 삭제할 사원을 선택해주세요.");
+      return;
+    }
+
+    try {
+      const token = sessionStorage.getItem('token');
+      if (!token) {
+        throw new Error('로그인이 필요합니다.');
+      }
+
+      console.log('연차 삭제 API 호출:', selectedMembers);
+
+      const response = await fetch(`${apiUrl}/leave/delete-remain`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          selectedMembers: selectedMembers
+        })
+      });
+
+      console.log('연차 삭제 응답 상태:', response.status);
+
+      if (!response.ok) {
+        throw new Error(`서버 오류: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('연차 삭제 응답:', result);
+
+      if (!result.success) {
+        throw new Error(result.msg || '연차 삭제에 실패했습니다.');
+      }
+
+      // 성공하면 데이터 새로고침
+      await fetchMembersLeaveData(leaveRules);
+      
+      alert(`선택된 ${selectedMembers.length}명의 사원의 연차가 삭제되었습니다.`);
+      
+    } catch (err) {
+      console.error('연차 삭제 실패:', err);
+      alert(`연차 삭제 실패: ${err.message}`);
+    }
+    
+    // 선택 해제 및 모달 닫기
+    setSelectedMembers([]);
+    setSelectAll(false);
+    setDeleteLeaveModal(false);
+  };
+
   // 개별 체크박스 토글
   const handleMemberCheck = (memberId) => {
     setSelectedMembers(prev => {
@@ -493,6 +553,16 @@ export default function VacationEditPage() {
     }
     
     setGrantLeaveModal(true);
+  };
+
+  // 선택된 사원들의 연차 삭제
+  const openDeleteLeaveModalForSelected = () => {
+    if (selectedMembers.length === 0) {
+      alert("연차를 삭제할 사원을 선택해주세요.");
+      return;
+    }
+    
+    setDeleteLeaveModal(true);
   };
   const handleEditSave = async (e) => {
     e.preventDefault();
@@ -610,7 +680,10 @@ export default function VacationEditPage() {
                     onChange={handleSearchChange}
                 />
               </form>
-              <button className="board_btn" onClick={openGrantLeaveModalForSelected}>연차 부여</button>
+              <div className="flex gap_10">
+                <button className="board_btn" onClick={openGrantLeaveModalForSelected}>연차 부여</button>
+                <button className="board_btn" style={{backgroundColor: '#f44336', color: 'white'}} onClick={openDeleteLeaveModalForSelected}>연차 삭제</button>
+              </div>
             </div>
             <div style={{ overflowX: 'auto', width: '100%' }}>
               <table className="vacation_member_table">
@@ -945,6 +1018,67 @@ export default function VacationEditPage() {
                     <div className="modal_buttons">
                       <button type="submit" className="board_btn">연차 생성</button>
                       <button type="button" className="board_btn board_btn_cancel" onClick={() => setGrantLeaveModal(false)}>취소</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+          )}
+
+          {/* 연차 삭제 모달 */}
+          {deleteLeaveModal && (
+              <div className="modal_overlay" onClick={() => setDeleteLeaveModal(false)}>
+                <div className="modal_content" onClick={e => e.stopPropagation()}>
+                  <h3 className="card_title font_700 mb_20">연차 삭제</h3>
+                  <form onSubmit={handleDeleteLeave} className="flex flex_column gap_10">
+                    <div className="board_write_row">
+                      <label className="board_write_label">선택된 사원 ({selectedMembers.length}명)</label>
+                      <div className="board_write_input" style={{height: 'auto', minHeight: '40px', padding: '8px'}}>
+                        {selectedMembers.length === 0 ? (
+                          <span style={{color: '#999'}}>선택된 사원이 없습니다.</span>
+                        ) : (
+                          selectedMembers.map(memberId => {
+                            const member = members.find(m => m.id === memberId);
+                            return member ? (
+                              <span key={memberId} style={{
+                                display: 'inline-block',
+                                background: '#ffebee',
+                                padding: '2px 8px',
+                                margin: '2px',
+                                borderRadius: '4px',
+                                fontSize: '14px',
+                                color: '#c62828'
+                              }}>
+                                {member.name} ({member.id})
+                              </span>
+                            ) : null;
+                          })
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="board_write_row">
+                      <div style={{background: '#fff3e0', padding: '15px', borderRadius: '5px', fontSize: '14px', border: '1px solid #ff9800'}}>
+                        <strong style={{color: '#e65100'}}>⚠️ 연차 삭제 주의사항</strong><br/><br/>
+                        
+                        <div style={{marginBottom: '10px'}}>
+                          <strong style={{color: '#f44336'}}>🗑️ 삭제 대상:</strong><br/>
+                          • 선택된 사원들의 모든 연차<br/>
+                        </div>
+                        
+                        <div style={{marginBottom: '10px'}}>
+                          <strong style={{color: '#f44336'}}>📋 삭제 내용:</strong><br/>
+                          • leave_history 테이블에서 완전히 삭제<br/>
+                        </div>
+                        
+                        <div style={{color: '#d32f2f', fontSize: '12px', marginTop: '10px', padding: '8px', background: '#ffebee', borderRadius: '4px'}}>
+                          ⚠️ <strong>이 작업은 되돌릴 수 없습니다!</strong><br/>
+                          삭제된 연차는 복구할 수 없으니 신중하게 진행해주세요.
+                        </div>
+                      </div>
+                    </div>
+                    <div className="modal_buttons">
+                      <button type="submit" className="board_btn" style={{backgroundColor: '#f44336', color: 'white'}}>연차 삭제</button>
+                      <button type="button" className="board_btn board_btn_cancel" onClick={() => setDeleteLeaveModal(false)}>취소</button>
                     </div>
                   </form>
                 </div>
