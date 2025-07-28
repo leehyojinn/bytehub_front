@@ -305,6 +305,10 @@ export default function CalendarPage() {
 
         edit_filter(info.event._def.extendedProps.type);
 
+        const endPlusOne = new Date(info.event._def.extendedProps.end);
+        endPlusOne.setDate(endPlusOne.getDate() - 1);
+        const endStr = endPlusOne.toISOString().slice(0, 10);
+
         beforeEvent.current = {
             scd_idx: info.event._def.extendedProps.id,
             user_id: currentUser.current.id,
@@ -312,7 +316,7 @@ export default function CalendarPage() {
             type_idx: info.event._def.extendedProps.type_idx,
             subject: info.event._def.extendedProps.title,
             start_date: info.event._def.extendedProps.start,
-            end_date: info.event._def.extendedProps.end,
+            end_date: endStr,
         }
 
         // console.log('parseEvent?: ', beforeEvent.current);
