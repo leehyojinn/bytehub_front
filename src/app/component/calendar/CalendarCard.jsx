@@ -26,12 +26,59 @@ const typeColors = {
   project: "#e7a43a",
 };
 
+// 오늘 날짜 포맷 생성 함수
 const dayfomatted = () => {
   const today = new Date();
   const year = today.getFullYear();
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+};
+
+// --- 새로 추가하는 mappingScd 함수 ---
+const mappingScd = ({ scd }) => {
+  let eventObj = {
+    id: scd.scd_idx,
+    title: scd.subject,
+    type: scd.scd_type,
+    type_idx: scd.type_idx,
+  };
+
+  // end_date + 1 해서 일정 끝 날짜 포함 처리
+  const endPlusOne = new Date(scd.end_date);
+  endPlusOne.setDate(endPlusOne.getDate() + 1);
+  const endStr = endPlusOne.toISOString().slice(0, 10);
+
+  if (scd.start_date === scd.end_date) {
+    eventObj.date = scd.start_date;
+  } else {
+    eventObj.start = scd.start_date;
+    eventObj.end = endStr;
+  }
+
+  switch (scd.scd_type) {
+    case "company":
+      eventObj.allowed_grades = [1, 2];
+      eventObj.visible_to_all = true;
+      break;
+    case "team":
+      eventObj.allowed_grades = [1, 2, 3];
+      eventObj.team_id = scd.type_idx;
+      eventObj.visible_to_team = true;
+      break;
+    case "personal":
+      eventObj.user_id = scd.user_id;
+      break;
+    case "project":
+      eventObj.team_id = scd.team_id;
+      eventObj.user_id = scd.user_id;
+      break;
+    default:
+      console.log(scd.scd_type + "는 알 수 없는 일정 유형입니다.");
+      break;
+  }
+
+  return eventObj;
 };
 
 export default function CalendarCard({ onTodayCountChange }) {
@@ -57,7 +104,7 @@ export default function CalendarCard({ onTodayCountChange }) {
     }
   };
 
-  const mappingLeave = (scd) => {
+  const mappingLeave = (scd, teamId) => {
     const endPlusOne = new Date(scd.vac_end);
     endPlusOne.setDate(endPlusOne.getDate() + 1);
     const endStr = endPlusOne.toISOString().slice(0, 10);
@@ -67,7 +114,7 @@ export default function CalendarCard({ onTodayCountChange }) {
       title: `${scd.name} : ${scd.subject}`,
       type: 'leave',
       user_id: scd.writer_id,
-      team_id: currentUser.team_id,
+      team_id: teamId || null,
     };
 
     if (scd.vac_start === scd.vac_end) {
@@ -76,6 +123,7 @@ export default function CalendarCard({ onTodayCountChange }) {
       eventObj.start = scd.vac_start;
       eventObj.end = endStr;
     }
+
     return eventObj;
   };
 
@@ -86,29 +134,17 @@ export default function CalendarCard({ onTodayCountChange }) {
     }
     try {
       const { data } = await axios.get(`${apiUrl}/scd/total`);
-      // 방어코드: 배열인지 체크 후 map 호출
-      const generalEvents = Array.isArray(data.scd_list) ? data.scd_list.map(item => {
-        let event = {
-          id: item.scd_idx,
-          title: item.subject,
-          type: item.scd_type,
-          user_id: item.user_id,
-          team_id: item.type_idx,
-          start_date: item.start_date,
-          end_date: item.end_date,
-        };
-        if (item.start_date === item.end_date) {
-          event.date = item.start_date;
-        } else {
-          event.start = item.start_date;
-          event.end = item.end_date;
-        }
-        return event;
-      }) : [];
-  
+
+      // mappingScd 함수로 일정 데이터 변환 (방어코드 포함)
+      const generalEvents = Array.isArray(data.scd_list)
+        ? data.scd_list.map(scdItem => mappingScd({ scd: scdItem }))
+        : [];
+
       const leaveRes = await axios.get(`${apiUrl}/leave/team/${currentUser.team_id}`);
-      const leaveEvents = Array.isArray(leaveRes.data.list) ? leaveRes.data.list.map(item => mappingLeave(item)) : [];
-  
+      const leaveEvents = Array.isArray(leaveRes.data.list)
+        ? leaveRes.data.list.map(item => mappingLeave(item, currentUser.team_id))
+        : [];
+
       setCalendarEvents([...generalEvents, ...leaveEvents]);
     } catch (err) {
       setCalendarEvents([]);
@@ -137,16 +173,19 @@ export default function CalendarCard({ onTodayCountChange }) {
     });
   };
 
+  // 컴포넌트 마운트 시 사용자 info fetch
   useEffect(() => {
     fetchUserInfo();
   }, []);
 
+  // userReady, currentUser.team_id 변경 시에만 이벤트 호출
   useEffect(() => {
     if (userReady && currentUser.team_id) {
       callEvents();
     }
   }, [userReady, currentUser.team_id]);
 
+  // fetched events 변경 시 필터링
   useEffect(() => {
     if (currentUser.id && calendarEvents.length > 0) {
       const filtered = filterEvents(calendarEvents, currentUser);
@@ -154,6 +193,7 @@ export default function CalendarCard({ onTodayCountChange }) {
     }
   }, [calendarEvents, currentUser]);
 
+  // FullCalendar에 넘길 포맷팅된 이벤트 배열 생성
   const calendarEventsFormatted = filteredEvents.map(ev => {
     if (ev.start && ev.end) {
       return {
@@ -189,6 +229,7 @@ export default function CalendarCard({ onTodayCountChange }) {
     }).length;
   };
 
+  // 오늘 일정 개수 변경 콜백
   useEffect(() => {
     if (onTodayCountChange) {
       const count = countTodayEvents(filteredEvents);
