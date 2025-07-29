@@ -60,6 +60,7 @@ export default function MemberManagePage() {
   async function deptList() {
     try {
       const { data } = await axios.post(`${apiUrl}/dept/list`);
+      console.log('dept',data);
       setDepartments(
         data.list.map(d => ({
           id: d.dept_idx,
@@ -86,12 +87,18 @@ export default function MemberManagePage() {
 
   // 수정 모달 열기
   const openEdit = (m) => {
+ if(departments.filter(d => d.status === false).length === 1) {
+    const singleDept = departments.find(d => d.status === false);
+    setEditMember({ ...m, dept_idx: singleDept?.id || m.dept_idx });
+  } else {
     setEditMember({ ...m });
-    setModalOpen(true);
+  }
+  setModalOpen(true);
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
+      console.log('저장 전 editMember:', editMember);  // <--- 이거 추가
     let { data } = await axios.post(
       `${apiUrl}/member/list/update`,
       { ...editMember, hire_end_date: null }
@@ -225,18 +232,37 @@ export default function MemberManagePage() {
                 </div>
                 <div className="board_write_row">
                   <label className="board_write_label">부서</label>
-                  <select
-                    className="board_write_input"
-                    value={editMember.dept_idx}
-                    onChange={e => setEditMember(m => ({ ...m, dept_idx: Number(e.target.value) }))}
-                  >
-                    {departments
-                      .filter(d => d.status === false)
-                      .map(d => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                      ))
-                    }
-                  </select>
+                   {departments.filter(d => d.status === false).length > 1 ? (
+                    <select
+                      className="board_write_input"
+                      value={editMember.dept_idx}
+                      onChange={e => {
+                        const val = Number(e.target.value);
+                        console.log("onChange dept_idx 값 변경:", val);
+                        setEditMember(m => ({ ...m, dept_idx: val }));
+                      }}
+                    >
+                      {departments
+                        .filter(d => d.status === false)
+                        .map(d => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))
+                      }
+                    </select>
+                  ) : (
+                    // 부서가 1개일 때는 해당 부서명 텍스트로 보여줌
+                    <input
+                      className="board_write_input"
+                      type="text"
+                      readOnly
+                      value={
+                        // departments가 있고, editMember.dept_idx에 해당하는 부서명 표시
+                        departments.length === 1
+                          ? departments[0].name
+                          : departments.find(d => d.id === editMember.dept_idx)?.name || ""
+                      }
+                    />
+                  )}
                 </div>
                 <div className="board_write_row">
                   <label className="board_write_label">재직상태</label>
