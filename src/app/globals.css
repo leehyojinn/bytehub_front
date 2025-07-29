@@ -207,6 +207,7 @@ a:hover {
 .ml_10 {margin-left: 10px !important;}
 .mb_0 {margin-bottom : 0 !important;}
 .mb_20 {margin-bottom: 20px !important;}
+.margin_auto { margin: 0 auto !important; }
 
 .text_center {text-align: center;}
 .text_left {text-align: left;}
@@ -221,6 +222,7 @@ a:hover {
 .font_100 { font-weight: 100; }
 
 .width_100 { width: 100% !important; }
+.width_fit { width: fit-content; }
 .flex_1{ flex: 1; }
 .title { font-size: 4rem; line-height: 4.5rem; word-break: keep-all; }
 .middle_title { font-size: 3.2rem; line-height: 3.7rem; word-break: keep-all; }
@@ -1797,12 +1799,10 @@ a:hover {
   align-items: center;
   gap: 32px;
 }
-.org_level_ceo {
-  margin-bottom: 18px;
-}
 .org_level_executives {
   display: flex;
   gap: 24px;
+  justify-content: center;
   margin-bottom: 28px;
 }
 .org_level_teams {
@@ -1810,6 +1810,7 @@ a:hover {
   gap: 36px;
   flex-wrap: wrap;
   justify-content: center;
+  margin-top: 20px;
 }
 .org_team_group {
   display: flex;
