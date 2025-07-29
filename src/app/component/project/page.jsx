@@ -431,15 +431,21 @@ export default function ProjectManagement() {
                     <button className="board_btn" onClick={() => openDetail(p)}>
                       상세보기
                     </button>
-                    <button className="board_btn" onClick={() => openModal(p)}>
-                      수정
-                    </button>
-                    <button
-                      className="board_btn board_btn_cancel"
-                      onClick={() => deleteProject(p.id)}
-                    >
-                      삭제
-                    </button>
+
+                    {/* 생성자만 수정/삭제 가능 */}
+                    {currentUser.user_id === p.user_id && (
+                        <>
+                          <button className="board_btn" onClick={() => openModal(p)}>
+                            수정
+                          </button>
+                          <button
+                              className="board_btn board_btn_cancel"
+                              onClick={() => deleteProject(p.id)}
+                          >
+                            삭제
+                          </button>
+                        </>
+                    )}
                   </div>
                 </div>
               ))

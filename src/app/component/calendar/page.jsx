@@ -319,7 +319,7 @@ export default function CalendarPage() {
             end_date: endStr,
         }
 
-        // console.log('parseEvent?: ', beforeEvent.current);
+        console.log('parseEvent?: ', beforeEvent.current);
 
         setModalTitle(beforeEvent.current.subject);
         setStartDate(beforeEvent.current.start_date);
