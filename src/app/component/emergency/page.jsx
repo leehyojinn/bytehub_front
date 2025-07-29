@@ -9,10 +9,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function EmergencyContact() {
 
-  const [departments, setDepartments] = useState([
-    { dept_idx: 1, dept_name: "" },
-    { dept_idx: 2, dept_name: "" },
-  ]);
+  const [departments, setDepartments] = useState([]);
 
   const [users, setUsers] = useState([
     { user_id: 1, name: "홍대표", email: "ceo@bytehub.com", dept_idx: 1 },
@@ -21,7 +18,7 @@ export default function EmergencyContact() {
   ]);
 
   // 선택된 팀
-  const [deptId, setDeptId] = useState(departments[0].dept_idx);
+  const [deptId, setDeptId] = useState(null);
 
   // 기본 수신자(선택 팀 소속)
   const defaultReceivers = users.filter(u => u.dept_idx === deptId);
@@ -56,14 +53,37 @@ export default function EmergencyContact() {
   }, []);
 
   const callDepts = async () => {
-    let{data} = await axios.get(`${apiUrl}/email/depts`);
-    setDepartments(data.list);
-    callUsers();
+    try {
+      let{data} = await axios.post(`${apiUrl}/dept/list`);
+      console.log('받은 부서 데이터:', data);
+      
+      if (data && data.list) {
+        setDepartments(data.list);
+        
+        // 첫 번째 부서를 자동으로 선택
+        if (data.list.length > 0) {
+          setDeptId(data.list[0].dept_idx);
+        }
+      } else {
+      }
+      
+      callUsers();
+    } catch (error) {
+
+    }
   }
 
   const callUsers = async () => {
-    let{data} = await axios.get(`${apiUrl}/email/users`);
-    setUsers(data.list);
+    try {
+      let{data} = await axios.get(`${apiUrl}/email/users`);
+      console.log('받은 사용자 데이터:', data);
+      
+      if (data && data.list) {
+        setUsers(data.list);
+      } else {
+      }
+    } catch (error) {
+    }
   }
 
 
@@ -112,7 +132,7 @@ export default function EmergencyContact() {
           {/* 팀 선택 */}
           <div className="emergency_row">
             <label className="emergency_label">팀 선택</label>
-            <select className="emergency_input" value={deptId} onChange={handleDeptChange}>
+            <select className="emergency_input" value={deptId || ""} onChange={handleDeptChange}>
               {departments.map(dep => (
                 <option key={dep.dept_idx} value={dep.dept_idx}>{dep.dept_name}</option>
               ))}
