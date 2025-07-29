@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, use } from "react";
 import axios from "axios";
 
 const GEMINI_API_KEY = process.env.NEXT_PUBLIC_API_KEY;
@@ -21,6 +21,7 @@ export default function Chatbot() {
   const [meetingList, setMeetingList] = useState([]);
   const [myInfo, setMyInfo] = useState([]);
   const [cloudInfo, setCloudInfo] = useState([]);
+  const [cloudLinks, setCloudLinks] = useState([]);
 
   // 키워드 목록 불러오기
   async function keyword_list() {
@@ -139,6 +140,10 @@ export default function Chatbot() {
       아래 JSON 데이터를 참고해서, 사용자의 요청에 가장 적합한 답변을 안내해줘.
       목록을 전체 보여줘야해.
 
+      무조건 내 정보가 포함된 회의록을 보여줘야해.
+
+      참가자에 ${myInfo.name} 없으면 절대로 보여주면 안돼.
+
       [게시판 목록]
       ${meetingJson}
 
@@ -179,15 +184,38 @@ export default function Chatbot() {
     setLoading(false);
   }
 
+  async function fetchCloudLinks() {
+    const userId = myInfo.user_id;
+    const selectedDeptIdx = myInfo.dept_idx;
+    const response = await fetch(`${api_url}/cloud/link/list?user_id=${userId}&deptIdx=${selectedDeptIdx}`);
+    const data = await response.json();
+    setCloudLinks(data);
+  }
+
+  useEffect(() => {
+      fetchCloudLinks();
+  }, []);
+
   async function fetchGeminiWithCloudJson(userText) {
     setLoading(true);
     try {
       const cloudJson = JSON.stringify(cloudInfo, null, 2);
+      const linkJson = JSON.stringify(cloudLinks, null, 2);
+      console.log(cloudJson);
       const prompt = `
       다음은 클라우드 및 링크 목록입니다.
       내 ${myInfo} 정보 포함된 클라우드 및 링크에서
       아래 JSON 데이터를 참고해서, 사용자의 요청에 가장 적합한 답변을 안내해줘.
       목록을 전체 보여줘야해.
+
+      ${myInfo.dept_idx} 와 ${cloudJson} 에서 dept_idx가 일치하는것들만 보여줘야해.
+      
+      다른건 절대 보여주면 안돼.
+
+      만약 링크로 요청할시,
+      ${myInfo.dept_idx} 와 ${linkJson} 에서 dept_idx가 일치하는것들만 보여줘야해.
+
+      모든 답들은 json 형태로 보여주지말고, link_name , url , file_name 만 보여줘야해.
 
       [클라우드 및 링크 목록]
       ${cloudJson}
