@@ -22,13 +22,14 @@ const attendanceStates = [
   { value: "정상퇴근", label: "정상퇴근" },
   { value: "조퇴", label: "조퇴" },
   { value: "결석", label: "결석" },
+  { value: "설정오류", label: "설정오류" },
 ];
 
-// 출퇴근 정책 초기값
+// 출퇴근 정책 초기값 - 설정이 없을 때 사용할 빈 값
 const initialPolicy = {
-  workStart: "09:00",
-  workEnd: "18:00",
-  term: 10, // 유효시간(분)
+  workStart: "",
+  workEnd: "",
+  term: 0, // 유효시간(분) - 설정 전까지 0
 };
 
 // 부서명 반환 함수
@@ -72,14 +73,16 @@ export default function AttendanceManagePage() {
           // 모든 필드 저장 (PK 포함)
           setPolicy({
             ...result.data,
-            workStart: result.data.set_in_time?.split('T')[1]?.slice(0,5) || "09:00",
-            workEnd: result.data.set_out_time?.split('T')[1]?.slice(0,5) || "18:00",
-            term: result.data.term || 10
+            workStart: result.data.set_in_time?.split('T')[1]?.slice(0,5) || "",
+            workEnd: result.data.set_out_time?.split('T')[1]?.slice(0,5) || "",
+            term: result.data.term || 0
           });
           setPolicyExists(true);
         } else {
           setPolicy(initialPolicy);
           setPolicyExists(false);
+          // 설정이 없으면 관리자에게 알림
+          alert("출퇴근 기준 시간이 설정되지 않았습니다.\n관리자 패널에서 기준 시간을 설정해주세요.");
         }
       });
   }, []);
@@ -171,6 +174,18 @@ export default function AttendanceManagePage() {
   // 출근/퇴근 기준 시간 설정 저장
   const handlePolicySave = async (e) => {
     e.preventDefault();
+    
+    // 유효성 검사
+    if (!policy.workStart || !policy.workEnd || !policy.term) {
+      alert("모든 필드를 입력해주세요.\n(출근시간, 퇴근시간, 유효시간)");
+      return;
+    }
+    
+    if (policy.term <= 0) {
+      alert("유효시간은 1분 이상 입력해주세요.");
+      return;
+    }
+    
     // 현재 로그인한 관리자 ID로 기준 시간 설정
     const userId = sessionStorage.getItem('userId');
     if (!userId) {
