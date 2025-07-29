@@ -30,7 +30,13 @@ function getCurrentDate() {
 }
 function getHourAndMinute(datetimeStr) {
   if (!datetimeStr) return "-";
-  return datetimeStr.slice(11, 13) + "시 " + datetimeStr.slice(14, 16) + "분";
+  
+  // ISO 문자열을 로컬 시간으로 변환
+  const date = new Date(datetimeStr);
+  const hours = date.getHours().toString().padStart(2, "0");
+  const minutes = date.getMinutes().toString().padStart(2, "0");
+  
+  return hours + "시 " + minutes + "분";
 }
 function getAttendanceStats(attList) {
   const stats = {
@@ -220,11 +226,15 @@ export default function Home() {
 
   const today = getCurrentDate();
   const todayAttendance = att.filter((item) => item.att_date === today);
+  
+  // 출근 시간 계산 (로컬 시간 기준)
   const inTimes = todayAttendance.filter((i) => i.in_time).map((i) => new Date(i.in_time));
-  const earliestInTime = inTimes.length > 0 ? new Date(Math.min(...inTimes)) : null;
+  const earliestInTime = inTimes.length > 0 ? new Date(Math.min(...inTimes.map(d => d.getTime()))) : null;
   const earliestInTimeStr = earliestInTime ? earliestInTime.toISOString() : null;
+  
+  // 퇴근 시간 계산 (로컬 시간 기준)
   const outTimes = todayAttendance.filter((i) => i.out_time).map((i) => new Date(i.out_time));
-  const latestOutTime = outTimes.length > 0 ? new Date(Math.max(...outTimes)) : null;
+  const latestOutTime = outTimes.length > 0 ? new Date(Math.max(...outTimes.map(d => d.getTime()))) : null;
   const latestOutTimeStr = latestOutTime ? latestOutTime.toISOString() : null;
   const attendanceCount = getAttendanceStats(att);
   const attendanceStats = [
