@@ -134,7 +134,7 @@ export default function Attendance() {
    * - 백엔드에서 출퇴근 기록 로드
    */
   useEffect(() => {
-    createOtps(); // 초기 인증번호 생성
+    // 초기 인증번호는 이메일 발송을 통해 생성됨 (자동 생성하지 않음)
     
     // 자정에 페이지 새로고침 (새로운 날짜 시작)
     const midnight = new Date();
@@ -156,15 +156,19 @@ export default function Attendance() {
   useEffect(() => {
     timerRef.current && clearInterval(timerRef.current); // 기존 타이머 정리
     
-    if (expireIn && expireOut) {
+    // 현재 모드에 따라 해당하는 만료 시간만 확인
+    const currentExpire = mode === "in" ? expireIn : expireOut;
+    
+    if (currentExpire) {
       timerRef.current = setInterval(() => {
         const now = new Date();
-        const remainIn = Math.max(0, Math.floor((expireIn - now) / 1000));
-        const remainOut = Math.max(0, Math.floor((expireOut - now) / 1000));
-        setRemain(mode === "in" ? remainIn : remainOut); // 현재 모드에 따른 남은 시간 설정
+        const remain = Math.max(0, Math.floor((currentExpire - now) / 1000));
+        setRemain(remain); // 현재 모드에 따른 남은 시간 설정
         
-        // 인증번호 만료 시 새로운 인증번호 생성
-        if (remainIn === 0 || remainOut === 0) createOtps();
+        // 인증번호 만료 시 사용자에게 이메일 발송 안내
+        if (remain === 0) {
+          console.log('인증번호가 만료되었습니다. 이메일 발송을 통해 새로운 인증번호를 받으세요.');
+        }
       }, 1000);
     }
     
@@ -281,17 +285,15 @@ export default function Attendance() {
 
 
   /**
-   * 이메일로 인증번호 발송하는 함수
-   * - 백엔드 API 호출
-   * - 발송 성공 시 인증번호와 만료 시간 설정
+   * 출근용 인증번호를 이메일로 발송하는 함수
    */
-  async function sendEmailOtp() {
+  async function sendEmailOtpIn() {
     setIsSending(true); // 발송 중 상태 설정
     
     try {
       // 세션스토리지에서 사용자 ID 가져오기
       let userId = sessionStorage.getItem('userId');
-      console.log('최종 전송할 user_id:', userId);
+      console.log('출근용 인증번호 발송 - user_id:', userId);
 
       if (!userId) {
         alert('로그인 정보가 없습니다. 다시 로그인 해주세요.');
@@ -299,8 +301,8 @@ export default function Attendance() {
         return;
       }
 
-      // 백엔드에 인증번호 발송 요청
-      const response = await fetch(`${apiUrl}/email/attendance`, {
+      // 백엔드에 출근용 인증번호 발송 요청
+      const response = await fetch(`${apiUrl}/email/attendance/in`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -312,26 +314,79 @@ export default function Attendance() {
 
       const result = await response.json();
 
-      // 발송 성공 시 인증번호와 만료 시간 설정
+      // 발송 성공 시 출근용 인증번호 설정
       if (result.msg && result.msg.includes("발송")) {
-        // 이메일로 받은 인증번호는 출근용으로 사용
         setOtpIn(result.authCode);
-        // 퇴근용은 별도로 생성
-        setOtpOut(generateOtp());
         const now = new Date();
         const expire = new Date(now.getTime() + OTP_VALID_MINUTES * 60000);
         setExpireIn(expire);
-        setExpireOut(expire);
+        // 퇴근용 만료시간도 기본값으로 설정 (타이머가 작동하도록)
+        if (!expireOut) {
+          setExpireOut(new Date(now.getTime() + OTP_VALID_MINUTES * 60000));
+        }
         setUsedOtpIn(false);
-        setUsedOtpOut(false);
         setInput("");
-        alert("인증번호가 이메일로 발송되었습니다.");
+        alert("출근용 인증번호가 이메일로 발송되었습니다.");
       } else {
-        alert("인증번호 발송에 실패했습니다.");
+        alert("출근용 인증번호 발송에 실패했습니다.");
       }
     } catch (error) {
-      console.error('인증번호 발송 오류:', error);
-      alert("인증번호 발송 중 오류가 발생했습니다.");
+      console.error('출근용 인증번호 발송 오류:', error);
+      alert("출근용 인증번호 발송 중 오류가 발생했습니다.");
+    } finally {
+      setIsSending(false); // 발송 중 상태 해제
+    }
+  }
+
+  /**
+   * 퇴근용 인증번호를 이메일로 발송하는 함수
+   */
+  async function sendEmailOtpOut() {
+    setIsSending(true); // 발송 중 상태 설정
+    
+    try {
+      // 세션스토리지에서 사용자 ID 가져오기
+      let userId = sessionStorage.getItem('userId');
+      console.log('퇴근용 인증번호 발송 - user_id:', userId);
+
+      if (!userId) {
+        alert('로그인 정보가 없습니다. 다시 로그인 해주세요.');
+        setIsSending(false);
+        return;
+      }
+
+      // 백엔드에 퇴근용 인증번호 발송 요청
+      const response = await fetch(`${apiUrl}/email/attendance/out`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId
+        })
+      });
+
+      const result = await response.json();
+
+      // 발송 성공 시 퇴근용 인증번호 설정
+      if (result.msg && result.msg.includes("발송")) {
+        setOtpOut(result.authCode);
+        const now = new Date();
+        const expire = new Date(now.getTime() + OTP_VALID_MINUTES * 60000);
+        setExpireOut(expire);
+        // 출근용 만료시간도 기본값으로 설정 (타이머가 작동하도록)
+        if (!expireIn) {
+          setExpireIn(new Date(now.getTime() + OTP_VALID_MINUTES * 60000));
+        }
+        setUsedOtpOut(false);
+        setInput("");
+        alert("퇴근용 인증번호가 이메일로 발송되었습니다.");
+      } else {
+        alert("퇴근용 인증번호 발송에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error('퇴근용 인증번호 발송 오류:', error);
+      alert("퇴근용 인증번호 발송 중 오류가 발생했습니다.");
     } finally {
       setIsSending(false); // 발송 중 상태 해제
     }
@@ -339,25 +394,11 @@ export default function Attendance() {
 
   /**
    * 새로운 인증번호를 생성하고 초기화하는 함수
-   * - 출근/퇴근용 인증번호 각각 생성
-   * - 만료 시간 설정
-   * - 사용 여부 초기화
+   * - 백엔드에서 인증번호를 받아와야 하므로 이 함수는 사용하지 않음
+   * - 인증번호는 이메일 발송을 통해서만 생성됨
    */
   function createOtps() {
-    const now = new Date();
-    const expire = new Date(now.getTime() + OTP_VALID_MINUTES * 60000);
-    const otpInValue = generateOtp();
-    const otpOutValue = generateOtp();
-    
-    console.log('생성된 인증번호 - 출근용:', otpInValue, '퇴근용:', otpOutValue);
-    
-    setOtpIn(otpInValue);
-    setOtpOut(otpOutValue);
-    setExpireIn(expire);
-    setExpireOut(expire);
-    setUsedOtpIn(false);
-    setUsedOtpOut(false);
-    setInput("");
+    alert("인증번호는 이메일 발송을 통해 생성됩니다.");
   }
 
   /**
@@ -574,7 +615,7 @@ export default function Attendance() {
             <button
               type="button"
               className="att_btn"
-              onClick={sendEmailOtp}
+              onClick={mode === "in" ? sendEmailOtpIn : sendEmailOtpOut}
               disabled={isSending || isLocked}
               style={{
                 width: "120px",
