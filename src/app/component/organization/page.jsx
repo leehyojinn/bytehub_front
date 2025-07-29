@@ -196,7 +196,6 @@ export default function OrgChartHierarchy() {
                 style={{ cursor: "pointer" }}
               >
                 <div className="org_card_title">{exe.name}</div>
-                <div className="org_card_sub">{exe.position}</div>
               </div>
             ))}
         </div>
@@ -214,7 +213,6 @@ export default function OrgChartHierarchy() {
                 style={{ cursor: "pointer" }}
               >
                 <div className="org_card_title">{exe.name}</div>
-                <div className="org_card_sub">{exe.position}</div>
               </div>
             ))}
         </div>
@@ -232,7 +230,6 @@ export default function OrgChartHierarchy() {
                 style={{ cursor: "pointer" }}
               >
                 <div className="org_card_title">{exe.name}</div>
-                <div className="org_card_sub">{exe.position}</div>
               </div>
             ))}
         </div>
@@ -250,7 +247,6 @@ export default function OrgChartHierarchy() {
                 style={{ cursor: "pointer" }}
               >
                 <div className="org_card_title">{exe.name}</div>
-                <div className="org_card_sub">{exe.position}</div>
               </div>
             ))}
         </div>
@@ -267,7 +263,6 @@ export default function OrgChartHierarchy() {
                 style={{ animationDelay: `${0.35 + idx * 0.16}s` }}
               >
                 <div className="org_card_title">{team.name}</div>
-                <div className="org_card_sub">팀 ID: {team.id}</div>
 
                 <div className="org_team_leaders">
                   {team.leaders.map((leader, lIdx) => (
@@ -282,7 +277,6 @@ export default function OrgChartHierarchy() {
                       }}
                     >
                       <div className="org_card_title">{leader.name}</div>
-                      <div className="org_card_sub">{leader.position}</div>
                     </div>
                   ))}
                 </div>
@@ -301,7 +295,6 @@ export default function OrgChartHierarchy() {
                     }}
                   >
                     <div className="org_card_title">{member.name}</div>
-                    <div className="org_card_sub">{member.position}</div>
                   </div>
                 ))}
               </div>
