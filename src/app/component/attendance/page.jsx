@@ -422,7 +422,7 @@ export default function Attendance() {
     if (!userId) return alert('로그인 정보가 없습니다. 다시 로그인 해주세요.');
 
     // 이메일 확인하기 귀찮을 때
-    // console.log('인증 시도 - 모드:', mode, '입력:', input, '예상:', expectedCode);
+    console.log('인증 시도 - 모드:', mode, '입력:', input, '예상:', expectedCode);
     
     // 백엔드에 인증번호 검증 및 기록 요청
     const result = await verifyOtp(userId, input, expectedCode, mode);
